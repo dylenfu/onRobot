@@ -1,0 +1,21 @@
+rpc = "http://127.0.0.1:22000"
+
+[admin]
+    KeyFile = "/Users/dylen/software/palette-chain-example/admin/keystore/UTC--2020-09-11T02-29-49.024005000Z--f3a9d42c01635a585f1721463842f8936075105f"
+    Address = "0xf3A9d42C01635A585f1721463842F8936075105F"
+    Passphrase   = "111111"
+
+[[testAccounts]]
+    KeyFile = "/Users/dylen/software/palette-chain-example/admin/keystore/UTC--2020-09-14T06-26-51.546662000Z--99e2a19cb2d4698ee2a040e953ea5014a65fc218"
+    Address = "0x99e2a19cb2d4698ee2a040e953ea5014a65fc218"
+    Passphrase   = "111111"
+
+[[testAccounts]]
+    KeyFile = "/Users/dylen/software/palette-chain-example/admin/keystore/UTC--2020-09-14T06-27-00.280341000Z--ecce5f1346afee82990cccc52fe521005bd54ff0"
+    Address = "0xecce5f1346afee82990cccc52fe521005bd54ff0"
+    Passphrase   = "111111"
+
+[[testAccounts]]
+    KeyFile = "/Users/dylen/software/palette-chain-example/admin/keystore/UTC--2020-09-14T06-27-08.318469000Z--2ffff236ff085b4d468b14c7b7b9fa1974a3bf7d"
+    Address = "0x2ffff236ff085b4d468b14c7b7b9fa1974a3bf7d"
+    Passphrase   = "111111"
