@@ -72,7 +72,7 @@ func (c *Client) PLTTransfer(to common.Address, amount *big.Int) (common.Hash, e
 }
 
 func (c *Client) PLTTransferFrom(from, to common.Address, amount *big.Int) (common.Hash, error) {
-	payload, err := utils.PackMethod(PLTABI, plt.MethodTransferFrom, from, to, amount)
+	payload, err := c.packPLT(plt.MethodTransferFrom, from, to, amount)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -80,11 +80,30 @@ func (c *Client) PLTTransferFrom(from, to common.Address, amount *big.Int) (comm
 }
 
 func (c *Client) PLTApprove(spender common.Address, amount *big.Int) (common.Hash, error) {
-	payload, err := utils.PackMethod(PLTABI, plt.MethodApprove, spender, amount)
+	payload, err := c.packPLT(plt.MethodApprove, spender, amount)
 	if err != nil {
 		return common.Hash{}, err
 	}
 	return c.sendPLTTx(payload)
+}
+
+func (c *Client) PLTAllowance(owner, spender common.Address, blockNum string) (*big.Int, error) {
+	payload, err := c.packPLT(plt.MethodAllowance, owner, spender)
+	if err != nil {
+		return nil, err
+	}
+
+	enc, err := c.callPLT(payload, blockNum)
+	if err != nil {
+		return nil, err
+	}
+
+	output := new(plt.MethodAllowanceOutput)
+	if err := c.unpackPLT(plt.MethodAllowance, output, enc); err != nil {
+		return nil, err
+	}
+
+	return output.Value, nil
 }
 
 func (c *Client) packPLT(method string, args ...interface{}) ([]byte, error) {

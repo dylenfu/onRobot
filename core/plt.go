@@ -232,3 +232,60 @@ func PLTTransfer() bool {
 
 	return true
 }
+
+func PLTApprove() bool {
+	var params struct {
+		RpcUrl string
+		Owner string
+		Spender string
+		Amount int
+		BlockNum string
+	}
+
+	if err := loadParams("PLTApprove", &params); err != nil {
+		log.Error(err)
+		return false
+	}
+
+	key := loadAccount(params.Owner)
+	client := sdk.NewSender(params.RpcUrl, key)
+
+	owner := key.Address
+	spender := common.HexToAddress(params.Spender)
+	amount := plt.TestMultiPLT(params.Amount)
+
+	// allowance before approve
+	allowanceBeforeApprove, err := client.PLTAllowance(owner, spender, params.BlockNum)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+
+	hash, err := client.PLTApprove(spender, amount)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+	wait(1)
+	if err := client.DumpEventLog(hash); err != nil {
+		log.Error(err)
+		return false
+	}
+
+	// allowance after approve
+	allowanceAfterApprove, err := client.PLTAllowance(owner, spender, params.BlockNum)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+
+	if allowanceAfterApprove.Cmp(utils.SafeAdd(allowanceBeforeApprove, amount)) != 0 {
+		log.Errorf("owner %s, spender %s, allowance before approve %d, allowance after approve %d, amount %d",
+			owner.Hex(), spender.Hex(),
+			utils.UnsafeDiv(allowanceBeforeApprove, plt.OnePLT),
+			utils.UnsafeDiv(allowanceAfterApprove, plt.OnePLT),
+			utils.UnsafeDiv(amount, plt.OnePLT))
+	}
+
+	return true
+}

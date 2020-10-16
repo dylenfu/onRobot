@@ -28,6 +28,7 @@ type Config struct {
 	Workspace         string
 	DefaultPassphrase string
 	AdminAccount      string
+	Accounts []string
 	GasLimit          uint64
 	DeployGasLimit    uint64
 	BlockPeriod       xtime.Duration
