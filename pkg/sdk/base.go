@@ -2,39 +2,50 @@ package sdk
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/contracts/native"
+	"github.com/ethereum/go-ethereum/contracts/native/governance"
+	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/palettechain/onRobot/pkg/log"
 )
 
-func (c *PaletteClient) Balance(address string) (*big.Int, error) {
-	var raw string
+var (
+	PLTABI, GovernanceABI abi.ABI
+	PLTAddress            = common.HexToAddress(native.PLTContractAddress)
+	GovernanceAddress     = common.HexToAddress(native.GovernanceContractAddress)
 
-	if err := c.Call(
-		&raw,
-		"eth_getBalance",
-		address,
-		"latest",
-	); err != nil {
-		return nil, fmt.Errorf("faild to get balance [%v]", err)
-	}
+	gasLimit, deployGasLimit uint64
+	blockPeriod time.Duration
 
-	src, _ := new(big.Int).SetString(raw, 0)
-	data := new(big.Int).Div(src, OneEth)
+	OnePLt = plt.OnePLT
 
-	return data, nil
+)
+
+const (
+	gasPrice    = 0
+)
+
+func Init(_gasLimit, _deployGasLimit uint64, _blockPeriod time.Duration) {
+	PLTABI = plt.GetABI()
+	GovernanceABI = governance.GetABI()
+
+	gasLimit = _gasLimit
+	deployGasLimit = _deployGasLimit
+	blockPeriod = _blockPeriod
 }
 
-func (c *PaletteClient) GetNonce(address string) (uint64, error) {
+func (c *Client) GetNonce(address string) (uint64, error) {
 	var raw string
 
 	if err := c.Call(
@@ -51,13 +62,67 @@ func (c *PaletteClient) GetNonce(address string) (uint64, error) {
 	return bigNonce.Uint64(), nil
 }
 
-func (c *PaletteClient) SignTransaction(key *ecdsa.PrivateKey, tx *types.Transaction) (string, error) {
+func (c *Client) SendTransaction(contractAddr common.Address, payload []byte) (common.Hash, error) {
+	addr := c.Address()
+
+	nonce, err := c.GetNonce(addr.Hex())
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx := types.NewTransaction(
+		nonce,
+		contractAddr,
+		big.NewInt(0),
+		gasLimit,
+		big.NewInt(gasPrice),
+		payload,
+	)
+
+	signedTx, err := c.SignTransaction(tx)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return c.SendRawTransaction(signedTx)
+}
+
+func (c *Client) SendTransactionAndDumpEvent(contract common.Address, payload []byte) error {
+	hash, err := c.SendTransaction(contract, payload)
+	if err != nil {
+		return err
+	}
+	time.Sleep(blockPeriod)
+	return c.DumpEventLog(hash)
+}
+
+func (c *Client) RepeatSendTransactionAndDumpEvent(contract common.Address, payload []byte, repeat int) error {
+	hashList := make([]common.Hash, repeat)
+
+	for i := 0; i < repeat; i++ {
+		hash, err := c.SendTransaction(contract, payload)
+		if err != nil {
+			return err
+		}
+		hashList[i] = hash
+	}
+
+	time.Sleep(blockPeriod)
+
+	for i := 0; i < repeat; i++ {
+		if err := c.DumpEventLog(hashList[i]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) SignTransaction(tx *types.Transaction) (string, error) {
 
 	signer := types.HomesteadSigner{}
 	signedTx, err := types.SignTx(
 		tx,
 		signer,
-		key,
+		c.Key.PrivateKey,
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign tx: [%v]", err)
@@ -70,7 +135,7 @@ func (c *PaletteClient) SignTransaction(key *ecdsa.PrivateKey, tx *types.Transac
 	return "0x" + hex.EncodeToString(bz), nil
 }
 
-func (c *PaletteClient) SendRawTransaction(signedTx string) (common.Hash, error) {
+func (c *Client) SendRawTransaction(signedTx string) (common.Hash, error) {
 	var result common.Hash
 	if err := c.Client.Call(&result, "eth_sendRawTransaction", signedTx); err != nil {
 		return result, fmt.Errorf("failed to send raw transaction: [%v]", err)
@@ -79,11 +144,11 @@ func (c *PaletteClient) SendRawTransaction(signedTx string) (common.Hash, error)
 	return result, nil
 }
 
-func (c *PaletteClient) AdminAddress() common.Address {
-	return c.Admin.Address
+func (c *Client) Address() common.Address {
+	return c.Key.Address
 }
 
-func (c *PaletteClient) DumpEventLog(hash common.Hash) error {
+func (c *Client) DumpEventLog(hash common.Hash) error {
 	raw := &types.Receipt{}
 
 	if err := c.Call(raw, "eth_getTransactionReceipt", hash.Hex()); err != nil {
@@ -100,11 +165,11 @@ func (c *PaletteClient) DumpEventLog(hash common.Hash) error {
 	return nil
 }
 
-func (c *PaletteClient) CallContract(from, to common.Address, payload []byte, blockNum string) ([]byte, error) {
+func (c *Client) CallContract(caller, contractAddr common.Address, payload []byte, blockNum string) ([]byte, error) {
 	var res hexutil.Bytes
 	arg := ethereum.CallMsg{
-		From: from,
-		To:   &to,
+		From: caller,
+		To:   &contractAddr,
 		Data: payload,
 	}
 	err := c.CallContext(context.Background(), &res, "eth_call", toCallArg(arg), blockNum)
@@ -132,15 +197,4 @@ func toCallArg(msg ethereum.CallMsg) interface{} {
 		arg["gasPrice"] = (*hexutil.Big)(msg.GasPrice)
 	}
 	return arg
-}
-
-func TransferETH(nonce uint64, toAddress string, value *big.Int) *types.Transaction {
-	return types.NewTransaction(
-		nonce,
-		common.HexToAddress(toAddress),
-		value,
-		GasMin,
-		big.NewInt(GasPrice),
-		nil,
-	)
 }

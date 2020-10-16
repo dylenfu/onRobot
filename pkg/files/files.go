@@ -1,49 +1,33 @@
 package files
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 )
 
-// LoadConfig
-func LoadConfig(fileName string, ins interface{}) error {
-	data, err := readFile(fileName)
+func ReadFile(filepath string) ([]byte, error) {
+	file, err := os.OpenFile(filepath, os.O_RDONLY, 0666)
 	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(data, ins)
-	if err != nil {
-		return fmt.Errorf("json.Unmarshal TestConfig:%s error:%s", data, err)
-	}
-	return nil
-}
-
-// LoadParams
-func LoadParams(dir, fileName string, data interface{}) error {
-	fullPath := dir + string(os.PathSeparator) + fileName
-	bz, err := ioutil.ReadFile(fullPath)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(bz, data)
-}
-
-func readFile(fileName string) ([]byte, error) {
-	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
-	if err != nil {
-		return nil, fmt.Errorf("OpenFile %s error %s", fileName, err)
+		return nil, fmt.Errorf("OpenFile %s error %s", filepath, err)
 	}
 	defer func() {
 		err := file.Close()
 		if err != nil {
-			panic(fmt.Sprintf("File %s close error %s", fileName, err))
+			panic(fmt.Sprintf("File %s close error %s", filepath, err))
 		}
 	}()
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
-		return nil, fmt.Errorf("ioutil.ReadAll %s error %s", fileName, err)
+		return nil, fmt.Errorf("ioutil.ReadAll %s error %s", filepath, err)
 	}
 	return data, nil
+}
+
+func FullPath(workspace, dir string, fileName string) string {
+	if !path.IsAbs(workspace) {
+		panic("path should be absolute path")
+	}
+	return path.Join(workspace, dir, fileName)
 }

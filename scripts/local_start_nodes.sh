@@ -3,7 +3,10 @@
 killall -INT geth
 source ~/.bash_profile;
 
-sleep 2s;
+sleep 1s;
+
+workspace=${PaletteWorkspace}
+cd $workspace;
 
 rm -rf node0/node.log
 rm -rf node1/node.log

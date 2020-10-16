@@ -2,6 +2,9 @@
 
 killall -INT geth
 
+workspace=${PaletteWorkspace}
+cd $workspace
+
 rm -rf node0 node1 node2 node3 node4
 
 echo "make directions";

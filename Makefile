@@ -4,12 +4,12 @@ GOBUILD=$(GOCMD) build
 GOTEST=$(GOCMD) test
 
 compile:
-	rm -rf build/target/*
-	mkdir -p build/target/params
-	cp cmd/config.json build/target/config.json
-	cp cmd/wallet.dat build/target/wallet.dat
-	cp cmd/transfer_wallet.dat build/target/transfer_wallet.dat
-	cp -r cmd/params/* build/target/params/
+	mkdir -p build/target
+	cp cmd/config.json build/target
+	cp -r cmd/params build/target
+	cp -r build/keystore build/target
+	cp -r build/setup build/target
+	cp -r scripts/* build/target/
 	$(GOBUILD) -o build/target/robot cmd/main.go
 
 compile-linux-robot:
@@ -17,11 +17,7 @@ compile-linux-robot:
 
 robot:
 	@echo test case $(t)
-	./build/target/robot -config=build/target/config.json \
-	-params=build/target/params \
-	-wallet=build/target/wallet.dat \
-	-transfer=build/target/transfer_wallet.dat \
-	-t=$(t)
+	./build/target/robot -config=build/target/config.json -t=$(t)
 
 clean:
 	rm -rf build/target/*

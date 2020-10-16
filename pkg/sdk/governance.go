@@ -1,34 +1,36 @@
 package sdk
 
 import (
-	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/governance"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // params are validator and isRevoke
-func (c *PaletteClient) AddValidator(validator common.Address, revoke bool) (common.Hash, error) {
+func (c *Client) AddValidator(validator common.Address, revoke bool) (common.Hash, error) {
 	payload, err := utils.PackMethod(GovernanceABI, governance.MethodAddValidator, validator, revoke)
 	if err != nil {
 		return common.Hash{}, err
 	}
-
-	return c.SendGovernanceTransaction(c.Admin.PrivateKey, payload)
+	return c.SendGovernanceTx(payload)
 }
 
-func (c *PaletteClient) GetRewardRecordBlock(blockNum string) (*big.Int, error) {
+// todo
+func (c *Client) GetValidators() []common.Address {
+	//payload, err := utils.PackMethod(GovernanceABI, )
+	return nil
+}
+
+func (c *Client) GetRewardRecordBlock(blockNum string) (*big.Int, error) {
 	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetRewardRecordBlockHeight)
 	if err != nil {
 		return nil, err
 	}
 
-	enc, err := c.CallContract(c.AdminAddress(), GovernanceAddress, payload, blockNum)
+	enc, err := c.CallGovernance(payload, blockNum)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get reward record block: [%v]", err)
 	}
@@ -42,13 +44,13 @@ func (c *PaletteClient) GetRewardRecordBlock(blockNum string) (*big.Int, error) 
 	return output.Value, nil
 }
 
-func (c *PaletteClient) GetLatestRewardProposer(blockNum string) (common.Address, error) {
+func (c *Client) GetLatestRewardProposer(blockNum string) (common.Address, error) {
 	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetLastRewardProposer)
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
 
-	enc, err := c.CallContract(c.AdminAddress(), GovernanceAddress, payload, blockNum)
+	enc, err := c.CallGovernance(payload, blockNum)
 	if err != nil {
 		return utils.EmptyAddress, fmt.Errorf("failed to get latest reward proposer: [%v]", err)
 	}
@@ -62,25 +64,12 @@ func (c *PaletteClient) GetLatestRewardProposer(blockNum string) (common.Address
 	return output.Proposer, nil
 }
 
-func (c *PaletteClient) SendGovernanceTransaction(key *ecdsa.PrivateKey, payload []byte) (common.Hash, error) {
-	addr := crypto.PubkeyToAddress(key.PublicKey)
-
-	nonce, err := c.GetNonce(addr.Hex())
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx := types.NewTransaction(
-		nonce,
-		GovernanceAddress,
-		big.NewInt(0),
-		Gas1GW,
-		big.NewInt(GasPrice),
-		payload,
-	)
-
-	signedTx, err := c.SignTransaction(key, tx)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	return c.SendRawTransaction(signedTx)
+func (c *Client) packGovernance(method string, args ...interface{}) ([]byte, error) {
+	return utils.PackMethod(GovernanceABI, method, args...)
+}
+func (c *Client) SendGovernanceTx(payload []byte) (common.Hash, error) {
+	return c.SendTransaction(GovernanceAddress, payload)
+}
+func (c *Client) CallGovernance(payload []byte, blockNum string) ([]byte, error) {
+	return c.CallContract(c.Address(), GovernanceAddress, payload, blockNum)
 }
