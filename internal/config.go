@@ -18,12 +18,16 @@ const (
 	keystoreDir = "keystore"
 )
 
-var config = new(Config)
+var (
+	config = new(Config)
+	adminKey *keystore.Key
+)
 
 type Config struct {
 	Env               string
 	Workspace         string
 	DefaultPassphrase string
+	AdminAccount string
 	GasLimit          json.Number
 	DeployGasLimit    json.Number
 	BlockPeriod       xtime.Duration
@@ -39,6 +43,8 @@ func Init(path string) {
 	gasLimit, _ := config.GasLimit.Int64()
 	deployGasLimit, _ := config.DeployGasLimit.Int64()
 	sdk.Init(uint64(gasLimit), uint64(deployGasLimit), time.Duration(config.BlockPeriod))
+
+	adminKey = loadAccount(config.AdminAccount)
 }
 
 func loadConfig(filepath string, ins interface{}) error {

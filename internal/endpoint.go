@@ -16,5 +16,9 @@ func Endpoint() {
 	core.Tool.RegMethod("reset", ResetNetwork)
 
 	// plt
-	core.Tool.RegMethod("pltBalanceOf", PLTBalanceOf)
+	core.Tool.RegMethod("totalSupply", PLTTotalSupply)
+	core.Tool.RegMethod("decimal", PLTDecimal)
+	core.Tool.RegMethod("adminBalance", PLTBalanceOf)
+	core.Tool.RegMethod("governanceBalance", GovernanceBalance)
+	core.Tool.RegMethod("balanceOf", PLTBalanceOf)
 }

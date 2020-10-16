@@ -1,8 +1,6 @@
 package sdk
 
 import (
-	"fmt"
-	"github.com/palettechain/onRobot/pkg/log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -10,26 +8,59 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 )
 
-func (c *Client) BalanceOf(owner common.Address, blockNum string) *big.Int {
+func (c *Client) BalanceOf(owner common.Address, blockNum string) (*big.Int, error) {
 	payload, err := c.packPLT(plt.MethodBalanceOf, owner)
 	if err != nil {
-		log.Errorf("pack plt balanceOf err %v", err)
-		return utils.EmptyBig
+		return nil, err
 	}
 
 	enc, err := c.callPLT(payload, blockNum)
 	if err != nil {
-		log.Error("call plt balanceOf err %v", err)
-		return utils.EmptyBig
+		return nil, err
 	}
 
 	output := new(plt.MethodBalanceOfOutput)
 	if err := c.unpackPLT(plt.MethodBalanceOf, output, enc); err != nil {
-		log.Error("unpack plt balanceOf err %v", err)
-		return utils.EmptyBig
+		return nil, err
 	}
 
-	return output.Balance
+	return output.Balance, nil
+}
+
+func (c *Client) PLTTotalSupply(blockNum string) (*big.Int, error) {
+	payload, err := c.packPLT(plt.MethodTotalSupply)
+	if err != nil {
+		return nil, err
+	}
+
+	enc, err := c.callPLT(payload, blockNum)
+	if err != nil {
+		return nil, err
+	}
+
+	output := new(plt.MethodTotalSupplyOutput)
+	if err := c.unpackPLT(plt.MethodTotalSupply, output, enc); err != nil {
+		return nil, err
+	}
+	return output.Supply, nil
+}
+
+func (c *Client) PLTDecimals() (uint64, error) {
+	payload, err := c.packPLT(plt.MethodDecimals)
+	if err != nil {
+		return 0, err
+	}
+
+	enc, err := c.callPLT(payload, "latest")
+	if err != nil {
+		return 0, err
+	}
+
+	output := new(plt.MethodDecimalsOutput)
+	if err := c.unpackPLT(plt.MethodDecimals, output, enc); err != nil {
+		return 0, err
+	}
+	return output.Decimal.Uint64(), nil
 }
 
 func (c *Client) PLTTransfer(to common.Address, amount *big.Int) (common.Hash, error) {
@@ -54,36 +85,6 @@ func (c *Client) PLTApprove(spender common.Address, amount *big.Int) (common.Has
 		return common.Hash{}, err
 	}
 	return c.sendPLTTx(payload)
-}
-
-func (c *Client) PLTTotalSupply(blockNum string) (*big.Int, error) {
-	payload, err := utils.PackMethod(PLTABI, plt.MethodTotalSupply)
-	if err != nil {
-		return nil, err
-	}
-
-	enc, err := c.callPLT(payload, blockNum)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get total supply: [%v]", err)
-	}
-
-	supply := new(big.Int).SetBytes(enc)
-	return supply, nil
-}
-
-func (c *Client) PLTDecimals() (uint64, error) {
-	payload, err := utils.PackMethod(PLTABI, plt.MethodDecimals)
-	if err != nil {
-		return 0, err
-	}
-
-	enc, err := c.callPLT(payload, "latest")
-	if err != nil {
-		return 0, fmt.Errorf("failed to get decimal: [%v]", err)
-	}
-
-	decimal := new(big.Int).SetBytes(enc).Uint64()
-	return decimal, nil
 }
 
 func (c *Client) packPLT(method string, args ...interface{}) ([]byte, error) {
