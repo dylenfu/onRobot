@@ -1,6 +1,8 @@
-package internal
+package core
 
 import (
+	"time"
+
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/shell"
 )
@@ -26,4 +28,8 @@ func ResetNetwork() bool {
 }
 
 func gc() {
+}
+
+func wait(nBlock int) {
+	time.Sleep(time.Duration(config.BlockPeriod) * time.Duration(nBlock))
 }

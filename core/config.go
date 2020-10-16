@@ -1,4 +1,4 @@
-package internal
+package core
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	config = new(Config)
+	config   = new(Config)
 	adminKey *keystore.Key
 )
 
@@ -27,9 +27,9 @@ type Config struct {
 	Env               string
 	Workspace         string
 	DefaultPassphrase string
-	AdminAccount string
-	GasLimit          json.Number
-	DeployGasLimit    json.Number
+	AdminAccount      string
+	GasLimit          uint64
+	DeployGasLimit    uint64
 	BlockPeriod       xtime.Duration
 }
 
@@ -40,9 +40,7 @@ func Init(path string) {
 
 	shell.Init(config.Env, config.Workspace)
 
-	gasLimit, _ := config.GasLimit.Int64()
-	deployGasLimit, _ := config.DeployGasLimit.Int64()
-	sdk.Init(uint64(gasLimit), uint64(deployGasLimit), time.Duration(config.BlockPeriod))
+	sdk.Init(config.GasLimit, config.DeployGasLimit, time.Duration(config.BlockPeriod))
 
 	adminKey = loadAccount(config.AdminAccount)
 }

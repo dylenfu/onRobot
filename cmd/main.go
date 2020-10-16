@@ -6,9 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/palettechain/onRobot/internal"
-	//_ "github.com/palettechain/onRobot/internal"
-	core "github.com/palettechain/onRobot/pkg/frame"
+	"github.com/palettechain/onRobot/core"
+	"github.com/palettechain/onRobot/pkg/frame"
 	"github.com/palettechain/onRobot/pkg/log"
 )
 
@@ -31,13 +30,13 @@ func main() {
 	defer time.Sleep(time.Second)
 
 	log.InitLog(loglevel, log.Stdout)
-	internal.Init(configpath)
-	internal.Endpoint()
+	core.Init(configpath)
+	core.Endpoint()
 
 	methods := make([]string, 0)
 	if Methods != "" {
 		methods = strings.Split(Methods, ",")
 	}
 
-	core.Tool.Start(methods)
+	frame.Tool.Start(methods)
 }
