@@ -239,10 +239,9 @@ func PLTApprove() bool {
 		Owner string
 		Spender string
 		Amount int
-		BlockNum string
 	}
 
-	if err := loadParams("PLTApprove", &params); err != nil {
+	if err := loadParams("PLTApprove.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
@@ -255,7 +254,7 @@ func PLTApprove() bool {
 	amount := plt.TestMultiPLT(params.Amount)
 
 	// allowance before approve
-	allowanceBeforeApprove, err := client.PLTAllowance(owner, spender, params.BlockNum)
+	allowanceBeforeApprove, err := client.PLTAllowance(owner, spender, "latest")
 	if err != nil {
 		log.Error(err)
 		return false
@@ -273,13 +272,13 @@ func PLTApprove() bool {
 	}
 
 	// allowance after approve
-	allowanceAfterApprove, err := client.PLTAllowance(owner, spender, params.BlockNum)
+	allowanceAfterApprove, err := client.PLTAllowance(owner, spender, "latest")
 	if err != nil {
 		log.Error(err)
 		return false
 	}
 
-	if allowanceAfterApprove.Cmp(utils.SafeAdd(allowanceBeforeApprove, amount)) != 0 {
+	if allowanceAfterApprove.Cmp(amount) != 0 {
 		log.Errorf("owner %s, spender %s, allowance before approve %d, allowance after approve %d, amount %d",
 			owner.Hex(), spender.Hex(),
 			utils.UnsafeDiv(allowanceBeforeApprove, plt.OnePLT),

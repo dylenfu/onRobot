@@ -67,6 +67,21 @@ func ResetNetwork() bool {
 	return true
 }
 
+func StartNetwork() bool {
+	var params struct {
+		ShellPath  string
+	}
+
+	if err := loadParams("Start.json", &params); err != nil {
+		log.Error(err)
+		return false
+	}
+
+	shellPath := shellPath(params.ShellPath)
+	shell.Exec(shellPath)
+	return true
+}
+
 func gc() {
 }
 

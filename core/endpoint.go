@@ -14,6 +14,7 @@ func Endpoint() {
 
 	frame.Tool.RegMethod("demo", Demo)
 	frame.Tool.RegMethod("reset", ResetNetwork)
+	frame.Tool.RegMethod("start", StartNetwork)
 
 	// plt
 	frame.Tool.RegMethod("totalSupply", PLTTotalSupply)
@@ -22,4 +23,5 @@ func Endpoint() {
 	frame.Tool.RegMethod("governanceBalance", GovernanceBalance)
 	frame.Tool.RegMethod("balanceOf", PLTBalanceOf)
 	frame.Tool.RegMethod("transfer", PLTTransfer)
+	frame.Tool.RegMethod("approve", PLTApprove)
 }
