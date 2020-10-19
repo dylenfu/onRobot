@@ -25,9 +25,9 @@ func ResetNetwork() bool {
 	ClearNetwork()
 
 	var params struct {
-		RpcUrl     string
-		ShellPath  string
-		InitAmount int
+		RpcUrl         string
+		ShellPath      string
+		UserInitAmount int
 	}
 
 	if err := config.LoadParams("Reset.json", &params); err != nil {
@@ -35,18 +35,13 @@ func ResetNetwork() bool {
 		return false
 	}
 
-	shellPath := config.ShellPath(params.ShellPath)
-	shell.Exec(shellPath)
+	shell.Exec(params.ShellPath)
 
 	wait(1)
 
 	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
-	amount := plt.TestMultiPLT(params.InitAmount)
-
-	accounts := config.Conf.Accounts
-	nodeAccounts := config.Conf.AllNodeAddressList()
-	accounts = append(accounts, nodeAccounts...)
-	for _, account := range accounts {
+	for _, account := range config.Conf.Accounts {
+		amount := plt.TestMultiPLT(params.UserInitAmount)
 		to := common.HexToAddress(account)
 		if _, err := client.PLTTransfer(to, amount); err != nil {
 			log.Errorf("transfer to %s err %v", to.Hex(), err)
@@ -56,7 +51,7 @@ func ResetNetwork() bool {
 
 	wait(1)
 
-	for _, account := range accounts {
+	for _, account := range config.Conf.Accounts {
 		owner := common.HexToAddress(account)
 		data, err := client.BalanceOf(owner, "latest")
 		if err != nil {
@@ -70,53 +65,106 @@ func ResetNetwork() bool {
 	return true
 }
 
+// start genesis nodes
 func StartNetwork() bool {
-	var params struct {
-		ShellPath string
-	}
-
-	if err := config.LoadParams("Start.json", &params); err != nil {
-		log.Error(err)
-		return false
-	}
-
-	shellPath := config.ShellPath(params.ShellPath)
-	shell.Exec(shellPath)
+	shell.Exec("start_nodes.sh")
 	return true
 }
 
+// stop all nodes
 func StopNetwork() bool {
-	var params struct {
-		ShellPath string
-	}
-
-	if err := config.LoadParams("Stop.json", &params); err != nil {
-		log.Error(err)
-		return false
-	}
-
-	shellPath := config.ShellPath(params.ShellPath)
-	shell.Exec(shellPath)
+	shell.Exec("stop_all_nodes.sh")
 	return true
 }
 
+// clear all nodes
 func ClearNetwork() bool {
-	var params struct {
-		ShellPath string
+	shell.Exec("clear_all_nodes.sh")
+	return true
+}
+
+// --------------------------------
+// validators management
+// --------------------------------
+
+type ValidatorsConfig struct {
+	RpcUrl               string
+	ValidatorsIndexStart int
+	ValidatorsIndexEnd   int
+	ValidatorsNumber     int
+	ValidatorInitAmount  int
+}
+
+func loadValidatorsConfig() *ValidatorsConfig {
+	params := new(ValidatorsConfig)
+	if err := config.LoadParams("InitValidators.json", params); err != nil {
+		log.Fatalf("failed to load `startValidators` params, [%v]", err)
+	}
+	params.ValidatorsIndexEnd = params.ValidatorsIndexStart + params.ValidatorsNumber - 1
+	return params
+}
+
+func InitValidators() (succeed bool) {
+	params := loadValidatorsConfig()
+
+	StopValidators()
+	ClearValidators()
+	config.Conf.ResetEnv(params.ValidatorsIndexStart, params.ValidatorsNumber)
+	shell.Exec("reset.sh")
+
+	wait(1)
+
+	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
+
+	amount := plt.TestMultiPLT(params.ValidatorInitAmount)
+	for i := params.ValidatorsIndexStart; i <= params.ValidatorsIndexEnd; i++ {
+		to := config.Conf.Nodes[i].Addr()
+		if _, err := client.PLTTransfer(to, amount); err != nil {
+			log.Errorf("transfer to %s err %v", to.Hex(), err)
+			return false
+		}
 	}
 
-	if err := config.LoadParams("Clear.json", &params); err != nil {
-		log.Error(err)
-		return false
+	wait(1)
+
+	for i := params.ValidatorsIndexStart; i <= params.ValidatorsIndexEnd; i++ {
+		owner := config.Conf.Nodes[i].Addr()
+		data, err := client.BalanceOf(owner, "latest")
+		if err != nil {
+			log.Errorf("query balanceOf %s err %v", owner.Hex(), err)
+			return false
+		}
+
+		log.Infof("%s init balance %d", owner.Hex(), utils.UnsafeDiv(data, plt.OnePLT))
 	}
 
-	shellPath := config.ShellPath(params.ShellPath)
-	shell.Exec(shellPath)
+	return true
+}
+
+func StartValidators() bool {
+	params := loadValidatorsConfig()
+	config.Conf.ResetEnv(params.ValidatorsIndexStart, params.ValidatorsNumber)
+	shell.Exec("start_nodes.sh")
+	return true
+}
+
+func StopValidators() bool {
+	params := loadValidatorsConfig()
+	config.Conf.ResetEnv(params.ValidatorsIndexStart, params.ValidatorsNumber)
+	shell.Exec("stop_nodes.sh")
+	return true
+}
+
+func ClearValidators() bool {
+	params := loadValidatorsConfig()
+	config.Conf.ResetEnv(params.ValidatorsIndexStart, params.ValidatorsNumber)
+	shell.Exec("clear_nodes.sh")
 	return true
 }
 
 func gc() {
 	client = nil
+	config.Conf = config.BakConf.DeepCopy()
 }
 
 func wait(nBlock int) {

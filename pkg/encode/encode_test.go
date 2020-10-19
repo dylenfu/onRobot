@@ -3,6 +3,8 @@ package encode
 import (
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDurationText(t *testing.T) {
@@ -17,4 +19,10 @@ func TestDurationText(t *testing.T) {
 	if int64(output) != int64(d) {
 		t.FailNow()
 	}
+
+	enc, err := d.MarshalText()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, input, enc)
 }

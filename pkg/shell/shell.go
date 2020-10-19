@@ -14,7 +14,9 @@ import (
 func Exec(filepath string) {
 	var errStdout, errStderr error
 
-	cmd := exec.Command(filepath)
+	shellpath := config.ShellPath(filepath)
+
+	cmd := exec.Command(shellpath)
 	cmd.Env = addEnv()
 
 	stdoutIn, _ := cmd.StdoutPipe()

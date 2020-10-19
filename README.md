@@ -615,3 +615,162 @@ coredns的使用参见doc/coredns.md
 gov节点reserve添加norm节点会使得gov及norm节点的neighborList出现对方
 norm节点中添加gov节点，而对方不添加gov，会导致该节点连不上任何节点
 ```
+
+```dtd
+fukundeMacBook-Pro:onRobot dylen$ make clean && make compile && make robot t=reset,totalSupply,decimal,adminBalance,governanceBalance,transfer,approve
+rm -rf build/target/*
+mkdir -p build/target
+cp config/config.json build/target
+cp -r cases build/target
+cp -r build/keystore build/target
+cp -r build/setup build/target
+cp -r scripts/* build/target/
+GO111MODULE=on go build -o build/target/robot cmd/main.go
+test case reset,totalSupply,decimal,adminBalance,governanceBalance,transfer,approve
+./build/target/robot -config=build/target/config.json -t=reset,totalSupply,decimal,adminBalance,governanceBalance,transfer,approve
+2020/10/19 09:39:33.145422 [INFO ] GID 1, ===============================================================
+2020/10/19 09:39:33.145464 [INFO ] GID 1, -------Palette Tool Start-------
+2020/10/19 09:39:33.145474 [INFO ] GID 1, ===============================================================
+2020/10/19 09:39:33.145483 [INFO ] GID 1, 
+2020/10/19 09:39:33.145497 [INFO ] GID 1, ===============================================================
+2020/10/19 09:39:33.145511 [INFO ] GID 1, 1. Start Method:reset
+2020/10/19 09:39:33.145520 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:39:33.145621 [INFO ] GID 1, start env: workspace /Users/dylen/software/onRobot/build/target/, nodeIndexStart 0, nodeNum 5, networkID 10, startRPCPort 22000, startP2PPort 30300, logLevel 5
+No matching processes belonging to you were found
+2020/10/19 09:39:33.155429 [FATAL] GID 1, cmd.Run() failed with exit status 1
+
+2020/10/19 09:39:33.155471 [INFO ] GID 1, start env: workspace /Users/dylen/software/onRobot/build/target/, nodeIndexStart 0, nodeNum 5, networkID 10, startRPCPort 22000, startP2PPort 30300, logLevel 5
+2020/10/19 09:39:33.161200 [INFO ] GID 1, start env: workspace /Users/dylen/software/onRobot/build/target/, nodeIndexStart 0, nodeNum 5, networkID 10, startRPCPort 22000, startP2PPort 30300, logLevel 5
+make directions and copy setup files......
+init geth node......
+INFO [10-19|17:39:33.270] Maximum peer count                       ETH=50 LES=0 total=50
+INFO [10-19|17:39:33.288] Allocated cache and file handles         database=/Users/dylen/software/onRobot/build/target/node0/data/geth/chaindata cache=16.00MiB handles=16
+INFO [10-19|17:39:33.315] Writing custom genesis block 
+INFO [10-19|17:39:33.316] Persisted trie from memory database      nodes=17 size=2.38KiB time=241.568µs gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=-164.00B
+INFO [10-19|17:39:33.317] Successfully wrote genesis state         database=chaindata hash=e74917…f282e1
+INFO [10-19|17:39:33.317] Allocated cache and file handles         database=/Users/dylen/software/onRobot/build/target/node0/data/geth/lightchaindata cache=16.00MiB handles=16
+INFO [10-19|17:39:33.338] Writing custom genesis block 
+INFO [10-19|17:39:33.338] Persisted trie from memory database      nodes=17 size=2.38KiB time=206.218µs gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=-164.00B
+INFO [10-19|17:39:33.339] Successfully wrote genesis state         database=lightchaindata hash=e74917…f282e1
+INFO [10-19|17:39:33.394] Maximum peer count                       ETH=50 LES=0 total=50
+INFO [10-19|17:39:33.414] Allocated cache and file handles         database=/Users/dylen/software/onRobot/build/target/node1/data/geth/chaindata cache=16.00MiB handles=16
+INFO [10-19|17:39:33.447] Writing custom genesis block 
+INFO [10-19|17:39:33.448] Persisted trie from memory database      nodes=17 size=2.38KiB time=244.748µs gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=-164.00B
+INFO [10-19|17:39:33.449] Successfully wrote genesis state         database=chaindata hash=e74917…f282e1
+INFO [10-19|17:39:33.449] Allocated cache and file handles         database=/Users/dylen/software/onRobot/build/target/node1/data/geth/lightchaindata cache=16.00MiB handles=16
+INFO [10-19|17:39:33.474] Writing custom genesis block 
+INFO [10-19|17:39:33.475] Persisted trie from memory database      nodes=17 size=2.38KiB time=192.491µs gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=-164.00B
+INFO [10-19|17:39:33.476] Successfully wrote genesis state         database=lightchaindata hash=e74917…f282e1
+INFO [10-19|17:39:33.532] Maximum peer count                       ETH=50 LES=0 total=50
+INFO [10-19|17:39:33.548] Allocated cache and file handles         database=/Users/dylen/software/onRobot/build/target/node2/data/geth/chaindata cache=16.00MiB handles=16
+INFO [10-19|17:39:33.568] Writing custom genesis block 
+INFO [10-19|17:39:33.569] Persisted trie from memory database      nodes=17 size=2.38KiB time=202.588µs gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=-164.00B
+INFO [10-19|17:39:33.569] Successfully wrote genesis state         database=chaindata hash=e74917…f282e1
+INFO [10-19|17:39:33.569] Allocated cache and file handles         database=/Users/dylen/software/onRobot/build/target/node2/data/geth/lightchaindata cache=16.00MiB handles=16
+INFO [10-19|17:39:33.596] Writing custom genesis block 
+INFO [10-19|17:39:33.598] Persisted trie from memory database      nodes=17 size=2.38KiB time=2.237875ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=-164.00B
+INFO [10-19|17:39:33.599] Successfully wrote genesis state         database=lightchaindata hash=e74917…f282e1
+INFO [10-19|17:39:33.656] Maximum peer count                       ETH=50 LES=0 total=50
+INFO [10-19|17:39:33.671] Allocated cache and file handles         database=/Users/dylen/software/onRobot/build/target/node3/data/geth/chaindata cache=16.00MiB handles=16
+INFO [10-19|17:39:33.692] Writing custom genesis block 
+INFO [10-19|17:39:33.692] Persisted trie from memory database      nodes=17 size=2.38KiB time=172.528µs gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=-164.00B
+INFO [10-19|17:39:33.693] Successfully wrote genesis state         database=chaindata hash=e74917…f282e1
+INFO [10-19|17:39:33.693] Allocated cache and file handles         database=/Users/dylen/software/onRobot/build/target/node3/data/geth/lightchaindata cache=16.00MiB handles=16
+INFO [10-19|17:39:33.715] Writing custom genesis block 
+INFO [10-19|17:39:33.716] Persisted trie from memory database      nodes=17 size=2.38KiB time=248.671µs gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=-164.00B
+INFO [10-19|17:39:33.717] Successfully wrote genesis state         database=lightchaindata hash=e74917…f282e1
+INFO [10-19|17:39:33.773] Maximum peer count                       ETH=50 LES=0 total=50
+INFO [10-19|17:39:33.789] Allocated cache and file handles         database=/Users/dylen/software/onRobot/build/target/node4/data/geth/chaindata cache=16.00MiB handles=16
+INFO [10-19|17:39:33.814] Writing custom genesis block 
+INFO [10-19|17:39:33.816] Persisted trie from memory database      nodes=17 size=2.38KiB time=1.954829ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=-164.00B
+INFO [10-19|17:39:33.817] Successfully wrote genesis state         database=chaindata hash=e74917…f282e1
+INFO [10-19|17:39:33.817] Allocated cache and file handles         database=/Users/dylen/software/onRobot/build/target/node4/data/geth/lightchaindata cache=16.00MiB handles=16
+INFO [10-19|17:39:33.848] Writing custom genesis block 
+INFO [10-19|17:39:33.849] Persisted trie from memory database      nodes=17 size=2.38KiB time=265.642µs  gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=-164.00B
+INFO [10-19|17:39:33.849] Successfully wrote genesis state         database=lightchaindata hash=e74917…f282e1
+start up nodes...
+  501 51579 51575   0  5:39下午 ttys000    0:00.25 geth --datadir data --nodiscover --syncmode full --mine --minerthreads 1 --verbosity 5 --networkid 10 --rpc --rpcaddr 127.0.0.1 --rpcport 22000 --rpcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3,quorum,istanbul --emitcheckpoints --port 30300
+  501 51584 51575   0  5:39下午 ttys000    0:00.26 geth --datadir data --nodiscover --syncmode full --mine --minerthreads 1 --verbosity 5 --networkid 10 --rpc --rpcaddr 127.0.0.1 --rpcport 22001 --rpcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3,quorum,istanbul --emitcheckpoints --port 30301
+  501 51589 51575   0  5:39下午 ttys000    0:00.24 geth --datadir data --nodiscover --syncmode full --mine --minerthreads 1 --verbosity 5 --networkid 10 --rpc --rpcaddr 127.0.0.1 --rpcport 22002 --rpcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3,quorum,istanbul --emitcheckpoints --port 30302
+  501 51594 51575   0  5:39下午 ttys000    0:00.23 geth --datadir data --nodiscover --syncmode full --mine --minerthreads 1 --verbosity 5 --networkid 10 --rpc --rpcaddr 127.0.0.1 --rpcport 22003 --rpcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3,quorum,istanbul --emitcheckpoints --port 30303
+  501 51599 51575   0  5:39下午 ttys000    0:00.23 geth --datadir data --nodiscover --syncmode full --mine --minerthreads 1 --verbosity 5 --networkid 10 --rpc --rpcaddr 127.0.0.1 --rpcport 22004 --rpcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3,quorum,istanbul --emitcheckpoints --port 30304
+  501 51602 51575   0  5:39下午 ttys000    0:00.00 grep geth
+2020/10/19 09:40:16.049434 [INFO ] GID 1, 0x2cd9d589d46122e4eddc495b49feda0b526c1af7 init balance 100000
+2020/10/19 09:40:16.050332 [INFO ] GID 1, 0x2ffff236ff085b4d468b14c7b7b9fa1974a3bf7d init balance 100000
+2020/10/19 09:40:16.051539 [INFO ] GID 1, 0x4cf477a37521b3fca951d49e32b9999bc7f97ff5 init balance 100000
+2020/10/19 09:40:16.052541 [INFO ] GID 1, 0x4e6f78ef223957226a36534ec339060d6f4731d4 init balance 100000
+2020/10/19 09:40:16.053661 [INFO ] GID 1, 0x65d966e4bd82180c2d7d3acee3124530e2141b03 init balance 100000
+2020/10/19 09:40:16.054597 [INFO ] GID 1, 0x99e2a19cb2d4698ee2a040e953ea5014a65fc218 init balance 100000
+2020/10/19 09:40:16.055543 [INFO ] GID 1, 0x6183c1578181aa36cb9d11e3aeb06cc773a55980 init balance 100000
+2020/10/19 09:40:16.056619 [INFO ] GID 1, 0x85422c9cf293295bdaa3ccfcf6ff2956b01516a6 init balance 100000
+2020/10/19 09:40:16.058137 [INFO ] GID 1, 0x1173547a19944cc3a70e68f609cfa3671eae84fb init balance 100000
+2020/10/19 09:40:16.060164 [INFO ] GID 1, 0xc9b48e9964e8d097c5ce1cc277c15ee41732606a init balance 100000
+2020/10/19 09:40:16.061743 [INFO ] GID 1, 0xc39081b4534156a7d6eeea1e0bd72d4c78262339 init balance 100000
+2020/10/19 09:40:16.062588 [INFO ] GID 1, 0xecce5f1346afee82990cccc52fe521005bd54ff0 init balance 100000
+2020/10/19 09:40:16.063394 [INFO ] GID 1, 0xf3a9d42c01635a585f1721463842f8936075105f init balance 658800000
+2020/10/19 09:40:16.063418 [INFO ] GID 1, Run Method:reset success.
+2020/10/19 09:40:16.063433 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:16.063447 [INFO ] GID 1, 
+2020/10/19 09:40:21.066354 [INFO ] GID 1, ===============================================================
+2020/10/19 09:40:21.066394 [INFO ] GID 1, 2. Start Method:totalSupply
+2020/10/19 09:40:21.066412 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:21.068086 [INFO ] GID 1, totalSupply 1000000000
+2020/10/19 09:40:21.068110 [INFO ] GID 1, Run Method:totalSupply success.
+2020/10/19 09:40:21.068125 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:21.068141 [INFO ] GID 1, 
+2020/10/19 09:40:26.071669 [INFO ] GID 1, ===============================================================
+2020/10/19 09:40:26.071701 [INFO ] GID 1, 3. Start Method:decimal
+2020/10/19 09:40:26.071719 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:26.072765 [INFO ] GID 1, decimal 18
+2020/10/19 09:40:26.072779 [INFO ] GID 1, Run Method:decimal success.
+2020/10/19 09:40:26.072793 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:26.072804 [INFO ] GID 1, 
+2020/10/19 09:40:31.074491 [INFO ] GID 1, ===============================================================
+2020/10/19 09:40:31.074534 [INFO ] GID 1, 4. Start Method:adminBalance
+2020/10/19 09:40:31.074553 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:31.076160 [INFO ] GID 1, balance 658800000
+2020/10/19 09:40:31.076193 [INFO ] GID 1, Run Method:adminBalance success.
+2020/10/19 09:40:31.076213 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:31.076231 [INFO ] GID 1, 
+2020/10/19 09:40:36.078093 [INFO ] GID 1, ===============================================================
+2020/10/19 09:40:36.078137 [INFO ] GID 1, 5. Start Method:governanceBalance
+2020/10/19 09:40:36.078157 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:36.080161 [INFO ] GID 1, balance 340000000
+2020/10/19 09:40:36.080200 [INFO ] GID 1, Run Method:governanceBalance success.
+2020/10/19 09:40:36.080217 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:36.080232 [INFO ] GID 1, 
+2020/10/19 09:40:41.081357 [INFO ] GID 1, ===============================================================
+2020/10/19 09:40:41.081400 [INFO ] GID 1, 6. Start Method:transfer
+2020/10/19 09:40:41.081419 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:59.879994 [INFO ] GID 1, eventlog address 0x0000000000000000000000000000000000000102
+2020/10/19 09:40:59.880031 [INFO ] GID 1, eventlog data 1000000000000000000
+2020/10/19 09:40:59.880050 [INFO ] GID 1, eventlog topic[0] 0xbeabacc8ffedac16e9a60acdb2ca743d80c2ebb44977a93fa8e483c74d2b35a8
+2020/10/19 09:40:59.880069 [INFO ] GID 1, eventlog topic[1] 0x000000000000000000000000f3a9d42c01635a585f1721463842f8936075105f
+2020/10/19 09:40:59.880087 [INFO ] GID 1, eventlog topic[2] 0x000000000000000000000000ecce5f1346afee82990cccc52fe521005bd54ff0
+2020/10/19 09:40:59.882068 [INFO ] GID 1, Run Method:transfer success.
+2020/10/19 09:40:59.882091 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:40:59.882107 [INFO ] GID 1, 
+2020/10/19 09:41:04.884414 [INFO ] GID 1, ===============================================================
+2020/10/19 09:41:04.884462 [INFO ] GID 1, 7. Start Method:approve
+2020/10/19 09:41:04.884485 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:41:23.618330 [INFO ] GID 1, eventlog address 0x0000000000000000000000000000000000000102
+2020/10/19 09:41:23.618371 [INFO ] GID 1, eventlog data 120000000000000000000
+2020/10/19 09:41:23.618396 [INFO ] GID 1, eventlog topic[0] 0x5c52a5f2b86fd16be577188b5a83ef1165faddc00b137b10285f16162e17792a
+2020/10/19 09:41:23.618421 [INFO ] GID 1, eventlog topic[1] 0x0000000000000000000000002cd9d589d46122e4eddc495b49feda0b526c1af7
+2020/10/19 09:41:23.618442 [INFO ] GID 1, eventlog topic[2] 0x0000000000000000000000002ffff236ff085b4d468b14c7b7b9fa1974a3bf7d
+2020/10/19 09:41:23.619680 [INFO ] GID 1, Run Method:approve success.
+2020/10/19 09:41:23.619712 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:41:23.619729 [INFO ] GID 1, 
+2020/10/19 09:41:23.619848 [INFO ] GID 1, ===============================================================
+2020/10/19 09:41:23.619869 [INFO ] GID 1, Palette Tool Finish Total:7 Success:7 Failed:0 Skip:0, SpendTime:111 sec
+2020/10/19 09:41:23.619887 [INFO ] GID 1, ---------------------------------------------------------------
+2020/10/19 09:41:23.619904 [INFO ] GID 1, Success list:
+2020/10/19 09:41:23.619922 [INFO ] GID 1, 1.	approve
+2020/10/19 09:41:23.619940 [INFO ] GID 1, 2.	reset
+2020/10/19 09:41:23.619959 [INFO ] GID 1, 3.	totalSupply
+2020/10/19 09:41:23.619977 [INFO ] GID 1, 4.	decimal
+2020/10/19 09:41:23.619994 [INFO ] GID 1, 5.	adminBalance
+2020/10/19 09:41:23.620011 [INFO ] GID 1, 6.	governanceBalance
+2020/10/19 09:41:23.620029 [INFO ] GID 1, 7.	transfer
+2020/10/19 09:41:23.620044 [INFO ] GID 1, ===============================================================
+```

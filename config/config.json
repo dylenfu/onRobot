@@ -11,6 +11,7 @@
   "GasLimit":2100000,
   "DeployGasLimit":10000000000,
   "BlockPeriod":"18s",
+  "EffectivePeriod": 5,
   "Accounts":[
     "0x2cd9d589d46122e4eddc495b49feda0b526c1af7",
     "0x2ffff236ff085b4d468b14c7b7b9fa1974a3bf7d",

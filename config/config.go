@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/palettechain/onRobot/pkg/encode"
 	"github.com/palettechain/onRobot/pkg/files"
@@ -23,8 +24,8 @@ const (
 )
 
 var (
-	Conf     = new(Config)
-	AdminKey *keystore.Key
+	Conf, BakConf = new(Config), new(Config)
+	AdminKey      *keystore.Key
 )
 
 type Config struct {
@@ -35,7 +36,20 @@ type Config struct {
 	GasLimit          uint64
 	DeployGasLimit    uint64
 	BlockPeriod       encode.Duration
+	EffectivePeriod   int // 区块奖励周期/参数生效周期
 	Nodes             []*Node
+}
+
+func (c *Config) DeepCopy() *Config {
+	cp := new(Config)
+	enc, err := json.Marshal(c)
+	if err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(enc, cp); err != nil {
+		panic(err)
+	}
+	return cp
 }
 
 func (c *Config) AllNodeAddressList() []string {
@@ -46,14 +60,18 @@ func (c *Config) AllNodeAddressList() []string {
 	return list
 }
 
+func (c *Config) ResetEnv(nodeIdxStart, nodeNum int) {
+	c.Environment.NodeIdxStart = nodeIdxStart
+	c.Environment.NodeNum = nodeNum
+}
+
 type Node struct {
 	Index      int
 	Address    string
 	Nodekey    string
-	PrivateKey *ecdsa.PrivateKey
 }
 
-func (n *Node) loadPrivateKey() {
+func (n *Node) PrivateKey() *ecdsa.PrivateKey{
 	key, err := hex.DecodeString(n.Nodekey)
 	if err != nil {
 		panic(err)
@@ -62,7 +80,11 @@ func (n *Node) loadPrivateKey() {
 	if err != nil {
 		panic(err)
 	}
-	n.PrivateKey = privKey
+	return privKey
+}
+
+func (n *Node) Addr() common.Address {
+	return common.HexToAddress(n.Address)
 }
 
 type Env struct {
@@ -87,11 +109,9 @@ func Init(path string) {
 
 	// load nodes privateKey
 	sdk.Init(Conf.GasLimit, Conf.DeployGasLimit, time.Duration(Conf.BlockPeriod))
-	for _, node := range Conf.Nodes {
-		node.loadPrivateKey()
-	}
 
 	AdminKey = LoadAccount(Conf.AdminAccount)
+	BakConf = Conf.DeepCopy()
 }
 
 func LoadConfig(filepath string, ins interface{}) error {

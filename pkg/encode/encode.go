@@ -14,3 +14,8 @@ func (d *Duration) UnmarshalText(text []byte) error {
 	}
 	return err
 }
+
+func (d *Duration) MarshalText() ([]byte, error) {
+	tmp := xtime.Duration(*d).String()
+	return []byte(tmp), nil
+}

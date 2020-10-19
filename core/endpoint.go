@@ -31,9 +31,15 @@ func Endpoint() {
 	frame.Tool.RegMethod("transfer", Transfer)
 	frame.Tool.RegMethod("approve", Approve)
 
+	// validators manage
+	frame.Tool.RegMethod("initValidators", InitValidators)
+	frame.Tool.RegMethod("startValidators", StartValidators)
+	frame.Tool.RegMethod("stopValidators", StopValidators)
+	frame.Tool.RegMethod("clearValidators", ClearValidators)
+
 	// governance
-	frame.Tool.RegMethod("addValidator", AddValidator)
-	frame.Tool.RegMethod("delValidator", DelValidator)
+	frame.Tool.RegMethod("addValidators", AddValidator)
+	frame.Tool.RegMethod("delValidators", DelValidator)
 	frame.Tool.RegMethod("reward", Reward)
 	frame.Tool.RegMethod("stake", Stake)
 	frame.Tool.RegMethod("propose", Propose)
