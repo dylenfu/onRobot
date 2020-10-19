@@ -159,10 +159,6 @@ func (c *Client) SendRawTransaction(hash common.Hash, signedTx string) (common.H
 	return result, nil
 }
 
-func (c *Client) Address() common.Address {
-	return c.Key.Address
-}
-
 func (c *Client) DumpEventLog(hash common.Hash) error {
 	raw := &types.Receipt{}
 

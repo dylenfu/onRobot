@@ -93,6 +93,7 @@ func ClearNetwork() bool {
 // --------------------------------
 
 type ValidatorsConfig struct {
+	NewNodeUrl           string
 	ValidatorsIndexStart int
 	ValidatorsIndexEnd   int
 	ValidatorsNumber     int
@@ -142,8 +143,20 @@ func InitValidators() (succeed bool) {
 		log.Infof("%s init balance %d", owner.Hex(), utils.UnsafeDiv(data, plt.OnePLT))
 	}
 
-	// sync blocks, todo
-	// client.GetRewardRecordBlock()
+	// sync blocks
+	newNodeClient := sdk.NewSender(params.NewNodeUrl, config.AdminKey)
+	for {
+		oldNodeBlockHeight := client.GetBlockNumber()
+		newNodeBlockHeight := newNodeClient.GetBlockNumber()
+
+		log.Infof("sync block, old node %s block height %d, new node %s block height %d",
+			client.Url(), oldNodeBlockHeight, newNodeClient.Url(), newNodeBlockHeight)
+
+		if newNodeBlockHeight >= oldNodeBlockHeight {
+			break
+		}
+	}
+
 	return true
 }
 
@@ -176,7 +189,7 @@ func BlockNumber() bool {
 }
 
 func Nonce() (succeed bool) {
-	var params struct{
+	var params struct {
 		Address string
 	}
 	if err := config.LoadParams("GetNonce.json", &params); err != nil {

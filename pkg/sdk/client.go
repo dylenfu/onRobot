@@ -4,20 +4,31 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type Client struct {
 	*rpc.Client
-	Key *keystore.Key
+	url          string
+	Key          *keystore.Key
 	currentNonce uint64
 }
 
 func NewSender(url string, key *keystore.Key) *Client {
 	return &Client{
+		url:    url,
 		Client: dialNode(url),
 		Key:    key,
 	}
+}
+
+func (c *Client) Url() string {
+	return c.url
+}
+
+func (c *Client) Address() common.Address {
+	return c.Key.Address
 }
 
 func dialNode(url string) *rpc.Client {
