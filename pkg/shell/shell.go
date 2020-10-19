@@ -7,24 +7,15 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 )
-
-var (
-	workspace  string
-	envname    string
-)
-
-func Init(env, workspacePath string) {
-	workspace = workspacePath
-	envname = env
-}
 
 func Exec(filepath string) {
 	var errStdout, errStderr error
 
 	cmd := exec.Command(filepath)
-	cmd.Env = setEnv(workspace)
+	cmd.Env = addEnv()
 
 	stdoutIn, _ := cmd.StdoutPipe()
 	stderrIn, _ := cmd.StderrPipe()
@@ -58,9 +49,36 @@ func Exec(filepath string) {
 	//log.Infof("\nout:\n%s\nerr:\n%s\n", outStr, errStr)
 }
 
-func setEnv(path string) []string {
-	additionalEnv := fmt.Sprintf("%s=%s", envname, path)
-	return append(os.Environ(), additionalEnv)
+const (
+	EnvWorkspace      = "PaletteWorkspace"
+	EnvNodeIndexStart = "PaletteNodeIndexStart"
+	EnvNodeNumber     = "PaletteNodeNumber"
+	EnvNodeIndexEnd   = "PaletteNodeIndexEnd"
+	EnvNetworkID      = "PaletteNetworkID"
+	EnvStartRPCPort   = "PaletteStartRPCPort"
+	EnvStartP2PPort   = "PaletteStartP2PPort"
+	EnvLogLevel       = "PaletteLogLevel"
+	EnvRPCAddress     = "PaletteRPCAddress"
+)
+
+func addEnv() []string {
+	env := config.Conf.Environment
+	list := make([]string, 0)
+	var add = func(env string, value interface{}) {
+		list = append(list, fmt.Sprintf("%s=%v", env, value))
+	}
+
+	add(EnvWorkspace, env.Workspace)
+	add(EnvNodeIndexStart, env.NodeIdxStart)
+	add(EnvNodeNumber, env.NodeNum)
+	add(EnvNodeIndexEnd, int(env.NodeIdxStart+env.NodeNum-1))
+	add(EnvNetworkID, env.NetworkID)
+	add(EnvStartRPCPort, env.StartRPCPort)
+	add(EnvStartP2PPort, env.StartP2PPort)
+	add(EnvLogLevel, env.LogLevel)
+	add(EnvRPCAddress, env.RPCAddress)
+
+	return append(os.Environ(), list...)
 }
 
 // CapturingPassThroughWriter is a writer that remembers

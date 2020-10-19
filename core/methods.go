@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
+	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
 	"github.com/palettechain/onRobot/pkg/shell"
@@ -24,19 +25,19 @@ func ResetNetwork() bool {
 		InitAmount int
 	}
 
-	if err := loadParams("Reset.json", &params); err != nil {
+	if err := config.LoadParams("Reset.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
 
-	shellPath := shellPath(params.ShellPath)
+	shellPath := config.ShellPath(params.ShellPath)
 	shell.Exec(shellPath)
 
 	wait(2)
 
-	client := sdk.NewSender(params.RpcUrl, adminKey)
+	client := sdk.NewSender(params.RpcUrl, config.AdminKey)
 	amount := plt.TestMultiPLT(params.InitAmount)
-	for _, account := range config.Accounts {
+	for _, account := range config.Conf.Accounts {
 		to := common.HexToAddress(account)
 		hash, err := client.PLTTransfer(to, amount)
 		if err != nil {
@@ -53,7 +54,7 @@ func ResetNetwork() bool {
 
 	wait(1)
 
-	for _, account := range config.Accounts {
+	for _, account := range config.Conf.Accounts {
 		owner := common.HexToAddress(account)
 		data, err := client.BalanceOf(owner, "latest")
 		if err != nil {
@@ -69,15 +70,15 @@ func ResetNetwork() bool {
 
 func StartNetwork() bool {
 	var params struct {
-		ShellPath  string
+		ShellPath string
 	}
 
-	if err := loadParams("Start.json", &params); err != nil {
+	if err := config.LoadParams("Start.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
 
-	shellPath := shellPath(params.ShellPath)
+	shellPath := config.ShellPath(params.ShellPath)
 	shell.Exec(shellPath)
 	return true
 }
@@ -86,5 +87,5 @@ func gc() {
 }
 
 func wait(nBlock int) {
-	time.Sleep(time.Duration(config.BlockPeriod) * time.Duration(nBlock))
+	time.Sleep(time.Duration(config.Conf.BlockPeriod) * time.Duration(nBlock))
 }

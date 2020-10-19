@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/core"
 	"github.com/palettechain/onRobot/pkg/frame"
 	"github.com/palettechain/onRobot/pkg/log"
@@ -30,7 +31,7 @@ func main() {
 	defer time.Sleep(time.Second)
 
 	log.InitLog(loglevel, log.Stdout)
-	core.Init(configpath)
+	config.Init(configpath)
 	core.Endpoint()
 
 	methods := make([]string, 0)

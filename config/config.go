@@ -1,4 +1,4 @@
-package core
+package config
 
 import (
 	"encoding/json"
@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/palettechain/onRobot/pkg/files"
 	"github.com/palettechain/onRobot/pkg/sdk"
-	"github.com/palettechain/onRobot/pkg/shell"
 	xtime "github.com/palettechain/onRobot/pkg/time"
 )
 
@@ -19,34 +18,48 @@ const (
 )
 
 var (
-	config   = new(Config)
-	adminKey *keystore.Key
+	Conf          = new(Config)
+	AdminKey *keystore.Key
 )
 
 type Config struct {
-	Env               string
-	Workspace         string
+	Environment       *Env
 	DefaultPassphrase string
 	AdminAccount      string
-	Accounts []string
+	Accounts          []string
 	GasLimit          uint64
 	DeployGasLimit    uint64
 	BlockPeriod       xtime.Duration
+	Nodes             []*Node
+}
+
+type Node struct {
+	Address string
+	Nodekey string
+}
+
+type Env struct {
+	Workspace    string
+	NodeIdxStart int
+	NodeNum      int
+	NetworkID    int
+	StartRPCPort int
+	StartP2PPort int
+	LogLevel     int
+	RPCAddress   string
 }
 
 func Init(path string) {
-	if err := loadConfig(path, config); err != nil {
+	if err := LoadConfig(path, Conf); err != nil {
 		panic(err)
 	}
 
-	shell.Init(config.Env, config.Workspace)
+	sdk.Init(Conf.GasLimit, Conf.DeployGasLimit, time.Duration(Conf.BlockPeriod))
 
-	sdk.Init(config.GasLimit, config.DeployGasLimit, time.Duration(config.BlockPeriod))
-
-	adminKey = loadAccount(config.AdminAccount)
+	AdminKey = LoadAccount(Conf.AdminAccount)
 }
 
-func loadConfig(filepath string, ins interface{}) error {
+func LoadConfig(filepath string, ins interface{}) error {
 	data, err := files.ReadFile(filepath)
 	if err != nil {
 		return err
@@ -58,8 +71,8 @@ func loadConfig(filepath string, ins interface{}) error {
 	return nil
 }
 
-func loadParams(fileName string, data interface{}) error {
-	filePath := files.FullPath(config.Workspace, paramsDir, fileName)
+func LoadParams(fileName string, data interface{}) error {
+	filePath := files.FullPath(Conf.Environment.Workspace, paramsDir, fileName)
 	bz, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return err
@@ -67,14 +80,14 @@ func loadParams(fileName string, data interface{}) error {
 	return json.Unmarshal(bz, data)
 }
 
-func loadAccount(keyhex string) *keystore.Key {
-	filepath := files.FullPath(config.Workspace, keystoreDir, keyhex)
+func LoadAccount(keyhex string) *keystore.Key {
+	filepath := files.FullPath(Conf.Environment.Workspace, keystoreDir, keyhex)
 	keyJson, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		panic(fmt.Errorf("failed to read file: [%v]", err))
 	}
 
-	key, err := keystore.DecryptKey(keyJson, config.DefaultPassphrase)
+	key, err := keystore.DecryptKey(keyJson, Conf.DefaultPassphrase)
 	if err != nil {
 		panic(fmt.Errorf("failed to decrypt keyjson: [%v]", err))
 	}
@@ -82,6 +95,6 @@ func loadAccount(keyhex string) *keystore.Key {
 	return key
 }
 
-func shellPath(fileName string) string {
-	return files.FullPath(config.Workspace, "", fileName)
+func ShellPath(fileName string) string {
+	return files.FullPath(Conf.Environment.Workspace, "", fileName)
 }

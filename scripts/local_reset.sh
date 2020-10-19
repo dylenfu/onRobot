@@ -1,11 +1,9 @@
 #!/bin/bash
 
+cd $PaletteWorkspace
+
 killall -INT geth
-
-workspace=${PaletteWorkspace}
-cd $workspace
-
-rm -rf node0 node1 node2 node3 node4
+rm -rf node*
 
 echo "make directions";
 ./local_mkdir.sh
@@ -13,24 +11,10 @@ echo "make directions";
 echo "copy genesis.json and static-nodes.json";
 ./local_cp_setup_files.sh;
 
-echo "init node1";
-cd node0
-geth --datadir data init genesis.json
-
-cd ../node1/
-geth --datadir data init genesis.json
-
-cd ../node2/
-geth --datadir data init genesis.json
-
-cd ../node3/
-geth --datadir data init genesis.json
-
-cd ../node4/
-geth --datadir data init genesis.json
+echo "init nodes";
+./local_init_nodes.sh
 
 sleep 1s;
 
 echo "start up nodes...";
-cd ../;
 ./local_start_nodes.sh;

@@ -26,14 +26,11 @@ var (
 	GovernanceAddress     = common.HexToAddress(native.GovernanceContractAddress)
 
 	gasLimit, deployGasLimit uint64
-	blockPeriod time.Duration
-
-	OnePLt = plt.OnePLT
-
+	blockPeriod              time.Duration
 )
 
 const (
-	gasPrice    = 0
+	gasPrice = 0
 )
 
 func Init(_gasLimit, _deployGasLimit uint64, _blockPeriod time.Duration) {

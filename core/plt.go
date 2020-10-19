@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
+	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
@@ -17,12 +18,12 @@ func PLTTotalSupply() bool {
 		Expect uint64
 	}
 
-	if err := loadParams("PLTTotalSupply.json", &params); err != nil {
+	if err := config.LoadParams("PLTTotalSupply.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
 
-	client := sdk.NewSender(params.RpcUrl, adminKey)
+	client := sdk.NewSender(params.RpcUrl, config.AdminKey)
 	totalSupply, err := client.PLTTotalSupply("latest")
 	if err != nil {
 		log.Error(err)
@@ -46,12 +47,12 @@ func PLTDecimal() bool {
 		Expect uint64
 	}
 
-	if err := loadParams("PLTDecimal.json", &params); err != nil {
+	if err := config.LoadParams("PLTDecimal.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
 
-	client := sdk.NewSender(params.RpcUrl, adminKey)
+	client := sdk.NewSender(params.RpcUrl, config.AdminKey)
 	actual, err := client.PLTDecimals()
 	if err != nil {
 		log.Error(err)
@@ -75,13 +76,13 @@ func AdminBalance() bool {
 		Expect   uint64
 	}
 
-	if err := loadParams("AdminBalance.json", &params); err != nil {
+	if err := config.LoadParams("AdminBalance.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
-	client := sdk.NewSender(params.RpcUrl, adminKey)
+	client := sdk.NewSender(params.RpcUrl, config.AdminKey)
 
-	balance, err := client.BalanceOf(adminKey.Address, params.BlockNum)
+	balance, err := client.BalanceOf(config.AdminKey.Address, params.BlockNum)
 	if err != nil {
 		log.Error(err)
 		return false
@@ -105,12 +106,12 @@ func GovernanceBalance() bool {
 		Expect   uint64
 	}
 
-	if err := loadParams("GovernanceBalance.json", &params); err != nil {
+	if err := config.LoadParams("GovernanceBalance.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
 
-	client := sdk.NewSender(params.RpcUrl, adminKey)
+	client := sdk.NewSender(params.RpcUrl, config.AdminKey)
 	owner := common.HexToAddress(native.GovernanceContractAddress)
 	balance, err := client.BalanceOf(owner, params.BlockNum)
 	if err != nil {
@@ -136,12 +137,12 @@ func PLTBalanceOf() bool {
 		BlockNum string
 	}
 
-	if err := loadParams("PLTBalanceOf.json", &params); err != nil {
+	if err := config.LoadParams("PLTBalanceOf.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
 
-	client := sdk.NewSender(params.RpcUrl, adminKey)
+	client := sdk.NewSender(params.RpcUrl, config.AdminKey)
 	owner := common.HexToAddress(params.Owner)
 	balance, err := client.BalanceOf(owner, params.BlockNum)
 	if err != nil {
@@ -162,12 +163,12 @@ func PLTTransfer() bool {
 		Amount int64
 	}
 
-	if err := loadParams("PLTTransfer.json", &params); err != nil {
+	if err := config.LoadParams("PLTTransfer.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
 
-	key := loadAccount(params.From)
+	key := config.LoadAccount(params.From)
 	client := sdk.NewSender(params.RpcUrl, key)
 	to := common.HexToAddress(params.To)
 	amount := utils.SafeMul(big.NewInt(params.Amount), plt.OnePLT)
@@ -235,18 +236,18 @@ func PLTTransfer() bool {
 
 func PLTApprove() bool {
 	var params struct {
-		RpcUrl string
-		Owner string
+		RpcUrl  string
+		Owner   string
 		Spender string
-		Amount int
+		Amount  int
 	}
 
-	if err := loadParams("PLTApprove.json", &params); err != nil {
+	if err := config.LoadParams("PLTApprove.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
 
-	key := loadAccount(params.Owner)
+	key := config.LoadAccount(params.Owner)
 	client := sdk.NewSender(params.RpcUrl, key)
 
 	owner := key.Address
