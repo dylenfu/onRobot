@@ -10,6 +10,7 @@ import (
 type Client struct {
 	*rpc.Client
 	Key *keystore.Key
+	currentNonce uint64
 }
 
 func NewSender(url string, key *keystore.Key) *Client {

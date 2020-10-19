@@ -58,7 +58,6 @@ const (
 	EnvStartRPCPort   = "PaletteStartRPCPort"
 	EnvStartP2PPort   = "PaletteStartP2PPort"
 	EnvLogLevel       = "PaletteLogLevel"
-	EnvRPCAddress     = "PaletteRPCAddress"
 )
 
 func addEnv() []string {
@@ -70,13 +69,18 @@ func addEnv() []string {
 
 	add(EnvWorkspace, env.Workspace)
 	add(EnvNodeIndexStart, env.NodeIdxStart)
+	if env.NodeNum == 0 {
+		env.NodeNum = config.GenesisNodeNumber()
+	}
 	add(EnvNodeNumber, env.NodeNum)
 	add(EnvNodeIndexEnd, int(env.NodeIdxStart+env.NodeNum-1))
 	add(EnvNetworkID, env.NetworkID)
 	add(EnvStartRPCPort, env.StartRPCPort)
 	add(EnvStartP2PPort, env.StartP2PPort)
 	add(EnvLogLevel, env.LogLevel)
-	add(EnvRPCAddress, env.RPCAddress)
+
+	log.Infof("start env: workspace %s, nodeIndexStart %d, nodeNum %d, networkID %d, startRPCPort %d, startP2PPort %d, logLevel %d",
+		env.Workspace, env.NodeIdxStart, env.NodeNum, env.NetworkID, env.StartRPCPort, env.StartP2PPort, env.LogLevel)
 
 	return append(os.Environ(), list...)
 }

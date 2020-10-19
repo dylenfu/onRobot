@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"sort"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -15,10 +16,11 @@ import (
 const (
 	paramsDir   = "params"
 	keystoreDir = "keystore"
+	setupDir = "setup"
 )
 
 var (
-	Conf          = new(Config)
+	Conf     = new(Config)
 	AdminKey *keystore.Key
 )
 
@@ -34,6 +36,7 @@ type Config struct {
 }
 
 type Node struct {
+	Index   int
 	Address string
 	Nodekey string
 }
@@ -46,14 +49,15 @@ type Env struct {
 	StartRPCPort int
 	StartP2PPort int
 	LogLevel     int
-	RPCAddress   string
 }
 
 func Init(path string) {
 	if err := LoadConfig(path, Conf); err != nil {
 		panic(err)
 	}
-
+	sort.Slice(Conf.Nodes, func(i, j int) bool {
+		return Conf.Nodes[i].Index < Conf.Nodes[j].Index
+	})
 	sdk.Init(Conf.GasLimit, Conf.DeployGasLimit, time.Duration(Conf.BlockPeriod))
 
 	AdminKey = LoadAccount(Conf.AdminAccount)
@@ -97,4 +101,19 @@ func LoadAccount(keyhex string) *keystore.Key {
 
 func ShellPath(fileName string) string {
 	return files.FullPath(Conf.Environment.Workspace, "", fileName)
+}
+
+func GenesisNodeNumber() int {
+	filepath := files.FullPath(Conf.Environment.Workspace, setupDir, "static-nodes.json")
+	keyJson, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		panic(fmt.Errorf("failed to read file: [%v]", err))
+	}
+
+	var nodes []string
+	if err := json.Unmarshal(keyJson, &nodes); err != nil {
+		panic(fmt.Errorf("failed to unmarshal static-nodes.json: [%v]", err))
+	}
+
+	return len(nodes)
 }

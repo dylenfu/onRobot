@@ -42,7 +42,7 @@ func Init(_gasLimit, _deployGasLimit uint64, _blockPeriod time.Duration) {
 	blockPeriod = _blockPeriod
 }
 
-func (c *Client) GetNonce(address string) (uint64, error) {
+func (c *Client) GetNonce(address string) uint64 {
 	var raw string
 
 	if err := c.Call(
@@ -51,21 +51,22 @@ func (c *Client) GetNonce(address string) (uint64, error) {
 		address,
 		"latest",
 	); err != nil {
-		return 0, fmt.Errorf("failed to get nonce: [%v]", err)
+		panic(fmt.Errorf("failed to get nonce: [%v]", err))
 	}
 
 	without0xStr := strings.Replace(raw, "0x", "", -1)
 	bigNonce, _ := new(big.Int).SetString(without0xStr, 16)
-	return bigNonce.Uint64(), nil
+	return bigNonce.Uint64()
 }
 
 func (c *Client) SendTransaction(contractAddr common.Address, payload []byte) (common.Hash, error) {
 	addr := c.Address()
 
-	nonce, err := c.GetNonce(addr.Hex())
-	if err != nil {
-		return common.Hash{}, err
+	nonce := c.GetNonce(addr.Hex())
+	if c.currentNonce > nonce {
+		nonce = c.currentNonce
 	}
+
 	tx := types.NewTransaction(
 		nonce,
 		contractAddr,
@@ -79,6 +80,7 @@ func (c *Client) SendTransaction(contractAddr common.Address, payload []byte) (c
 	if err != nil {
 		return common.Hash{}, err
 	}
+	c.currentNonce += 1
 	return c.SendRawTransaction(signedTx)
 }
 

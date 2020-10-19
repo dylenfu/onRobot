@@ -12,13 +12,13 @@ import (
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
-func PLTTotalSupply() bool {
+func TotalSupply() bool {
 	var params struct {
 		RpcUrl string
 		Expect uint64
 	}
 
-	if err := config.LoadParams("PLTTotalSupply.json", &params); err != nil {
+	if err := config.LoadParams("TotalSupply.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
@@ -32,7 +32,7 @@ func PLTTotalSupply() bool {
 
 	actual := utils.UnsafeDiv(totalSupply, plt.OnePLT)
 	if actual != params.Expect {
-		log.Error("totalSupply expect %d actually %d", params.Expect, actual)
+		log.Errorf("totalSupply expect %d actually %d", params.Expect, actual)
 		return false
 	}
 
@@ -41,13 +41,13 @@ func PLTTotalSupply() bool {
 	return true
 }
 
-func PLTDecimal() bool {
+func Decimal() bool {
 	var params struct {
 		RpcUrl string
 		Expect uint64
 	}
 
-	if err := config.LoadParams("PLTDecimal.json", &params); err != nil {
+	if err := config.LoadParams("Decimal.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
@@ -60,7 +60,7 @@ func PLTDecimal() bool {
 	}
 
 	if params.Expect != actual {
-		log.Error("decimal expect %d actual %d", params.Expect, actual)
+		log.Errorf("decimal expect %d actual %d", params.Expect, actual)
 		return false
 	}
 
@@ -90,7 +90,7 @@ func AdminBalance() bool {
 
 	actual := utils.UnsafeDiv(balance, plt.OnePLT)
 	if actual != params.Expect {
-		log.Error("balance expect %d actually %d", params.Expect, actual)
+		log.Errorf("balance expect %d actually %d", params.Expect, actual)
 		return false
 	}
 
@@ -121,7 +121,7 @@ func GovernanceBalance() bool {
 
 	actual := utils.UnsafeDiv(balance, plt.OnePLT)
 	if actual != params.Expect {
-		log.Error("balance expect %d actually %d", params.Expect, actual)
+		log.Errorf("balance expect %d actually %d", params.Expect, actual)
 		return false
 	}
 
@@ -130,14 +130,14 @@ func GovernanceBalance() bool {
 	return true
 }
 
-func PLTBalanceOf() bool {
+func BalanceOf() bool {
 	var params struct {
 		RpcUrl   string
 		Owner    string
 		BlockNum string
 	}
 
-	if err := config.LoadParams("PLTBalanceOf.json", &params); err != nil {
+	if err := config.LoadParams("BalanceOf.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
@@ -155,7 +155,7 @@ func PLTBalanceOf() bool {
 	return true
 }
 
-func PLTTransfer() bool {
+func Transfer() bool {
 	var params struct {
 		RpcUrl string
 		From   string
@@ -163,7 +163,7 @@ func PLTTransfer() bool {
 		Amount int64
 	}
 
-	if err := config.LoadParams("PLTTransfer.json", &params); err != nil {
+	if err := config.LoadParams("Transfer.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}
@@ -234,7 +234,7 @@ func PLTTransfer() bool {
 	return true
 }
 
-func PLTApprove() bool {
+func Approve() bool {
 	var params struct {
 		RpcUrl  string
 		Owner   string
@@ -242,7 +242,7 @@ func PLTApprove() bool {
 		Amount  int
 	}
 
-	if err := config.LoadParams("PLTApprove.json", &params); err != nil {
+	if err := config.LoadParams("Approve.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}

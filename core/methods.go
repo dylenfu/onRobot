@@ -33,7 +33,7 @@ func ResetNetwork() bool {
 	shellPath := config.ShellPath(params.ShellPath)
 	shell.Exec(shellPath)
 
-	wait(2)
+	wait(1)
 
 	client := sdk.NewSender(params.RpcUrl, config.AdminKey)
 	amount := plt.TestMultiPLT(params.InitAmount)
@@ -41,13 +41,13 @@ func ResetNetwork() bool {
 		to := common.HexToAddress(account)
 		hash, err := client.PLTTransfer(to, amount)
 		if err != nil {
-			log.Error("transfer to %s err %v", to.Hex(), err)
+			log.Errorf("transfer to %s err %v", to.Hex(), err)
 			return false
 		}
 		// for nonce increasing
-		wait(1)
+		//wait(1)
 		if err := client.DumpEventLog(hash); err != nil {
-			log.Error("dump %s event log err %v", hash.Hex(), err)
+			log.Errorf("dump %s event log err %v", hash.Hex(), err)
 			return false
 		}
 	}
@@ -58,7 +58,7 @@ func ResetNetwork() bool {
 		owner := common.HexToAddress(account)
 		data, err := client.BalanceOf(owner, "latest")
 		if err != nil {
-			log.Error("query balanceOf %s err %v", owner.Hex(), err)
+			log.Errorf("query balanceOf %s err %v", owner.Hex(), err)
 			return false
 		}
 
