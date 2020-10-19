@@ -19,6 +19,8 @@ func Endpoint() {
 	// network
 	frame.Tool.RegMethod("reset", ResetNetwork)
 	frame.Tool.RegMethod("start", StartNetwork)
+	frame.Tool.RegMethod("stop", StopNetwork)
+	frame.Tool.RegMethod("clear", ClearNetwork)
 
 	// plt
 	frame.Tool.RegMethod("totalSupply", TotalSupply)

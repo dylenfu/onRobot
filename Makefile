@@ -5,7 +5,7 @@ GOTEST=$(GOCMD) test
 
 compile:
 	mkdir -p build/target
-	cp cmd/config.json build/target
+	cp config/config.json build/target
 	cp -r cmd/params build/target
 	cp -r build/keystore build/target
 	cp -r build/setup build/target

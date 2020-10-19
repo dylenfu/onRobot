@@ -1,7 +1,5 @@
 #!/bin/bash
 
-killall -INT geth
-
 gethflag="--datadir data --nodiscover --syncmode full --mine --minerthreads 1 --verbosity $PaletteLogLevel --networkid $PaletteNetworkID --rpc --rpcaddr 127.0.0.1";
 rpcflag="--rpcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3,quorum,istanbul --emitcheckpoints";
 

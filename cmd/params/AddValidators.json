@@ -1,6 +1,6 @@
 {
   "RpcUrl": "http://127.0.0.1:22000",
-  "ShellPath": "local_add_validators.sh",
+  "ShellPath": "add_validators.sh",
   "ValidatorsIndexStart": 5,
   "ValidatorsNumber": 3
 }

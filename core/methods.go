@@ -19,6 +19,9 @@ func Demo() bool {
 
 // 清理数据，重启节点，并给每个账户一定的初始PLT(100000)
 func ResetNetwork() bool {
+	StopNetwork()
+	ClearNetwork()
+
 	var params struct {
 		RpcUrl     string
 		ShellPath  string
@@ -37,24 +40,21 @@ func ResetNetwork() bool {
 
 	client := sdk.NewSender(params.RpcUrl, config.AdminKey)
 	amount := plt.TestMultiPLT(params.InitAmount)
-	for _, account := range config.Conf.Accounts {
+
+	accounts := config.Conf.Accounts
+	nodeAccounts := config.Conf.AllNodeAddressList()
+	accounts = append(accounts, nodeAccounts...)
+	for _, account := range accounts {
 		to := common.HexToAddress(account)
-		hash, err := client.PLTTransfer(to, amount)
-		if err != nil {
+		if _, err := client.PLTTransfer(to, amount); err != nil {
 			log.Errorf("transfer to %s err %v", to.Hex(), err)
-			return false
-		}
-		// for nonce increasing
-		//wait(1)
-		if err := client.DumpEventLog(hash); err != nil {
-			log.Errorf("dump %s event log err %v", hash.Hex(), err)
 			return false
 		}
 	}
 
 	wait(1)
 
-	for _, account := range config.Conf.Accounts {
+	for _, account := range accounts {
 		owner := common.HexToAddress(account)
 		data, err := client.BalanceOf(owner, "latest")
 		if err != nil {
@@ -74,6 +74,36 @@ func StartNetwork() bool {
 	}
 
 	if err := config.LoadParams("Start.json", &params); err != nil {
+		log.Error(err)
+		return false
+	}
+
+	shellPath := config.ShellPath(params.ShellPath)
+	shell.Exec(shellPath)
+	return true
+}
+
+func StopNetwork() bool {
+	var params struct {
+		ShellPath string
+	}
+
+	if err := config.LoadParams("Stop.json", &params); err != nil {
+		log.Error(err)
+		return false
+	}
+
+	shellPath := config.ShellPath(params.ShellPath)
+	shell.Exec(shellPath)
+	return true
+}
+
+func ClearNetwork() bool {
+	var params struct {
+		ShellPath string
+	}
+
+	if err := config.LoadParams("Clear.json", &params); err != nil {
 		log.Error(err)
 		return false
 	}

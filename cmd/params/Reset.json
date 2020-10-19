@@ -1,5 +1,5 @@
 {
   "RpcUrl": "http://127.0.0.1:22000",
-  "ShellPath": "local_reset.sh",
+  "ShellPath": "reset.sh",
   "InitAmount": 100000
 }

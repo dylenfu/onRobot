@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/ecdsa"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,15 +10,16 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/palettechain/onRobot/pkg/encode"
 	"github.com/palettechain/onRobot/pkg/files"
 	"github.com/palettechain/onRobot/pkg/sdk"
-	xtime "github.com/palettechain/onRobot/pkg/time"
 )
 
 const (
 	paramsDir   = "params"
 	keystoreDir = "keystore"
-	setupDir = "setup"
+	setupDir    = "setup"
 )
 
 var (
@@ -31,14 +34,35 @@ type Config struct {
 	Accounts          []string
 	GasLimit          uint64
 	DeployGasLimit    uint64
-	BlockPeriod       xtime.Duration
+	BlockPeriod       encode.Duration
 	Nodes             []*Node
 }
 
+func (c *Config) AllNodeAddressList() []string {
+	list := make([]string, len(c.Nodes))
+	for i, node := range c.Nodes {
+		list[i] = node.Address
+	}
+	return list
+}
+
 type Node struct {
-	Index   int
-	Address string
-	Nodekey string
+	Index      int
+	Address    string
+	Nodekey    string
+	PrivateKey *ecdsa.PrivateKey
+}
+
+func (n *Node) loadPrivateKey() {
+	key, err := hex.DecodeString(n.Nodekey)
+	if err != nil {
+		panic(err)
+	}
+	privKey, err := crypto.ToECDSA(key)
+	if err != nil {
+		panic(err)
+	}
+	n.PrivateKey = privKey
 }
 
 type Env struct {
@@ -55,10 +79,17 @@ func Init(path string) {
 	if err := LoadConfig(path, Conf); err != nil {
 		panic(err)
 	}
+
+	// sort nodes with node index
 	sort.Slice(Conf.Nodes, func(i, j int) bool {
 		return Conf.Nodes[i].Index < Conf.Nodes[j].Index
 	})
+
+	// load nodes privateKey
 	sdk.Init(Conf.GasLimit, Conf.DeployGasLimit, time.Duration(Conf.BlockPeriod))
+	for _, node := range Conf.Nodes {
+		node.loadPrivateKey()
+	}
 
 	AdminKey = LoadAccount(Conf.AdminAccount)
 }
