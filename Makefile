@@ -10,6 +10,7 @@ compile:
 	cp -r build/keystore build/target
 	cp -r build/setup build/target
 	cp -r scripts/* build/target/
+	rm -rf build/target/robot
 	$(GOBUILD) -o build/target/robot cmd/main.go
 
 compile-linux-robot:

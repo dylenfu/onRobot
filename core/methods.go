@@ -36,7 +36,6 @@ func ResetNetwork() bool {
 	wait(1)
 
 	var params struct {
-		RpcUrl         string
 		UserInitAmount int
 	}
 
@@ -45,7 +44,7 @@ func ResetNetwork() bool {
 		return false
 	}
 
-	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	for _, account := range config.Conf.Accounts {
 		amount := plt.TestMultiPLT(params.UserInitAmount)
 		to := common.HexToAddress(account)
@@ -94,7 +93,6 @@ func ClearNetwork() bool {
 // --------------------------------
 
 type ValidatorsConfig struct {
-	RpcUrl               string
 	ValidatorsIndexStart int
 	ValidatorsIndexEnd   int
 	ValidatorsNumber     int
@@ -119,13 +117,14 @@ func InitValidators() (succeed bool) {
 
 	wait(1)
 
-	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 
+	// transfer and check balance
 	amount := plt.TestMultiPLT(params.ValidatorInitAmount)
 	for i := params.ValidatorsIndexStart; i <= params.ValidatorsIndexEnd; i++ {
 		to := config.Conf.Nodes[i].Addr()
 		if hash, err := client.PLTTransfer(to, amount); err != nil {
-			log.Errorf("url %s, transfer to node%d %s amount %d, hash %s, err %v", params.RpcUrl, i, to.Hex(), params.ValidatorInitAmount, hash.Hex(), err)
+			log.Errorf("url %s, transfer to node%d %s amount %d, hash %s, err %v", config.Conf.BaseRPCUrl, i, to.Hex(), params.ValidatorInitAmount, hash.Hex(), err)
 			return false
 		}
 	}
@@ -143,6 +142,8 @@ func InitValidators() (succeed bool) {
 		log.Infof("%s init balance %d", owner.Hex(), utils.UnsafeDiv(data, plt.OnePLT))
 	}
 
+	// sync blocks, todo
+	// client.GetRewardRecordBlock()
 	return true
 }
 
@@ -164,6 +165,28 @@ func ClearValidators() bool {
 	params := loadValidatorsConfig()
 	config.Conf.ResetEnv(params.ValidatorsIndexStart, params.ValidatorsNumber)
 	shell.Exec(shClearNodes)
+	return true
+}
+
+func BlockNumber() bool {
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	blockNumber := client.GetBlockNumber()
+	log.Infof("current block number %d", blockNumber)
+	return true
+}
+
+func Nonce() (succeed bool) {
+	var params struct{
+		Address string
+	}
+	if err := config.LoadParams("GetNonce.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	nonce := client.GetNonce(params.Address)
+	log.Infof("%s nonce is %d", params.Address, nonce)
 	return true
 }
 

@@ -1,5 +1,4 @@
 {
-  "RpcUrl": "http://127.0.0.1:22000",
   "ValidatorsIndexStart": 5,
   "ValidatorsNumber": 3,
   "ValidatorInitAmount": 10000000

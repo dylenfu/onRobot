@@ -14,7 +14,6 @@ import (
 
 func TotalSupply() (succeed bool) {
 	var params struct {
-		RpcUrl string
 		Expect uint64
 	}
 
@@ -23,7 +22,7 @@ func TotalSupply() (succeed bool) {
 		return
 	}
 
-	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	totalSupply, err := client.PLTTotalSupply("latest")
 	if err != nil {
 		log.Error(err)
@@ -43,7 +42,6 @@ func TotalSupply() (succeed bool) {
 
 func Decimal() (succeed bool) {
 	var params struct {
-		RpcUrl string
 		Expect uint64
 	}
 
@@ -52,7 +50,7 @@ func Decimal() (succeed bool) {
 		return
 	}
 
-	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	actual, err := client.PLTDecimals()
 	if err != nil {
 		log.Error(err)
@@ -71,7 +69,6 @@ func Decimal() (succeed bool) {
 
 func AdminBalance() (succeed bool) {
 	var params struct {
-		RpcUrl   string
 		BlockNum string
 		Expect   uint64
 	}
@@ -80,7 +77,7 @@ func AdminBalance() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 
 	balance, err := client.BalanceOf(config.AdminKey.Address, params.BlockNum)
 	if err != nil {
@@ -101,7 +98,6 @@ func AdminBalance() (succeed bool) {
 
 func GovernanceBalance() (succeed bool) {
 	var params struct {
-		RpcUrl   string
 		BlockNum string
 		Expect   uint64
 	}
@@ -111,7 +107,7 @@ func GovernanceBalance() (succeed bool) {
 		return
 	}
 
-	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	owner := common.HexToAddress(native.GovernanceContractAddress)
 	balance, err := client.BalanceOf(owner, params.BlockNum)
 	if err != nil {
@@ -132,7 +128,6 @@ func GovernanceBalance() (succeed bool) {
 
 func BalanceOf() (succeed bool) {
 	var params struct {
-		RpcUrl   string
 		Owner    string
 		BlockNum string
 	}
@@ -142,7 +137,7 @@ func BalanceOf() (succeed bool) {
 		return
 	}
 
-	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	owner := common.HexToAddress(params.Owner)
 	balance, err := client.BalanceOf(owner, params.BlockNum)
 	if err != nil {
@@ -157,7 +152,6 @@ func BalanceOf() (succeed bool) {
 
 func Transfer() (succeed bool) {
 	var params struct {
-		RpcUrl string
 		From   string
 		To     string
 		Amount int64
@@ -169,7 +163,7 @@ func Transfer() (succeed bool) {
 	}
 
 	key := config.LoadAccount(params.From)
-	client = sdk.NewSender(params.RpcUrl, key)
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, key)
 	to := common.HexToAddress(params.To)
 	amount := utils.SafeMul(big.NewInt(params.Amount), plt.OnePLT)
 
@@ -236,7 +230,6 @@ func Transfer() (succeed bool) {
 
 func Approve() (succeed bool) {
 	var params struct {
-		RpcUrl  string
 		Owner   string
 		Spender string
 		Amount  int
@@ -248,7 +241,7 @@ func Approve() (succeed bool) {
 	}
 
 	key := config.LoadAccount(params.Owner)
-	client = sdk.NewSender(params.RpcUrl, key)
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, key)
 
 	owner := key.Address
 	spender := common.HexToAddress(params.Spender)

@@ -22,6 +22,10 @@ func Endpoint() {
 	frame.Tool.RegMethod("stop", StopNetwork)
 	frame.Tool.RegMethod("clear", ClearNetwork)
 
+	// basic
+	frame.Tool.RegMethod("blockNumber", BlockNumber)
+	frame.Tool.RegMethod("nonce", Nonce)
+
 	// plt
 	frame.Tool.RegMethod("totalSupply", TotalSupply)
 	frame.Tool.RegMethod("decimal", Decimal)
@@ -38,8 +42,8 @@ func Endpoint() {
 	frame.Tool.RegMethod("clearValidators", ClearValidators)
 
 	// governance
-	frame.Tool.RegMethod("addValidators", AddValidator)
-	frame.Tool.RegMethod("delValidators", DelValidator)
+	frame.Tool.RegMethod("addValidators", AddValidators)
+	frame.Tool.RegMethod("delValidators", DelValidators)
 	frame.Tool.RegMethod("reward", Reward)
 	frame.Tool.RegMethod("stake", Stake)
 	frame.Tool.RegMethod("propose", Propose)

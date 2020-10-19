@@ -6,6 +6,7 @@
     "StartP2PPort":30300,
     "LogLevel":5
   },
+  "BaseRPCUrl": "http://127.0.0.1:22000",
   "DefaultPassphrase":"111111",
   "AdminAccount":"0xf3a9d42c01635a585f1721463842f8936075105f",
   "GasLimit":2100000,

@@ -1,5 +1,4 @@
 {
-  "RpcUrl": "http://127.0.0.1:22000",
   "Owner": "0x2cd9d589d46122e4eddc495b49feda0b526c1af7",
   "Spender": "0x2ffff236ff085b4d468b14c7b7b9fa1974a3bf7d",
   "Amount": 120

@@ -30,6 +30,7 @@ var (
 
 type Config struct {
 	Environment       *Env
+	BaseRPCUrl        string
 	DefaultPassphrase string
 	AdminAccount      string
 	Accounts          []string
@@ -66,12 +67,12 @@ func (c *Config) ResetEnv(nodeIdxStart, nodeNum int) {
 }
 
 type Node struct {
-	Index      int
-	Address    string
-	Nodekey    string
+	Index   int
+	Address string
+	Nodekey string
 }
 
-func (n *Node) PrivateKey() *ecdsa.PrivateKey{
+func (n *Node) PrivateKey() *ecdsa.PrivateKey {
 	key, err := hex.DecodeString(n.Nodekey)
 	if err != nil {
 		panic(err)

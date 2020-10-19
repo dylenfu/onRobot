@@ -1,33 +1,39 @@
 package core
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
-func AddValidator() (succeed bool) {
-	var params struct {
-		RpcUrl string
-	}
-
-	// add validators
+func AddValidators() (succeed bool) {
 	sv := loadValidatorsConfig()
 	start, end, num := sv.ValidatorsIndexStart, sv.ValidatorsIndexEnd, sv.ValidatorsNumber
 
-	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+
+	// send transactions and dump receipt
+	hashList := make([]common.Hash, num)
 	for i := start; i <= end; i++ {
 		node := config.Conf.Nodes[i]
-		if _, err := client.AddValidator(node.Addr(), false); err != nil {
-			log.Errorf("failed to add validator, [%v]", err)
+		hash, err := client.AddValidator(node.Addr(), false)
+		if err != nil {
+			log.Errorf("failed to add validator %s, hash %s, [%v]", node.Addr().Hex(), hash.Hex(), err)
+			return
+		}
+		hashList[i] = hash
+	}
+	wait(1)
+	for _, hash := range hashList {
+		if err := client.DumpEventLog(hash); err != nil {
+			log.Errorf("failed to dump receipt, hash %s, [%v]", hash.Hex(), err)
 			return
 		}
 	}
-	wait(1)
-
-	wait(config.Conf.EffectivePeriod)
 
 	// check validators
+	wait(config.Conf.EffectivePeriod)
 	validators := client.GetValidators()
 	if len(validators) != num {
 		log.Error("validators not effective, check palette log")
@@ -53,7 +59,7 @@ func AddValidator() (succeed bool) {
 	return true
 }
 
-func DelValidator() bool {
+func DelValidators() bool {
 	return true
 }
 

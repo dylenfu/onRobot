@@ -42,6 +42,21 @@ func Init(_gasLimit, _deployGasLimit uint64, _blockPeriod time.Duration) {
 	blockPeriod = _blockPeriod
 }
 
+func (c *Client) GetBlockNumber() uint64 {
+	var raw string
+
+	if err := c.Call(
+		&raw,
+		"eth_blockNumber",
+	); err != nil {
+		panic(fmt.Errorf("failed to get nonce: [%v]", err))
+	}
+
+	without0xStr := strings.Replace(raw, "0x", "", -1)
+	bigNonce, _ := new(big.Int).SetString(without0xStr, 16)
+	return bigNonce.Uint64()
+}
+
 func (c *Client) GetNonce(address string) uint64 {
 	var raw string
 
