@@ -14,6 +14,15 @@ import (
 
 var client *sdk.Client
 
+const (
+	shReset         = "reset.sh"
+	shStartNodes    = "start_nodes.sh"
+	shStopNodes     = "stop_nodes.sh"
+	shStopAllNodes  = "stop_all_nodes.sh"
+	shClearNodes    = "clear_nodes.sh"
+	shClearAllNodes = "clear_all_nodes.sh"
+)
+
 func Demo() bool {
 	log.Info("Hello, Palette chain")
 	return true
@@ -23,10 +32,11 @@ func Demo() bool {
 func ResetNetwork() bool {
 	StopNetwork()
 	ClearNetwork()
+	shell.Exec(shReset)
+	wait(1)
 
 	var params struct {
 		RpcUrl         string
-		ShellPath      string
 		UserInitAmount int
 	}
 
@@ -34,10 +44,6 @@ func ResetNetwork() bool {
 		log.Error(err)
 		return false
 	}
-
-	shell.Exec(params.ShellPath)
-
-	wait(1)
 
 	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
 	for _, account := range config.Conf.Accounts {
@@ -67,19 +73,19 @@ func ResetNetwork() bool {
 
 // start genesis nodes
 func StartNetwork() bool {
-	shell.Exec("start_nodes.sh")
+	shell.Exec(shStartNodes)
 	return true
 }
 
 // stop all nodes
 func StopNetwork() bool {
-	shell.Exec("stop_all_nodes.sh")
+	shell.Exec(shStopAllNodes)
 	return true
 }
 
 // clear all nodes
 func ClearNetwork() bool {
-	shell.Exec("clear_all_nodes.sh")
+	shell.Exec(shClearAllNodes)
 	return true
 }
 
@@ -106,11 +112,10 @@ func loadValidatorsConfig() *ValidatorsConfig {
 
 func InitValidators() (succeed bool) {
 	params := loadValidatorsConfig()
-
-	StopValidators()
-	ClearValidators()
 	config.Conf.ResetEnv(params.ValidatorsIndexStart, params.ValidatorsNumber)
-	shell.Exec("reset.sh")
+	shell.Exec(shStopNodes)
+	shell.Exec(shClearNodes)
+	shell.Exec(shReset)
 
 	wait(1)
 
@@ -144,21 +149,21 @@ func InitValidators() (succeed bool) {
 func StartValidators() bool {
 	params := loadValidatorsConfig()
 	config.Conf.ResetEnv(params.ValidatorsIndexStart, params.ValidatorsNumber)
-	shell.Exec("start_nodes.sh")
+	shell.Exec(shStartNodes)
 	return true
 }
 
 func StopValidators() bool {
 	params := loadValidatorsConfig()
 	config.Conf.ResetEnv(params.ValidatorsIndexStart, params.ValidatorsNumber)
-	shell.Exec("stop_nodes.sh")
+	shell.Exec(shStopNodes)
 	return true
 }
 
 func ClearValidators() bool {
 	params := loadValidatorsConfig()
 	config.Conf.ResetEnv(params.ValidatorsIndexStart, params.ValidatorsNumber)
-	shell.Exec("clear_nodes.sh")
+	shell.Exec(shClearNodes)
 	return true
 }
 
