@@ -124,8 +124,8 @@ func InitValidators() (succeed bool) {
 	amount := plt.TestMultiPLT(params.ValidatorInitAmount)
 	for i := params.ValidatorsIndexStart; i <= params.ValidatorsIndexEnd; i++ {
 		to := config.Conf.Nodes[i].Addr()
-		if _, err := client.PLTTransfer(to, amount); err != nil {
-			log.Errorf("transfer to %s err %v", to.Hex(), err)
+		if hash, err := client.PLTTransfer(to, amount); err != nil {
+			log.Errorf("url %s, transfer to node%d %s amount %d, hash %s, err %v", params.RpcUrl, i, to.Hex(), params.ValidatorInitAmount, hash.Hex(), err)
 			return false
 		}
 	}

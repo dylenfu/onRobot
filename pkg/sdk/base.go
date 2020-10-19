@@ -63,25 +63,26 @@ func (c *Client) SendTransaction(contractAddr common.Address, payload []byte) (c
 	addr := c.Address()
 
 	nonce := c.GetNonce(addr.Hex())
-	if c.currentNonce > nonce {
-		nonce = c.currentNonce
+	if c.currentNonce < nonce {
+		c.currentNonce = nonce
 	}
-
+	log.Debugf("%s current nonce %d, valid nonce %d", addr.Hex(), c.currentNonce, nonce)
 	tx := types.NewTransaction(
-		nonce,
+		c.currentNonce,
 		contractAddr,
 		big.NewInt(0),
 		gasLimit,
 		big.NewInt(gasPrice),
 		payload,
 	)
+	hash := tx.Hash()
 
 	signedTx, err := c.SignTransaction(tx)
 	if err != nil {
-		return common.Hash{}, err
+		return hash, err
 	}
 	c.currentNonce += 1
-	return c.SendRawTransaction(signedTx)
+	return c.SendRawTransaction(hash, signedTx)
 }
 
 func (c *Client) SendTransactionAndDumpEvent(contract common.Address, payload []byte) error {
@@ -134,10 +135,10 @@ func (c *Client) SignTransaction(tx *types.Transaction) (string, error) {
 	return "0x" + hex.EncodeToString(bz), nil
 }
 
-func (c *Client) SendRawTransaction(signedTx string) (common.Hash, error) {
+func (c *Client) SendRawTransaction(hash common.Hash, signedTx string) (common.Hash, error) {
 	var result common.Hash
 	if err := c.Client.Call(&result, "eth_sendRawTransaction", signedTx); err != nil {
-		return result, fmt.Errorf("failed to send raw transaction: [%v]", err)
+		return hash, fmt.Errorf("failed to send raw transaction: [%v]", err)
 	}
 
 	return result, nil

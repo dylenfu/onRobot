@@ -6,3 +6,5 @@ for((i=$PaletteNodeIndexStart;i<=$PaletteNodeIndexEnd;i++)); do
     node="node$i"
     rm -rf $node
 done
+
+ls -al|grep node
