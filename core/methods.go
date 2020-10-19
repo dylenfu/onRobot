@@ -12,6 +12,8 @@ import (
 	"github.com/palettechain/onRobot/pkg/shell"
 )
 
+var client *sdk.Client
+
 func Demo() bool {
 	log.Info("Hello, Palette chain")
 	return true
@@ -38,7 +40,7 @@ func ResetNetwork() bool {
 
 	wait(1)
 
-	client := sdk.NewSender(params.RpcUrl, config.AdminKey)
+	client = sdk.NewSender(params.RpcUrl, config.AdminKey)
 	amount := plt.TestMultiPLT(params.InitAmount)
 
 	accounts := config.Conf.Accounts
@@ -114,6 +116,7 @@ func ClearNetwork() bool {
 }
 
 func gc() {
+	client = nil
 }
 
 func wait(nBlock int) {

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	paramsDir   = "params"
+	testCaseDir = "cases"
 	keystoreDir = "keystore"
 	setupDir    = "setup"
 )
@@ -107,7 +107,7 @@ func LoadConfig(filepath string, ins interface{}) error {
 }
 
 func LoadParams(fileName string, data interface{}) error {
-	filePath := files.FullPath(Conf.Environment.Workspace, paramsDir, fileName)
+	filePath := files.FullPath(Conf.Environment.Workspace, testCaseDir, fileName)
 	bz, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return err
