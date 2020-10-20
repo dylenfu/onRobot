@@ -13,18 +13,21 @@ func Endpoint() {
 	// gc function
 	frame.Tool.RegGCFunc(gc)
 
-	// demo
+	// basic
 	frame.Tool.RegMethod("demo", Demo)
+	frame.Tool.RegMethod("blockNumber", BlockNumber)
+	frame.Tool.RegMethod("nonce", Nonce)
 
 	// network
 	frame.Tool.RegMethod("reset", ResetNetwork)
 	frame.Tool.RegMethod("start", StartNetwork)
 	frame.Tool.RegMethod("stop", StopNetwork)
 	frame.Tool.RegMethod("clear", ClearNetwork)
+	frame.Tool.RegMethod("restart", RestartNetwork)
 
-	// basic
-	frame.Tool.RegMethod("blockNumber", BlockNumber)
-	frame.Tool.RegMethod("nonce", Nonce)
+	// sync node
+	frame.Tool.RegMethod("startSyncNode", StartSyncNode)
+	frame.Tool.RegMethod("stopSyncNode", StopSyncNode)
 
 	// plt
 	frame.Tool.RegMethod("totalSupply", TotalSupply)

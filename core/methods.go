@@ -21,12 +21,40 @@ const (
 	shStopAllNodes  = "stop_all_nodes.sh"
 	shClearNodes    = "clear_nodes.sh"
 	shClearAllNodes = "clear_all_nodes.sh"
+	shStartSyncNode = "reset_sync_node.sh"
+	shStopSyncNode  = "stop_sync_node.sh"
 )
 
 func Demo() bool {
 	log.Info("Hello, Palette chain")
 	return true
 }
+
+func BlockNumber() bool {
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	blockNumber := client.GetBlockNumber()
+	log.Infof("current block number %d", blockNumber)
+	return true
+}
+
+func Nonce() (succeed bool) {
+	var params struct {
+		Address string
+	}
+	if err := config.LoadParams("GetNonce.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	nonce := client.GetNonce(params.Address)
+	log.Infof("%s nonce is %d", params.Address, nonce)
+	return true
+}
+
+// --------------------------------
+// genesis node management
+// --------------------------------
 
 // 清理数据，重启节点，并给每个账户一定的初始PLT(100000)
 func ResetNetwork() bool {
@@ -181,25 +209,55 @@ func ClearValidators() bool {
 	return true
 }
 
-func BlockNumber() bool {
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	blockNumber := client.GetBlockNumber()
-	log.Infof("current block number %d", blockNumber)
+// --------------------------------
+// restart genesis nodes and validators
+// --------------------------------
+func RestartNetwork() bool {
+	StopNetwork()
+	StartNetwork()
+	StartValidators()
 	return true
 }
 
-func Nonce() (succeed bool) {
-	var params struct {
-		Address string
-	}
-	if err := config.LoadParams("GetNonce.json", &params); err != nil {
-		log.Error(err)
-		return
+// --------------------------------
+// start sync node
+// --------------------------------
+func StartSyncNode() bool {
+	shell.Exec(shStartSyncNode)
+	wait(3)
+
+	url := "http://127.0.0.1:22010"
+	client := sdk.NewSender(url, config.AdminKey)
+
+	// check current block number
+	for i := 0;i<10;i++ {
+		currentBlock := client.GetBlockNumber()
+		wait(1)
+		log.Infof("sync node check current block %d", currentBlock)
 	}
 
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	nonce := client.GetNonce(params.Address)
-	log.Infof("%s nonce is %d", params.Address, nonce)
+	// check admin nonce
+	nonce := client.GetNonce(config.AdminKey.Address.Hex())
+	if nonce == 0 {
+		log.Error("sync node check admin nonce failed")
+		return false
+	}
+	log.Infof("sync node check admin nonce %d", nonce)
+
+	// check PLT total supply
+	totalSupply, err := client.PLTTotalSupply("latest")
+	if err != nil {
+		log.Errorf("sync node check total supply failed, [%v]", err)
+		return false
+	} else {
+		log.Infof("sync node check total supply %d", utils.UnsafeDiv(totalSupply, plt.OnePLT))
+	}
+
+	return true
+}
+
+func StopSyncNode() bool {
+	shell.Exec(shStopSyncNode)
 	return true
 }
 

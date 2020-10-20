@@ -4,7 +4,7 @@
     "NetworkID":10,
     "StartRPCPort":22000,
     "StartP2PPort":30300,
-    "LogLevel":5
+    "LogLevel":3
   },
   "BaseRPCUrl": "http://127.0.0.1:22000",
   "DefaultPassphrase":"111111",

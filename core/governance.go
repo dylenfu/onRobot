@@ -12,9 +12,10 @@ func AddValidators() (succeed bool) {
 	start, end, num := sv.ValidatorsIndexStart, sv.ValidatorsIndexEnd, sv.ValidatorsNumber
 
 	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	newClient := sdk.NewSender(sv.NewNodeUrl, config.AdminKey)
 
 	// send transactions and dump receipt
-	hashList := make([]common.Hash, num)
+	hashList := make([]common.Hash, 0)
 	for i := start; i <= end; i++ {
 		node := config.Conf.Nodes[i]
 		hash, err := client.AddValidator(node.Addr(), false)
@@ -22,7 +23,7 @@ func AddValidators() (succeed bool) {
 			log.Errorf("failed to add validator %s, hash %s, [%v]", node.Addr().Hex(), hash.Hex(), err)
 			return
 		}
-		hashList[i] = hash
+		hashList = append(hashList, hash)
 	}
 	wait(1)
 	for _, hash := range hashList {
@@ -30,6 +31,11 @@ func AddValidators() (succeed bool) {
 			log.Errorf("failed to dump receipt, hash %s, [%v]", hash.Hex(), err)
 			return
 		}
+		if err := newClient.DumpEventLog(hash); err != nil {
+			log.Errorf("failed to dump receipt, hash %s, [%v]", hash.Hex(), err)
+			return
+		}
+		log.Infof("------------------------------------------------------")
 	}
 
 	// check validators
