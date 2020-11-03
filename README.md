@@ -1,7 +1,7 @@
 # onRobot
 
 基础测试:
-make clean && make reset && make compile && make robot t=reset,name,totalSupply,decimal,adminBalance,governanceBalance,balanceOf,transfer,approve
+make clean && make compile && make robot t=reset,name,totalSupply,decimal,adminBalance,governanceBalance,balanceOf,transfer,approve
 
 palette p2pserver 测试工具
 

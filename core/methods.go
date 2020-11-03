@@ -183,6 +183,7 @@ func InitValidators() (succeed bool) {
 		if newNodeBlockHeight >= oldNodeBlockHeight {
 			break
 		}
+		wait(1)
 	}
 
 	return true

@@ -64,6 +64,26 @@ func (c *Client) GetLatestRewardProposer(blockNum string) (common.Address, error
 	return output.Proposer, nil
 }
 
+func (c *Client) GetLastRewardBlock(blockNum string) (*big.Int, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetLastRewardBlockHeight)
+	if err != nil {
+		return utils.EmptyBig, err
+	}
+
+	enc, err := c.CallGovernance(payload, blockNum)
+	if err != nil {
+		return utils.EmptyBig, fmt.Errorf("failed to get latest reward block number: [%v]", err)
+	}
+
+	output := new(governance.MethodGetLastRewardBlockHeightOutput)
+	err = utils.UnpackOutputs(GovernanceABI, governance.MethodGetLastRewardBlockHeight, output, enc)
+	if err != nil {
+		return utils.EmptyBig, fmt.Errorf("failed to unpack encode bytes [%v]: [%v]", common.Bytes2Hex(enc), err)
+	}
+
+	return output.Value, nil
+}
+
 func (c *Client) packGovernance(method string, args ...interface{}) ([]byte, error) {
 	return utils.PackMethod(GovernanceABI, method, args...)
 }

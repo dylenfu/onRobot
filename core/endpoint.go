@@ -31,6 +31,7 @@ func Endpoint() {
 
 	// plt
 	frame.Tool.RegMethod("totalSupply", TotalSupply)
+	frame.Tool.RegMethod("name", Name)
 	frame.Tool.RegMethod("decimal", Decimal)
 	frame.Tool.RegMethod("adminBalance", BalanceOf)
 	frame.Tool.RegMethod("governanceBalance", GovernanceBalance)
@@ -45,6 +46,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("clearValidators", ClearValidators)
 
 	// governance
+	frame.Tool.RegMethod("consistency", Consistency)
 	frame.Tool.RegMethod("addValidators", AddValidators)
 	frame.Tool.RegMethod("delValidators", DelValidators)
 	frame.Tool.RegMethod("reward", Reward)

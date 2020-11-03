@@ -5,7 +5,48 @@ import (
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
+	"math/big"
+	"strconv"
 )
+
+// 检查数据一致性(重要):
+// 5个创世验证节点启动后，再添加3个新的验证节点，轮询这8个节点，比较其查询所得的lastRewardBlock是否一致。
+func Consistency() (succeed bool) {
+	var params struct {
+		UrlList []string
+	}
+
+	log.Infof("-----------------1")
+	if err := config.LoadParams("Consistency.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+	log.Infof("-----------------2")
+	clients := make([]*sdk.Client, len(params.UrlList))
+	for i:=0;i<len(params.UrlList);i++ {
+		clients[i] = sdk.NewSender(params.UrlList[i], config.AdminKey)
+	}
+	log.Infof("-----------------3")
+	queryBlkNo := int64(config.Conf.EffectivePeriod + 2)
+	queryBlkHex := "0x" + strconv.FormatInt(queryBlkNo, 16)
+	lastRdBlk := big.NewInt(0)
+	for i:=0;i<len(params.UrlList);i++ {
+		data, err := clients[i].GetRewardRecordBlock(queryBlkHex)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if i ==0 {
+			lastRdBlk = data
+			continue
+		}
+		if lastRdBlk.Cmp(data) != 0 {
+			log.Errorf("%d query result %d, %s query result %d", clients[0].Url(), lastRdBlk.Uint64(), clients[i].Url(), data.Uint64())
+		}
+	}
+	log.Infof("last reward block %d", lastRdBlk.Uint64())
+	return true
+}
 
 func AddValidators() (succeed bool) {
 	sv := loadValidatorsConfig()
