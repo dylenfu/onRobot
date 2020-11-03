@@ -12,8 +12,8 @@ compile:
 	cp -r scripts/* build/target/
 	$(GOBUILD) -o build/target/robot cmd/main.go
 
-compile-linux-robot:
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -o build/target/linux-robot cmd/main.go
+compile-linux:
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -o build/target/robot-linux cmd/main.go
 
 robot:
 	@echo test case $(t)
