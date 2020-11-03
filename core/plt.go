@@ -30,7 +30,7 @@ func TotalSupply() (succeed bool) {
 	}
 
 	actual := utils.UnsafeDiv(totalSupply, plt.OnePLT)
-	if actual != params.Expect {
+	if actual.Uint64() != params.Expect {
 		log.Errorf("totalSupply expect %d actually %d", params.Expect, actual)
 		return
 	}
@@ -67,6 +67,25 @@ func Decimal() (succeed bool) {
 	return true
 }
 
+func Name() (succeed bool) {
+	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	actual, err := client.PLTName()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	expect := "Palette Token"
+	if actual != expect {
+		log.Errorf("contract name expect %s actual %s", expect, actual)
+		return
+	}
+
+	log.Infof("contract name %s", actual)
+
+	return true
+}
+
 func AdminBalance() (succeed bool) {
 	var params struct {
 		BlockNum string
@@ -86,7 +105,7 @@ func AdminBalance() (succeed bool) {
 	}
 
 	actual := utils.UnsafeDiv(balance, plt.OnePLT)
-	if actual != params.Expect {
+	if actual.Uint64() != params.Expect {
 		log.Errorf("balance expect %d actually %d", params.Expect, actual)
 		return
 	}
@@ -116,7 +135,7 @@ func GovernanceBalance() (succeed bool) {
 	}
 
 	actual := utils.UnsafeDiv(balance, plt.OnePLT)
-	if actual != params.Expect {
+	if actual.Uint64() != params.Expect {
 		log.Errorf("balance expect %d actually %d", params.Expect, actual)
 		return
 	}
@@ -245,7 +264,7 @@ func Approve() (succeed bool) {
 
 	owner := key.Address
 	spender := common.HexToAddress(params.Spender)
-	amount := plt.TestMultiPLT(params.Amount)
+	amount := plt.MultiPLT(params.Amount)
 
 	// allowance before approve
 	allowanceBeforeApprove, err := client.PLTAllowance(owner, spender, "latest")

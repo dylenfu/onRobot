@@ -23,20 +23,20 @@ func Consistency() (succeed bool) {
 	}
 	log.Infof("-----------------2")
 	clients := make([]*sdk.Client, len(params.UrlList))
-	for i:=0;i<len(params.UrlList);i++ {
+	for i := 0; i < len(params.UrlList); i++ {
 		clients[i] = sdk.NewSender(params.UrlList[i], config.AdminKey)
 	}
 	log.Infof("-----------------3")
 	queryBlkNo := int64(config.Conf.EffectivePeriod + 2)
 	queryBlkHex := "0x" + strconv.FormatInt(queryBlkNo, 16)
 	lastRdBlk := big.NewInt(0)
-	for i:=0;i<len(params.UrlList);i++ {
+	for i := 0; i < len(params.UrlList); i++ {
 		data, err := clients[i].GetRewardRecordBlock(queryBlkHex)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		if i ==0 {
+		if i == 0 {
 			lastRdBlk = data
 			continue
 		}

@@ -74,7 +74,7 @@ func ResetNetwork() bool {
 
 	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	for _, account := range config.Conf.Accounts {
-		amount := plt.TestMultiPLT(params.UserInitAmount)
+		amount := plt.MultiPLT(params.UserInitAmount)
 		to := common.HexToAddress(account)
 		if _, err := client.PLTTransfer(to, amount); err != nil {
 			log.Errorf("transfer to %s err %v", to.Hex(), err)
@@ -149,7 +149,7 @@ func InitValidators() (succeed bool) {
 	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 
 	// transfer and check balance
-	amount := plt.TestMultiPLT(params.ValidatorInitAmount)
+	amount := plt.MultiPLT(params.ValidatorInitAmount)
 	for i := params.ValidatorsIndexStart; i <= params.ValidatorsIndexEnd; i++ {
 		to := config.Conf.Nodes[i].Addr()
 		if hash, err := client.PLTTransfer(to, amount); err != nil {
@@ -231,7 +231,7 @@ func StartSyncNode() bool {
 	client := sdk.NewSender(url, config.AdminKey)
 
 	// check current block number
-	for i := 0;i<10;i++ {
+	for i := 0; i < 10; i++ {
 		currentBlock := client.GetBlockNumber()
 		wait(1)
 		log.Infof("sync node check current block %d", currentBlock)

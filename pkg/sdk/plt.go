@@ -45,6 +45,24 @@ func (c *Client) PLTTotalSupply(blockNum string) (*big.Int, error) {
 	return output.Supply, nil
 }
 
+func (c *Client) PLTName() (string, error) {
+	payload, err := c.packPLT(plt.MethodName)
+	if err != nil {
+		return "", err
+	}
+
+	enc, err := c.callPLT(payload, "latest")
+	if err != nil {
+		return "", err
+	}
+
+	output := new(plt.MethodNameOutput)
+	if err := c.unpackPLT(plt.MethodName, output, enc); err != nil {
+		return "", err
+	}
+	return output.Name, nil
+}
+
 func (c *Client) PLTDecimals() (uint64, error) {
 	payload, err := c.packPLT(plt.MethodDecimals)
 	if err != nil {
