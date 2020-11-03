@@ -231,7 +231,7 @@ func StartSyncNode() bool {
 	client := sdk.NewSender(url, config.AdminKey)
 
 	// check current block number
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 3; i++ {
 		currentBlock := client.GetBlockNumber()
 		wait(1)
 		log.Infof("sync node check current block %d", currentBlock)
