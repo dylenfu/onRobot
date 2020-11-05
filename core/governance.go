@@ -1,12 +1,13 @@
 package core
 
 import (
+	"math/big"
+	"strconv"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
-	"math/big"
-	"strconv"
 )
 
 // 检查数据一致性(重要):
@@ -15,36 +16,50 @@ func Consistency() (succeed bool) {
 	var params struct {
 		UrlList []string
 	}
-
-	log.Infof("-----------------1")
 	if err := config.LoadParams("Consistency.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
-	log.Infof("-----------------2")
+
 	clients := make([]*sdk.Client, len(params.UrlList))
 	for i := 0; i < len(params.UrlList); i++ {
 		clients[i] = sdk.NewSender(params.UrlList[i], config.AdminKey)
 	}
-	log.Infof("-----------------3")
-	queryBlkNo := int64(config.Conf.RewardEffectivePeriod + 2)
-	queryBlkHex := "0x" + strconv.FormatInt(queryBlkNo, 16)
-	lastRdBlk := big.NewInt(0)
-	for i := 0; i < len(params.UrlList); i++ {
-		data, err := clients[i].GetRewardRecordBlock(queryBlkHex)
-		if err != nil {
-			log.Error(err)
-			return
+
+	currentBlkNo := clients[0].GetBlockNumber() - 10
+
+	var i, blkNo uint64 = 0, 10
+	for i = currentBlkNo - blkNo; i < currentBlkNo; i++ {
+		lastRdBlk := big.NewInt(0)
+		lastRdProposer := common.Address{}
+		queryBlkHex := "0x" + strconv.FormatInt(int64(i), 16)
+		for i := 0; i < len(params.UrlList); i++ {
+			rdBlk, err := clients[i].GetRewardRecordBlock(queryBlkHex)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			rdProp, err := clients[i].GetLatestRewardProposer(queryBlkHex)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+
+			if i == 0 {
+				lastRdBlk = rdBlk
+				lastRdProposer = rdProp
+				continue
+			}
+			if lastRdBlk.Cmp(rdBlk) != 0 {
+				log.Errorf("%s query result %d, %s query result %d", clients[0].Url(), lastRdBlk.Uint64(), clients[i].Url(), rdBlk.Uint64())
+			}
+			if lastRdProposer != rdProp {
+				log.Errorf("%s query result %s, %s query result %s", clients[0].Url(), lastRdProposer.Hex(), clients[i].Url(), rdProp.Hex())
+			}
 		}
-		if i == 0 {
-			lastRdBlk = data
-			continue
-		}
-		if lastRdBlk.Cmp(data) != 0 {
-			log.Errorf("%d query result %d, %s query result %d", clients[0].Url(), lastRdBlk.Uint64(), clients[i].Url(), data.Uint64())
-		}
+		log.Infof("last reward block %d, last reward proposer %s", lastRdBlk.Uint64(), lastRdProposer.Hex())
 	}
-	log.Infof("last reward block %d", lastRdBlk.Uint64())
+
 	return true
 }
 
