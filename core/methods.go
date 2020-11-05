@@ -15,6 +15,7 @@ import (
 var client *sdk.Client
 
 const (
+	shInit          = "init_nodes.sh"
 	shReset         = "reset.sh"
 	shStartNodes    = "start_nodes.sh"
 	shStopNodes     = "stop_nodes.sh"
@@ -55,7 +56,6 @@ func Nonce() (succeed bool) {
 // --------------------------------
 // genesis node management
 // --------------------------------
-
 // 清理数据，重启节点，并给每个账户一定的初始PLT(100000)
 func ResetNetwork() bool {
 	StopNetwork()
@@ -151,7 +151,7 @@ func InitValidators() (succeed bool) {
 	// transfer and check balance
 	amount := plt.MultiPLT(params.ValidatorInitAmount)
 	for i := params.ValidatorsIndexStart; i <= params.ValidatorsIndexEnd; i++ {
-		to := config.Conf.Nodes[i].Addr()
+		to := config.Conf.Nodes[i].NodeAddr()
 		if hash, err := client.PLTTransfer(to, amount); err != nil {
 			log.Errorf("url %s, transfer to node%d %s amount %d, hash %s, err %v", config.Conf.BaseRPCUrl, i, to.Hex(), params.ValidatorInitAmount, hash.Hex(), err)
 			return false
@@ -161,7 +161,7 @@ func InitValidators() (succeed bool) {
 	wait(1)
 
 	for i := params.ValidatorsIndexStart; i <= params.ValidatorsIndexEnd; i++ {
-		owner := config.Conf.Nodes[i].Addr()
+		owner := config.Conf.Nodes[i].NodeAddr()
 		data, err := client.BalanceOf(owner, "latest")
 		if err != nil {
 			log.Errorf("query balanceOf %s err %v", owner.Hex(), err)

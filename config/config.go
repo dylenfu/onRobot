@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -29,16 +31,17 @@ var (
 )
 
 type Config struct {
-	Environment       *Env
-	BaseRPCUrl        string
-	DefaultPassphrase string
-	AdminAccount      string
-	Accounts          []string
-	GasLimit          uint64
-	DeployGasLimit    uint64
-	BlockPeriod       encode.Duration
-	EffectivePeriod   int // 区块奖励周期/参数生效周期
-	Nodes             []*Node
+	Environment           *Env
+	BaseRPCUrl            string
+	DefaultPassphrase     string
+	AdminAccount          string
+	BaseRewardPool        string
+	Accounts              []string
+	GasLimit              uint64
+	DeployGasLimit        uint64
+	BlockPeriod           encode.Duration
+	RewardEffectivePeriod int // 区块奖励周期/参数生效周期
+	Nodes                 []*Node
 }
 
 func (c *Config) DeepCopy() *Config {
@@ -67,25 +70,56 @@ func (c *Config) ResetEnv(nodeIdxStart, nodeNum int) {
 }
 
 type Node struct {
-	Index   int
-	Address string
-	Nodekey string
+	Index        int    `json:"Index"`
+	Address      string `json:"Address"`
+	NodeKey      string `json:"NodeKey"`
+	StakeAccount string `json:"StakeAccount"`
+
+	once       sync.Once
+	ndpk, sapk *ecdsa.PrivateKey
+}
+
+func (n *Node) init() {
+
+	// load node private key
+	bz, err := hex.DecodeString(n.NodeKey)
+	if err != nil {
+		panic(err)
+	}
+	if pk, err := crypto.ToECDSA(bz); err != nil {
+		panic(err)
+	} else {
+		n.ndpk = pk
+	}
+
+	// load node stake account private key
+	file := path.Join(Conf.Environment.Workspace, n.StakeAccount)
+	if bz, err = ioutil.ReadFile(file); err != nil {
+		panic(fmt.Sprintf("load keystore err %v", err))
+	}
+	if ks, err := keystore.DecryptKey(bz, Conf.DefaultPassphrase); err != nil {
+		panic(fmt.Sprintf("decrypt key %s err %v", n.StakeAccount, err))
+	} else {
+		n.sapk = ks.PrivateKey
+	}
 }
 
 func (n *Node) PrivateKey() *ecdsa.PrivateKey {
-	key, err := hex.DecodeString(n.Nodekey)
-	if err != nil {
-		panic(err)
-	}
-	privKey, err := crypto.ToECDSA(key)
-	if err != nil {
-		panic(err)
-	}
-	return privKey
+	n.once.Do(n.init)
+	return n.ndpk
 }
 
-func (n *Node) Addr() common.Address {
+func (n *Node) NodeAddr() common.Address {
 	return common.HexToAddress(n.Address)
+}
+
+func (n *Node) StakePrivateKey() *ecdsa.PrivateKey {
+	n.once.Do(n.init)
+	return n.sapk
+}
+
+func (n *Node) StakeAddr() common.Address {
+	return common.HexToAddress(n.StakeAccount)
 }
 
 type Env struct {

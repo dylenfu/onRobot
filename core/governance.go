@@ -27,7 +27,7 @@ func Consistency() (succeed bool) {
 		clients[i] = sdk.NewSender(params.UrlList[i], config.AdminKey)
 	}
 	log.Infof("-----------------3")
-	queryBlkNo := int64(config.Conf.EffectivePeriod + 2)
+	queryBlkNo := int64(config.Conf.RewardEffectivePeriod + 2)
 	queryBlkHex := "0x" + strconv.FormatInt(queryBlkNo, 16)
 	lastRdBlk := big.NewInt(0)
 	for i := 0; i < len(params.UrlList); i++ {
@@ -59,9 +59,9 @@ func AddValidators() (succeed bool) {
 	hashList := make([]common.Hash, 0)
 	for i := start; i <= end; i++ {
 		node := config.Conf.Nodes[i]
-		hash, err := client.AddValidator(node.Addr(), false)
+		hash, err := client.AddValidator(node.NodeAddr(), false)
 		if err != nil {
-			log.Errorf("failed to add validator %s, hash %s, [%v]", node.Addr().Hex(), hash.Hex(), err)
+			log.Errorf("failed to add validator %s, hash %s, [%v]", node.NodeAddr().Hex(), hash.Hex(), err)
 			return
 		}
 		hashList = append(hashList, hash)
@@ -80,7 +80,7 @@ func AddValidators() (succeed bool) {
 	}
 
 	// check validators
-	wait(config.Conf.EffectivePeriod)
+	wait(config.Conf.RewardEffectivePeriod)
 	validators := client.GetValidators()
 	if len(validators) != num {
 		log.Error("validators not effective, check palette log")
@@ -90,7 +90,7 @@ func AddValidators() (succeed bool) {
 	for _, v := range validators {
 		exist := false
 		for i := start; i <= end; i++ {
-			nodeAddr := config.Conf.Nodes[i].Addr()
+			nodeAddr := config.Conf.Nodes[i].NodeAddr()
 			if nodeAddr == v {
 				exist = true
 				goto check
