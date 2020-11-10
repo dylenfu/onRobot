@@ -10,8 +10,7 @@ import (
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
-// 检查数据一致性(重要):
-// 5个创世验证节点启动后，再添加3个新的验证节点，轮询这8个节点，比较其查询所得的lastRewardBlock是否一致。
+// 检查数据一致性(重要): 轮询N个节点，比较其查询所得的lastRewardBlock是否一致。非验证节点同步速度可能会慢上几个块.
 func Consistency() (succeed bool) {
 	var params struct {
 		UrlList []string
