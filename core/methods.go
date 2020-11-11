@@ -12,7 +12,7 @@ import (
 	"github.com/palettechain/onRobot/pkg/shell"
 )
 
-var client *sdk.Client
+var admcli *sdk.Client
 
 const (
 	shInit          = "init_nodes.sh"
@@ -32,8 +32,8 @@ func Demo() bool {
 }
 
 func BlockNumber() bool {
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	blockNumber := client.GetBlockNumber()
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	blockNumber := admcli.GetBlockNumber()
 	log.Infof("current block number %d", blockNumber)
 	return true
 }
@@ -47,8 +47,8 @@ func Nonce() (succeed bool) {
 		return
 	}
 
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	nonce := client.GetNonce(params.Address)
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	nonce := admcli.GetNonce(params.Address)
 	log.Infof("%s nonce is %d", params.Address, nonce)
 	return true
 }
@@ -72,11 +72,11 @@ func ResetNetwork() bool {
 		return false
 	}
 
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	for _, account := range config.Conf.Accounts {
 		amount := plt.MultiPLT(params.UserInitAmount)
 		to := common.HexToAddress(account)
-		if _, err := client.PLTTransfer(to, amount); err != nil {
+		if _, err := admcli.PLTTransfer(to, amount); err != nil {
 			log.Errorf("transfer to %s err %v", to.Hex(), err)
 			return false
 		}
@@ -86,7 +86,7 @@ func ResetNetwork() bool {
 
 	for _, account := range config.Conf.Accounts {
 		owner := common.HexToAddress(account)
-		data, err := client.BalanceOf(owner, "latest")
+		data, err := admcli.BalanceOf(owner, "latest")
 		if err != nil {
 			log.Errorf("query balanceOf %s err %v", owner.Hex(), err)
 			return false
@@ -146,13 +146,13 @@ func InitValidators() (succeed bool) {
 
 	wait(1)
 
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 
 	// transfer and check balance
 	amount := plt.MultiPLT(params.ValidatorInitAmount)
 	for i := params.ValidatorsIndexStart; i <= params.ValidatorsIndexEnd; i++ {
-		to := config.Conf.Nodes[i].NodeAddr()
-		if hash, err := client.PLTTransfer(to, amount); err != nil {
+		to := config.Conf.Nodes[i].StakeAddr()
+		if hash, err := admcli.PLTTransfer(to, amount); err != nil {
 			log.Errorf("url %s, transfer to node%d %s amount %d, hash %s, err %v", config.Conf.BaseRPCUrl, i, to.Hex(), params.ValidatorInitAmount, hash.Hex(), err)
 			return false
 		}
@@ -162,23 +162,23 @@ func InitValidators() (succeed bool) {
 
 	for i := params.ValidatorsIndexStart; i <= params.ValidatorsIndexEnd; i++ {
 		owner := config.Conf.Nodes[i].NodeAddr()
-		data, err := client.BalanceOf(owner, "latest")
+		data, err := admcli.BalanceOf(owner, "latest")
 		if err != nil {
 			log.Errorf("query balanceOf %s err %v", owner.Hex(), err)
 			return false
 		}
 
-		log.Infof("%s init balance %d", owner.Hex(), utils.UnsafeDiv(data, plt.OnePLT))
+		log.Infof("%s init balance %d", owner.Hex(), plt.PrintUPLT(data))
 	}
 
 	// sync blocks
 	newNodeClient := sdk.NewSender(params.NewNodeUrl, config.AdminKey)
 	for {
-		oldNodeBlockHeight := client.GetBlockNumber()
+		oldNodeBlockHeight := admcli.GetBlockNumber()
 		newNodeBlockHeight := newNodeClient.GetBlockNumber()
 
 		log.Infof("sync block, old node %s block height %d, new node %s block height %d",
-			client.Url(), oldNodeBlockHeight, newNodeClient.Url(), newNodeBlockHeight)
+			admcli.Url(), oldNodeBlockHeight, newNodeClient.Url(), newNodeBlockHeight)
 
 		if newNodeBlockHeight >= oldNodeBlockHeight {
 			break
@@ -238,7 +238,7 @@ func StartSyncNode() bool {
 	}
 
 	// check admin nonce
-	nonce := client.GetNonce(config.AdminKey.Address.Hex())
+	nonce := client.GetNonce(config.AdminAddr.Hex())
 	if nonce == 0 {
 		log.Error("sync node check admin nonce failed")
 		return false
@@ -263,7 +263,7 @@ func StopSyncNode() bool {
 }
 
 func gc() {
-	client = nil
+	admcli = nil
 	config.Conf = config.BakConf.DeepCopy()
 }
 

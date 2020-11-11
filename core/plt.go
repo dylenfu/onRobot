@@ -22,8 +22,8 @@ func TotalSupply() (succeed bool) {
 		return
 	}
 
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	totalSupply, err := client.PLTTotalSupply("latest")
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	totalSupply, err := admcli.PLTTotalSupply("latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -50,8 +50,8 @@ func Decimal() (succeed bool) {
 		return
 	}
 
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	actual, err := client.PLTDecimals()
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	actual, err := admcli.PLTDecimals()
 	if err != nil {
 		log.Error(err)
 		return
@@ -68,8 +68,8 @@ func Decimal() (succeed bool) {
 }
 
 func Name() (succeed bool) {
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	actual, err := client.PLTName()
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	actual, err := admcli.PLTName()
 	if err != nil {
 		log.Error(err)
 		return
@@ -96,9 +96,8 @@ func AdminBalance() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-
-	balance, err := client.BalanceOf(config.AdminKey.Address, params.BlockNum)
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	balance, err := admcli.BalanceOf(config.AdminAddr, params.BlockNum)
 	if err != nil {
 		log.Error(err)
 		return
@@ -126,9 +125,9 @@ func GovernanceBalance() (succeed bool) {
 		return
 	}
 
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	owner := common.HexToAddress(native.GovernanceContractAddress)
-	balance, err := client.BalanceOf(owner, params.BlockNum)
+	balance, err := admcli.BalanceOf(owner, params.BlockNum)
 	if err != nil {
 		log.Error(err)
 		return
@@ -156,9 +155,9 @@ func BalanceOf() (succeed bool) {
 		return
 	}
 
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	owner := common.HexToAddress(params.Owner)
-	balance, err := client.BalanceOf(owner, params.BlockNum)
+	balance, err := admcli.BalanceOf(owner, params.BlockNum)
 	if err != nil {
 		log.Error(err)
 		return
@@ -182,17 +181,17 @@ func Transfer() (succeed bool) {
 	}
 
 	key := config.LoadAccount(params.From)
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, key)
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, key)
 	to := common.HexToAddress(params.To)
 	amount := utils.SafeMul(big.NewInt(params.Amount), plt.OnePLT)
 
 	// balance before transfer
-	fromBalanceBeforeTrans, err := client.BalanceOf(key.Address, "latest")
+	fromBalanceBeforeTrans, err := admcli.BalanceOf(PrivKey2Addr(key), "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	toBalanceBeforeTrans, err := client.BalanceOf(to, "latest")
+	toBalanceBeforeTrans, err := admcli.BalanceOf(to, "latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -203,24 +202,24 @@ func Transfer() (succeed bool) {
 	}
 
 	// transfer and waiting for commit
-	hash, err := client.PLTTransfer(to, amount)
+	hash, err := admcli.PLTTransfer(to, amount)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	wait(1)
-	if err := client.DumpEventLog(hash); err != nil {
+	if err := admcli.DumpEventLog(hash); err != nil {
 		log.Error(err)
 		return
 	}
 
 	// balance after transfer
-	fromBalanceAfterTrans, err := client.BalanceOf(key.Address, "latest")
+	fromBalanceAfterTrans, err := admcli.BalanceOf(PrivKey2Addr(key), "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	toBalanceAfterTrans, err := client.BalanceOf(to, "latest")
+	toBalanceAfterTrans, err := admcli.BalanceOf(to, "latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -260,32 +259,32 @@ func Approve() (succeed bool) {
 	}
 
 	key := config.LoadAccount(params.Owner)
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, key)
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, key)
 
-	owner := key.Address
+	owner := PrivKey2Addr(key)
 	spender := common.HexToAddress(params.Spender)
 	amount := plt.MultiPLT(params.Amount)
 
 	// allowance before approve
-	allowanceBeforeApprove, err := client.PLTAllowance(owner, spender, "latest")
+	allowanceBeforeApprove, err := admcli.PLTAllowance(owner, spender, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	hash, err := client.PLTApprove(spender, amount)
+	hash, err := admcli.PLTApprove(spender, amount)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	wait(1)
-	if err := client.DumpEventLog(hash); err != nil {
+	if err := admcli.DumpEventLog(hash); err != nil {
 		log.Error(err)
 		return
 	}
 
 	// allowance after approve
-	allowanceAfterApprove, err := client.PLTAllowance(owner, spender, "latest")
+	allowanceAfterApprove, err := admcli.PLTAllowance(owner, spender, "latest")
 	if err != nil {
 		log.Error(err)
 		return

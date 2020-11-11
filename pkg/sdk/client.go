@@ -1,21 +1,22 @@
 package sdk
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type Client struct {
 	*rpc.Client
 	url          string
-	Key          *keystore.Key
+	Key          *ecdsa.PrivateKey
 	currentNonce uint64
 }
 
-func NewSender(url string, key *keystore.Key) *Client {
+func NewSender(url string, key *ecdsa.PrivateKey) *Client {
 	return &Client{
 		url:    url,
 		Client: dialNode(url),
@@ -28,7 +29,7 @@ func (c *Client) Url() string {
 }
 
 func (c *Client) Address() common.Address {
-	return c.Key.Address
+	return crypto.PubkeyToAddress(c.Key.PublicKey)
 }
 
 func dialNode(url string) *rpc.Client {

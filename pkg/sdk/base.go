@@ -137,7 +137,7 @@ func (c *Client) SignTransaction(tx *types.Transaction) (string, error) {
 	signedTx, err := types.SignTx(
 		tx,
 		signer,
-		c.Key.PrivateKey,
+		c.Key,
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign tx: [%v]", err)

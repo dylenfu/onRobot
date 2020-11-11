@@ -27,7 +27,8 @@ const (
 
 var (
 	Conf, BakConf = new(Config), new(Config)
-	AdminKey      *keystore.Key
+	AdminKey      *ecdsa.PrivateKey
+	AdminAddr     common.Address
 )
 
 type Config struct {
@@ -93,7 +94,7 @@ func (n *Node) init() {
 	}
 
 	// load node stake account private key
-	file := path.Join(Conf.Environment.Workspace, n.StakeAccount)
+	file := path.Join(Conf.Environment.Workspace, keystoreDir, n.StakeAccount)
 	if bz, err = ioutil.ReadFile(file); err != nil {
 		panic(fmt.Sprintf("load keystore err %v", err))
 	}
@@ -119,6 +120,7 @@ func (n *Node) StakePrivateKey() *ecdsa.PrivateKey {
 }
 
 func (n *Node) StakeAddr() common.Address {
+	n.once.Do(n.init)
 	return common.HexToAddress(n.StakeAccount)
 }
 
@@ -146,6 +148,7 @@ func Init(path string) {
 	sdk.Init(Conf.GasLimit, Conf.DeployGasLimit, time.Duration(Conf.BlockPeriod))
 
 	AdminKey = LoadAccount(Conf.AdminAccount)
+	AdminAddr = crypto.PubkeyToAddress(AdminKey.PublicKey)
 	BakConf = Conf.DeepCopy()
 }
 
@@ -170,7 +173,7 @@ func LoadParams(fileName string, data interface{}) error {
 	return json.Unmarshal(bz, data)
 }
 
-func LoadAccount(keyhex string) *keystore.Key {
+func LoadAccount(keyhex string) *ecdsa.PrivateKey {
 	filepath := files.FullPath(Conf.Environment.Workspace, keystoreDir, keyhex)
 	keyJson, err := ioutil.ReadFile(filepath)
 	if err != nil {
@@ -182,7 +185,7 @@ func LoadAccount(keyhex string) *keystore.Key {
 		panic(fmt.Errorf("failed to decrypt keyjson: [%v]", err))
 	}
 
-	return key
+	return key.PrivateKey
 }
 
 func ShellPath(fileName string) string {

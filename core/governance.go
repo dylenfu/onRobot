@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
@@ -66,14 +67,42 @@ func AddValidators() (succeed bool) {
 	sv := loadValidatorsConfig()
 	start, end, num := sv.ValidatorsIndexStart, sv.ValidatorsIndexEnd, sv.ValidatorsNumber
 
-	client = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	newClient := sdk.NewSender(sv.NewNodeUrl, config.AdminKey)
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 
-	// send transactions and dump receipt
+	// stake
+	stakeAmt := plt.MultiPLT(sv.ValidatorInitAmount)
 	hashList := make([]common.Hash, 0)
 	for i := start; i <= end; i++ {
 		node := config.Conf.Nodes[i]
-		hash, err := client.AddValidator(node.NodeAddr(), false)
+		nodecli := sdk.NewSender(config.Conf.BaseRPCUrl, node.StakePrivateKey())
+		hash, err := nodecli.Stake(node.NodeAddr(), node.StakeAddr(), stakeAmt, false)
+		if err != nil {
+			log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), sv.ValidatorInitAmount)
+			return
+		}
+		hashList = append(hashList, hash)
+	}
+	wait(1)
+	if err := DumpHashList(hashList); err != nil {
+		return
+	}
+
+	// check balance after stake
+	for i := start; i <= end; i++ {
+		node := config.Conf.Nodes[i]
+		data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
+		if err != nil {
+			log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), sv.ValidatorInitAmount)
+			return
+		}
+		log.Infof("%s balance after stake %d", node.NodeAddr().Hex(), plt.PrintUPLT(data))
+	}
+
+	// admin add balance
+	hashList = make([]common.Hash, 0)
+	for i := start; i <= end; i++ {
+		node := config.Conf.Nodes[i]
+		hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), false)
 		if err != nil {
 			log.Errorf("failed to add validator %s, hash %s, [%v]", node.NodeAddr().Hex(), hash.Hex(), err)
 			return
@@ -81,21 +110,13 @@ func AddValidators() (succeed bool) {
 		hashList = append(hashList, hash)
 	}
 	wait(1)
-	for _, hash := range hashList {
-		if err := client.DumpEventLog(hash); err != nil {
-			log.Errorf("failed to dump receipt, hash %s, [%v]", hash.Hex(), err)
-			return
-		}
-		if err := newClient.DumpEventLog(hash); err != nil {
-			log.Errorf("failed to dump receipt, hash %s, [%v]", hash.Hex(), err)
-			return
-		}
-		log.Infof("------------------------------------------------------")
+	if err := DumpHashList(hashList); err != nil {
+		return
 	}
 
 	// check validators
 	wait(config.Conf.RewardEffectivePeriod)
-	validators := client.GetValidators()
+	validators := admcli.GetAllValidators("latest")
 	if len(validators) != num {
 		log.Error("validators not effective, check palette log")
 		return

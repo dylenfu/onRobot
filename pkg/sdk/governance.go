@@ -10,18 +10,60 @@ import (
 )
 
 // params are validator and isRevoke
-func (c *Client) AddValidator(validator common.Address, revoke bool) (common.Hash, error) {
-	payload, err := utils.PackMethod(GovernanceABI, governance.MethodAddValidator, validator, revoke)
+func (c *Client) AddValidator(validator, stakeAccount common.Address, revoke bool) (common.Hash, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodAddValidator, validator, stakeAccount, revoke)
 	if err != nil {
 		return common.Hash{}, err
 	}
 	return c.SendGovernanceTx(payload)
 }
 
-// todo
-func (c *Client) GetValidators() []common.Address {
-	//payload, err := utils.PackMethod(GovernanceABI, )
-	return nil
+func (c *Client) Stake(validator, stakeAccount common.Address, amount *big.Int, revoke bool) (common.Hash, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodStake, validator, stakeAccount, amount, revoke)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return c.SendGovernanceTx(payload)
+}
+
+func (c *Client) GetEffectiveValidators(blockNum string) []common.Address {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetEffectiveValidators)
+	if err != nil {
+		return nil
+	}
+
+	enc, err := c.CallGovernance(payload, blockNum)
+	if err != nil {
+		return nil
+	}
+
+	output := new(governance.MethodGetEffectiveValidatorsOutput)
+	err = utils.UnpackOutputs(GovernanceABI, governance.MethodGetEffectiveValidators, output, enc)
+	if err != nil {
+		return nil
+	}
+
+	return output.List
+}
+
+func (c *Client) GetAllValidators(blockNum string) []common.Address {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetAllValidators)
+	if err != nil {
+		return nil
+	}
+
+	enc, err := c.CallGovernance(payload, blockNum)
+	if err != nil {
+		return nil
+	}
+
+	output := new(governance.MethodGetAllValidatorsOutput)
+	err = utils.UnpackOutputs(GovernanceABI, governance.MethodGetAllValidators, output, enc)
+	if err != nil {
+		return nil
+	}
+
+	return output.List
 }
 
 func (c *Client) GetRewardRecordBlock(blockNum string) (*big.Int, error) {
