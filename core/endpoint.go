@@ -49,6 +49,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("consistency", Consistency)
 	frame.Tool.RegMethod("addValidators", AddValidators)
 	frame.Tool.RegMethod("delValidators", DelValidators)
+	frame.Tool.RegMethod("getValidators", GetValidators)
 	frame.Tool.RegMethod("reward", Reward)
 	frame.Tool.RegMethod("stake", Stake)
 	frame.Tool.RegMethod("propose", Propose)

@@ -64,14 +64,29 @@ func Consistency() (succeed bool) {
 }
 
 func AddValidators() (succeed bool) {
+	wait(1)
 	sv := loadValidatorsConfig()
-	start, end, num := sv.ValidatorsIndexStart, sv.ValidatorsIndexEnd, sv.ValidatorsNumber
+	start, end, _ := sv.ValidatorsIndexStart, sv.ValidatorsIndexEnd, sv.ValidatorsNumber
 
 	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	nodeList := make([]common.Address, 0)
 
-	// stake
+	// check balance before stake
+	for i := start; i <= end; i++ {
+		node := config.Conf.Nodes[i]
+		nodeList = append(nodeList, node.NodeAddr())
+		data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
+		if err != nil {
+			log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), sv.ValidatorInitAmount)
+			return
+		}
+		log.Infof("%s balance before stake %d", node.NodeAddr().Hex(), plt.PrintUPLT(data))
+	}
+
+	// stake and dump event log
 	stakeAmt := plt.MultiPLT(sv.ValidatorInitAmount)
 	hashList := make([]common.Hash, 0)
+	log.Infof("validators stake at block %d", admcli.GetBlockNumber())
 	for i := start; i <= end; i++ {
 		node := config.Conf.Nodes[i]
 		nodecli := sdk.NewSender(config.Conf.BaseRPCUrl, node.StakePrivateKey())
@@ -82,8 +97,8 @@ func AddValidators() (succeed bool) {
 		}
 		hashList = append(hashList, hash)
 	}
-	wait(1)
-	if err := DumpHashList(hashList); err != nil {
+	wait(2)
+	if err := DumpHashList(hashList, "stake"); err != nil {
 		return
 	}
 
@@ -98,7 +113,7 @@ func AddValidators() (succeed bool) {
 		log.Infof("%s balance after stake %d", node.NodeAddr().Hex(), plt.PrintUPLT(data))
 	}
 
-	// admin add balance
+	// admin add validators
 	hashList = make([]common.Hash, 0)
 	for i := start; i <= end; i++ {
 		node := config.Conf.Nodes[i]
@@ -109,35 +124,41 @@ func AddValidators() (succeed bool) {
 		}
 		hashList = append(hashList, hash)
 	}
-	wait(1)
-	if err := DumpHashList(hashList); err != nil {
+	log.Infof("add validator at block %d", admcli.GetBlockNumber())
+	wait(2)
+	if err := DumpHashList(hashList, "addValidator"); err != nil {
 		return
 	}
+
+	log.Infof("check pending validators at block %d", admcli.GetBlockNumber())
+	validators := admcli.GetAllValidators("latest")
+	if !HasAddrs(validators, nodeList) {
+		log.Error("validators not pending, check palette log")
+		return
+	}
+	log.Infof("check pending validators success")
 
 	// check validators
 	wait(config.Conf.RewardEffectivePeriod)
-	validators := admcli.GetAllValidators("latest")
-	if len(validators) != num {
+	log.Infof("check effective validators at block %d", admcli.GetBlockNumber())
+	effectiveValidators := admcli.GetEffectiveValidators("latest")
+	if !HasAddrs(effectiveValidators, nodeList) {
 		log.Error("validators not effective, check palette log")
 		return
 	}
-
-	for _, v := range validators {
-		exist := false
-		for i := start; i <= end; i++ {
-			nodeAddr := config.Conf.Nodes[i].NodeAddr()
-			if nodeAddr == v {
-				exist = true
-				goto check
-			}
-		}
-	check:
-		if !exist {
-			log.Errorf("validator %s not exist in params", v.Hex())
-			return
-		}
+	for _, v := range effectiveValidators {
+		log.Infof("add validator %s success", v.Hex())
 	}
 
+	return true
+}
+
+func GetValidators() bool {
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	effectiveValidators := admcli.GetEffectiveValidators("latest")
+	for _, v := range effectiveValidators {
+		log.Infof("validator %s", v.Hex())
+	}
 	return true
 }
 
@@ -145,7 +166,87 @@ func DelValidators() bool {
 	return true
 }
 
-func Reward() bool {
+func Reward() (succeed bool) {
+	var params struct {
+		StakeAmountIsSame              bool
+		RewardBlocks                   int
+		ValidatorsIndexStart           int
+		ValidatorsNumber               int
+		ExpectRewardPoolAmount         int
+		ExpectRewardAmountPerValidator int
+	}
+
+	if err := config.LoadParams("CheckReward.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	rewardPool := common.HexToAddress(config.Conf.BaseRewardPool)
+
+	// check balance before reward
+	start, end := params.ValidatorsIndexStart, params.ValidatorsIndexStart+params.ValidatorsNumber-1
+	balancesBeforeCheckReward := make(map[common.Address]int)
+	log.Infof("check balance before testing reward at block %d", admcli.GetBlockNumber())
+	for i := start; i <= end; i++ {
+		node := config.Conf.Nodes[i]
+		addr := node.NodeAddr()
+		if balance, err := admcli.BalanceOf(addr, "latest"); err != nil {
+			log.Errorf("%s check balance err %v", addr.Hex(), err)
+			return
+		} else {
+			balancesBeforeCheckReward[addr] = int(plt.PrintUPLT(balance))
+		}
+	}
+	if balance, err := admcli.BalanceOf(rewardPool, "latest"); err != nil {
+		log.Errorf("%s check balance err %v", rewardPool.Hex(), err)
+		return
+	} else {
+		balancesBeforeCheckReward[rewardPool] = int(plt.PrintUPLT(balance))
+	}
+
+	// waiting for blocks
+	wait(params.RewardBlocks + 2)
+
+	// check balance after reward
+	balancesAfterCheckReward := make(map[common.Address]int)
+	log.Infof("check balance after testing reward at block %d, waited for %d blocks", admcli.GetBlockNumber(), params.RewardBlocks)
+	for i := start; i <= end; i++ {
+		node := config.Conf.Nodes[i]
+		addr := node.NodeAddr()
+		balance, err := admcli.BalanceOf(addr, "latest")
+		if err != nil {
+			log.Errorf("%s check balance err %v", addr.Hex(), err)
+			return
+		}
+		balancesAfterCheckReward[addr] = int(plt.PrintUPLT(balance))
+	}
+	if balance, err := admcli.BalanceOf(rewardPool, "latest"); err != nil {
+		log.Errorf("%s check balance err %v", rewardPool.Hex(), err)
+		return
+	} else {
+		balancesAfterCheckReward[rewardPool] = int(plt.PrintUPLT(balance))
+	}
+
+	for addr, bBefRd := range balancesBeforeCheckReward {
+		bAftRd, exist := balancesAfterCheckReward[addr]
+		if !exist {
+			log.Errorf("missing check %s's balance after reward", addr.Hex())
+			return
+		}
+		amt := bAftRd - bBefRd
+		expect := params.ExpectRewardAmountPerValidator
+		if addr == rewardPool {
+			expect = params.ExpectRewardPoolAmount
+		}
+
+		if amt != expect {
+			log.Errorf("%s amount expect %d, actual %d", addr.Hex(), expect, amt)
+		} else {
+			log.Infof("%s reward amount %d", addr.Hex(), amt)
+		}
+	}
+
 	return true
 }
 

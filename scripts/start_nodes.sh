@@ -1,6 +1,6 @@
 #!/bin/bash
 
-discover="--nodiscover --maxpeers 10"
+discflag="--nodiscover --maxpeers 10"
 gethflag="--datadir data --syncmode full --mine --minerthreads 1 --verbosity $PaletteLogLevel --networkid $PaletteNetworkID --rpc --rpcaddr 127.0.0.1";
 rpcflag="--rpcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3,quorum,istanbul --emitcheckpoints";
 
@@ -15,7 +15,7 @@ for((i=$PaletteNodeIndexStart;i<=$PaletteNodeIndexEnd;i++)); do
 
     rpcPort=$(($PaletteStartRPCPort+$i))
     p2pPort=$(($PaletteStartP2PPort+$i))
-    PRIVATE_CONFIG=ignore nohup geth $gethflag --rpcport $rpcPort $rpcflag --port $p2pPort 2>>node.log &
+    PRIVATE_CONFIG=ignore nohup geth $discflag $gethflag --rpcport $rpcPort $rpcflag --port $p2pPort 2>>node.log &
     sleep 1s;
 done
 

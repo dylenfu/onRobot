@@ -1,6 +1,7 @@
 package core
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -138,6 +139,7 @@ func loadValidatorsConfig() *ValidatorsConfig {
 }
 
 func InitValidators() (succeed bool) {
+	wait(1)
 	params := loadValidatorsConfig()
 	config.Conf.ResetEnv(params.ValidatorsIndexStart, params.ValidatorsNumber)
 	shell.Exec(shStopNodes)
@@ -161,14 +163,23 @@ func InitValidators() (succeed bool) {
 	wait(1)
 
 	for i := params.ValidatorsIndexStart; i <= params.ValidatorsIndexEnd; i++ {
-		owner := config.Conf.Nodes[i].NodeAddr()
-		data, err := admcli.BalanceOf(owner, "latest")
+		nodeAcc := config.Conf.Nodes[i].NodeAddr()
+		stkAcc := config.Conf.Nodes[i].StakeAddr()
+		nodeAmt, err := admcli.BalanceOf(nodeAcc, "latest")
 		if err != nil {
-			log.Errorf("query balanceOf %s err %v", owner.Hex(), err)
+			log.Errorf("query balanceOf %s err %v", nodeAcc.Hex(), err)
 			return false
 		}
-
-		log.Infof("%s init balance %d", owner.Hex(), plt.PrintUPLT(data))
+		stkAmt, err := admcli.BalanceOf(stkAcc, "latest")
+		if err != nil {
+			log.Errorf("query balanceOf %s err %v", stkAcc.Hex(), err)
+			return false
+		}
+		if nodeAmt.Cmp(big.NewInt(0)) > 0 {
+			log.Errorf("validator init PLT used for staking, validator address used for reward")
+			return false
+		}
+		log.Infof("%s init balance %d", nodeAcc.Hex(), plt.PrintUPLT(stkAmt))
 	}
 
 	// sync blocks
