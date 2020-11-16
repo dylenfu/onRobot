@@ -101,6 +101,7 @@ func AddValidators() (succeed bool) {
 	if err := DumpHashList(hashList, "stake"); err != nil {
 		return
 	}
+	wait(2 * config.Conf.RewardEffectivePeriod)
 
 	// check balance after stake
 	for i := start; i <= end; i++ {
