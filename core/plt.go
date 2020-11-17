@@ -13,25 +13,17 @@ import (
 )
 
 func TotalSupply() (succeed bool) {
-	var params struct {
-		Expect uint64
-	}
+	expect := 1e9
 
-	if err := config.LoadParams("TotalSupply.json", &params); err != nil {
-		log.Error(err)
-		return
-	}
-
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	totalSupply, err := admcli.PLTTotalSupply("latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	actual := utils.UnsafeDiv(totalSupply, plt.OnePLT)
-	if actual.Uint64() != params.Expect {
-		log.Errorf("totalSupply expect %d actually %d", params.Expect, actual)
+	actual := plt.PrintUPLT(totalSupply)
+	if actual != uint64(expect) {
+		log.Errorf("totalSupply expect %d actually %d", expect, actual)
 		return
 	}
 
@@ -41,34 +33,18 @@ func TotalSupply() (succeed bool) {
 }
 
 func Decimal() (succeed bool) {
-	var params struct {
-		Expect uint64
-	}
-
-	if err := config.LoadParams("Decimal.json", &params); err != nil {
-		log.Error(err)
-		return
-	}
-
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	actual, err := admcli.PLTDecimals()
+	data, err := admcli.PLTDecimals()
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	if params.Expect != actual {
-		log.Errorf("decimal expect %d actual %d", params.Expect, actual)
-		return
-	}
-
-	log.Infof("decimal %d", actual)
+	log.Infof("decimal %d", data)
 
 	return true
 }
 
 func Name() (succeed bool) {
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	actual, err := admcli.PLTName()
 	if err != nil {
 		log.Error(err)
@@ -87,59 +63,28 @@ func Name() (succeed bool) {
 }
 
 func AdminBalance() (succeed bool) {
-	var params struct {
-		BlockNum string
-		Expect   uint64
-	}
-
-	if err := config.LoadParams("AdminBalance.json", &params); err != nil {
-		log.Error(err)
-		return
-	}
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	balance, err := admcli.BalanceOf(config.AdminAddr, params.BlockNum)
+	balance, err := admcli.BalanceOf(config.AdminAddr, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	actual := utils.UnsafeDiv(balance, plt.OnePLT)
-	if actual.Uint64() != params.Expect {
-		log.Errorf("balance expect %d actually %d", params.Expect, actual)
-		return
-	}
-
-	log.Infof("balance %d")
+	actual := plt.PrintUPLT(balance)
+	log.Infof("admin %s balance %d", config.AdminAddr.Hex(), actual)
 
 	return true
 }
 
 func GovernanceBalance() (succeed bool) {
-	var params struct {
-		BlockNum string
-		Expect   uint64
-	}
-
-	if err := config.LoadParams("GovernanceBalance.json", &params); err != nil {
-		log.Error(err)
-		return
-	}
-
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	owner := common.HexToAddress(native.GovernanceContractAddress)
-	balance, err := admcli.BalanceOf(owner, params.BlockNum)
+	balance, err := admcli.BalanceOf(owner, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	actual := utils.UnsafeDiv(balance, plt.OnePLT)
-	if actual.Uint64() != params.Expect {
-		log.Errorf("balance expect %d actually %d", params.Expect, actual)
-		return
-	}
-
-	log.Infof("balance %d", utils.UnsafeDiv(balance, plt.OnePLT))
+	actual := plt.PrintUPLT(balance)
+	log.Infof("governance %s balance %d", owner.Hex(), actual)
 
 	return true
 }
@@ -155,7 +100,6 @@ func BalanceOf() (succeed bool) {
 		return
 	}
 
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
 	owner := common.HexToAddress(params.Owner)
 	balance, err := admcli.BalanceOf(owner, params.BlockNum)
 	if err != nil {
@@ -181,7 +125,6 @@ func Transfer() (succeed bool) {
 	}
 
 	key := config.LoadAccount(params.From)
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, key)
 	to := common.HexToAddress(params.To)
 	amount := utils.SafeMul(big.NewInt(params.Amount), plt.OnePLT)
 
@@ -258,33 +201,34 @@ func Approve() (succeed bool) {
 		return
 	}
 
+	baseUrl := config.Conf.Nodes[0].RPCAddr()
 	key := config.LoadAccount(params.Owner)
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, key)
+	cli := sdk.NewSender(baseUrl, key)
 
 	owner := PrivKey2Addr(key)
 	spender := common.HexToAddress(params.Spender)
 	amount := plt.MultiPLT(params.Amount)
 
 	// allowance before approve
-	allowanceBeforeApprove, err := admcli.PLTAllowance(owner, spender, "latest")
+	allowanceBeforeApprove, err := cli.PLTAllowance(owner, spender, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	hash, err := admcli.PLTApprove(spender, amount)
+	hash, err := cli.PLTApprove(spender, amount)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	wait(1)
-	if err := admcli.DumpEventLog(hash); err != nil {
+	if err := cli.DumpEventLog(hash); err != nil {
 		log.Error(err)
 		return
 	}
 
 	// allowance after approve
-	allowanceAfterApprove, err := admcli.PLTAllowance(owner, spender, "latest")
+	allowanceAfterApprove, err := cli.PLTAllowance(owner, spender, "latest")
 	if err != nil {
 		log.Error(err)
 		return

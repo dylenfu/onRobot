@@ -2,7 +2,6 @@ package shell
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -11,13 +10,12 @@ import (
 	"github.com/palettechain/onRobot/pkg/log"
 )
 
-func Exec(filepath string) {
+func Exec(filepath string, args ...string) {
 	var errStdout, errStderr error
 
 	shellpath := config.ShellPath(filepath)
-
-	cmd := exec.Command(shellpath)
-	cmd.Env = addEnv()
+	cmd := exec.Command(shellpath, args...)
+	//cmd.Env = addEnv()
 
 	stdoutIn, _ := cmd.StdoutPipe()
 	stderrIn, _ := cmd.StderrPipe()
@@ -51,41 +49,41 @@ func Exec(filepath string) {
 	//log.Infof("\nout:\n%s\nerr:\n%s\n", outStr, errStr)
 }
 
-const (
-	EnvWorkspace      = "PaletteWorkspace"
-	EnvNodeIndexStart = "PaletteNodeIndexStart"
-	EnvNodeNumber     = "PaletteNodeNumber"
-	EnvNodeIndexEnd   = "PaletteNodeIndexEnd"
-	EnvNetworkID      = "PaletteNetworkID"
-	EnvStartRPCPort   = "PaletteStartRPCPort"
-	EnvStartP2PPort   = "PaletteStartP2PPort"
-	EnvLogLevel       = "PaletteLogLevel"
-)
-
-func addEnv() []string {
-	env := config.Conf.Environment
-	list := make([]string, 0)
-	var add = func(env string, value interface{}) {
-		list = append(list, fmt.Sprintf("%s=%v", env, value))
-	}
-
-	add(EnvWorkspace, env.Workspace)
-	add(EnvNodeIndexStart, env.NodeIdxStart)
-	if env.NodeNum == 0 {
-		env.NodeNum = config.GenesisNodeNumber()
-	}
-	add(EnvNodeNumber, env.NodeNum)
-	add(EnvNodeIndexEnd, int(env.NodeIdxStart+env.NodeNum-1))
-	add(EnvNetworkID, env.NetworkID)
-	add(EnvStartRPCPort, env.StartRPCPort)
-	add(EnvStartP2PPort, env.StartP2PPort)
-	add(EnvLogLevel, env.LogLevel)
-
-	log.Infof("start env: workspace %s, nodeIndexStart %d, nodeNum %d, networkID %d, startRPCPort %d, startP2PPort %d, logLevel %d",
-		env.Workspace, env.NodeIdxStart, env.NodeNum, env.NetworkID, env.StartRPCPort, env.StartP2PPort, env.LogLevel)
-
-	return append(os.Environ(), list...)
-}
+//const (
+//	EnvWorkspace      = "PaletteWorkspace"
+//	EnvNodeIndexStart = "PaletteNodeIndexStart"
+//	EnvNodeNumber     = "PaletteNodeNumber"
+//	EnvNodeIndexEnd   = "PaletteNodeIndexEnd"
+//	EnvNetworkID      = "PaletteNetworkID"
+//	EnvStartRPCPort   = "PaletteStartRPCPort"
+//	EnvStartP2PPort   = "PaletteStartP2PPort"
+//	EnvLogLevel       = "PaletteLogLevel"
+//)
+//
+//func addEnv() []string {
+//	env := config.Conf.Environment
+//	list := make([]string, 0)
+//	var add = func(env string, value interface{}) {
+//		list = append(list, fmt.Sprintf("%s=%v", env, value))
+//	}
+//
+//	add(EnvWorkspace, env.NodeDir)
+//	add(EnvNodeIndexStart, env.NodeIdxStart)
+//	if env.NodeNum == 0 {
+//		env.NodeNum = config.GenesisNodeNumber()
+//	}
+//	add(EnvNodeNumber, env.NodeNum)
+//	add(EnvNodeIndexEnd, int(env.NodeIdxStart+env.NodeNum-1))
+//	add(EnvNetworkID, env.NetworkID)
+//	add(EnvStartRPCPort, env.StartRPCPort)
+//	add(EnvStartP2PPort, env.StartP2PPort)
+//	add(EnvLogLevel, env.LogLevel)
+//
+//	log.Infof("start env: workspace %s, nodeIndexStart %d, nodeNum %d, networkID %d, startRPCPort %d, startP2PPort %d, logLevel %d",
+//		env.NodeDir, env.NodeIdxStart, env.NodeNum, env.NetworkID, env.StartRPCPort, env.StartP2PPort, env.LogLevel)
+//
+//	return append(os.Environ(), list...)
+//}
 
 // CapturingPassThroughWriter is a writer that remembers
 // data written to it and passes it to w

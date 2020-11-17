@@ -33,7 +33,7 @@ var (
 
 type Config struct {
 	Environment           *Env
-	BaseRPCUrl            string
+	Network               *Network
 	DefaultPassphrase     string
 	AdminAccount          string
 	BaseRewardPool        string
@@ -65,9 +65,48 @@ func (c *Config) AllNodeAddressList() []string {
 	return list
 }
 
-func (c *Config) ResetEnv(nodeIdxStart, nodeNum int) {
-	c.Environment.NodeIdxStart = nodeIdxStart
-	c.Environment.NodeNum = nodeNum
+func (c *Config) IpList() []string {
+	data := make(map[string]struct{})
+	for _, v := range c.Nodes {
+		data[v.Host] = struct{}{}
+	}
+
+	list := make([]string, 0)
+	for host, _ := range data {
+		list = append(list, host)
+	}
+
+	return list
+}
+
+func (c *Config) GenesisNodes() []*Node {
+	start := c.Network.NodeIndexStart
+	end := start + c.Network.GenesisNodeNumber - 1
+	return c.getRangeNodes(start, end)
+}
+
+func (c *Config) ValidatorNodes() []*Node {
+	genesisStart := c.Network.NodeIndexStart
+	genesisEnd := genesisStart + c.Network.GenesisNodeNumber - 1
+
+	start := genesisEnd + 1
+	end := start + c.Network.ValidatorsNumber - 1
+	return c.getRangeNodes(start, end)
+}
+
+func (c *Config) AllNodes() []*Node {
+	start := c.Network.NodeIndexStart
+	num := c.Network.GenesisNodeNumber + c.Network.ValidatorsNumber
+	end := start + num - 1
+	return c.getRangeNodes(start, end)
+}
+
+func (c *Config) getRangeNodes(start, end int) []*Node {
+	list := make([]*Node, 0)
+	for i := start; i <= end; i++ {
+		list = append(list, c.Nodes[i])
+	}
+	return list
 }
 
 type Node struct {
@@ -75,6 +114,10 @@ type Node struct {
 	Address      string `json:"Address"`
 	NodeKey      string `json:"NodeKey"`
 	StakeAccount string `json:"StakeAccount"`
+	Host         string `json:"Host"`
+	RPCPort      string `json:"RPCPort"`
+	P2PPort      string `json:"P2PPort"`
+	NodeDir      string `json:"NodeDir"`
 
 	once       sync.Once
 	ndpk, sapk *ecdsa.PrivateKey
@@ -94,7 +137,7 @@ func (n *Node) init() {
 	}
 
 	// load node stake account private key
-	file := path.Join(Conf.Environment.Workspace, keystoreDir, n.StakeAccount)
+	file := path.Join(Conf.Environment.LocalWorkspace, keystoreDir, n.StakeAccount)
 	if bz, err = ioutil.ReadFile(file); err != nil {
 		panic(fmt.Sprintf("load keystore err %v", err))
 	}
@@ -124,14 +167,23 @@ func (n *Node) StakeAddr() common.Address {
 	return common.HexToAddress(n.StakeAccount)
 }
 
+func (n *Node) RPCAddr() string {
+	return fmt.Sprintf("http://%s:%s", n.Host, n.RPCPort)
+}
+
 type Env struct {
-	Workspace    string
-	NodeIdxStart int
-	NodeNum      int
-	NetworkID    int
-	StartRPCPort int
-	StartP2PPort int
-	LogLevel     int
+	Remote          bool
+	LocalWorkspace  string
+	RemoteWorkspace string
+	NetworkID       int
+	LogLevel        int
+	IpList          []string
+}
+
+type Network struct {
+	NodeIndexStart    int
+	GenesisNodeNumber int
+	ValidatorsNumber  int
 }
 
 func Init(path string) {
@@ -165,7 +217,7 @@ func LoadConfig(filepath string, ins interface{}) error {
 }
 
 func LoadParams(fileName string, data interface{}) error {
-	filePath := files.FullPath(Conf.Environment.Workspace, testCaseDir, fileName)
+	filePath := files.FullPath(Conf.Environment.LocalWorkspace, testCaseDir, fileName)
 	bz, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return err
@@ -174,7 +226,7 @@ func LoadParams(fileName string, data interface{}) error {
 }
 
 func LoadAccount(keyhex string) *ecdsa.PrivateKey {
-	filepath := files.FullPath(Conf.Environment.Workspace, keystoreDir, keyhex)
+	filepath := files.FullPath(Conf.Environment.LocalWorkspace, keystoreDir, keyhex)
 	keyJson, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		panic(fmt.Errorf("failed to read file: [%v]", err))
@@ -189,11 +241,11 @@ func LoadAccount(keyhex string) *ecdsa.PrivateKey {
 }
 
 func ShellPath(fileName string) string {
-	return files.FullPath(Conf.Environment.Workspace, "", fileName)
+	return files.FullPath(Conf.Environment.LocalWorkspace, "", fileName)
 }
 
 func GenesisNodeNumber() int {
-	filepath := files.FullPath(Conf.Environment.Workspace, setupDir, "static-nodes.json")
+	filepath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, "static-nodes.json")
 	keyJson, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		panic(fmt.Errorf("failed to read file: [%v]", err))

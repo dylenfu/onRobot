@@ -1,9 +1,6 @@
 package core
 
 import (
-	"math/big"
-	"strconv"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/palettechain/onRobot/config"
@@ -11,129 +8,102 @@ import (
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
-// 检查数据一致性(重要): 轮询N个节点，比较其查询所得的lastRewardBlock是否一致。非验证节点同步速度可能会慢上几个块.
-func Consistency() (succeed bool) {
+func AddValidators() (succeed bool) {
 	var params struct {
-		UrlList []string
+		InitAmount int
 	}
-	if err := config.LoadParams("Consistency.json", &params); err != nil {
+
+	if err := config.LoadParams("AddValidators.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
 
-	clients := make([]*sdk.Client, len(params.UrlList))
-	for i := 0; i < len(params.UrlList); i++ {
-		clients[i] = sdk.NewSender(params.UrlList[i], config.AdminKey)
-	}
+	nodes := config.Conf.ValidatorNodes()
+	balances := make([]int, len(nodes))
 
-	currentBlkNo := clients[0].GetBlockNumber() - 10
-
-	var i, blkNo uint64 = 0, 10
-	for i = currentBlkNo - blkNo; i < currentBlkNo; i++ {
-		lastRdBlk := big.NewInt(0)
-		lastRdProposer := common.Address{}
-		queryBlkHex := "0x" + strconv.FormatInt(int64(i), 16)
-		for i := 0; i < len(params.UrlList); i++ {
-			rdBlk, err := clients[i].GetRewardRecordBlock(queryBlkHex)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			rdProp, err := clients[i].GetLatestRewardProposer(queryBlkHex)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-
-			if i == 0 {
-				lastRdBlk = rdBlk
-				lastRdProposer = rdProp
-				continue
-			}
-			if lastRdBlk.Cmp(rdBlk) != 0 {
-				log.Errorf("%s query result %d, %s query result %d", clients[0].Url(), lastRdBlk.Uint64(), clients[i].Url(), rdBlk.Uint64())
-			}
-			if lastRdProposer != rdProp {
-				log.Errorf("%s query result %s, %s query result %s", clients[0].Url(), lastRdProposer.Hex(), clients[i].Url(), rdProp.Hex())
-			}
-		}
-		log.Infof("last reward block %d, last reward proposer %s", lastRdBlk.Uint64(), lastRdProposer.Hex())
-	}
-
-	return true
-}
-
-func AddValidators() (succeed bool) {
-	wait(1)
-	sv := loadValidatorsConfig()
-	start, end, _ := sv.ValidatorsIndexStart, sv.ValidatorsIndexEnd, sv.ValidatorsNumber
-
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
-	nodeList := make([]common.Address, 0)
-
-	// check balance before stake
-	for i := start; i <= end; i++ {
-		node := config.Conf.Nodes[i]
-		nodeList = append(nodeList, node.NodeAddr())
+	// check and add balance before stake
+	for i, node := range nodes {
 		data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
 		if err != nil {
-			log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), sv.ValidatorInitAmount)
+			log.Error("failed to check %s balance", node.NodeAddr().Hex())
 			return
 		}
+		balances[i] = int(plt.PrintUPLT(data))
 		log.Infof("%s balance before stake %d", node.NodeAddr().Hex(), plt.PrintUPLT(data))
+	}
+	depoistHashList := make([]common.Hash, 0)
+	for i, balance := range balances {
+		if balance < params.InitAmount {
+			addAmount := params.InitAmount - balance
+			node := nodes[i]
+			hash, err := admcli.PLTTransfer(node.StakeAddr(), plt.MultiPLT(addAmount))
+			if err != nil {
+				log.Errorf("failed to deposit to node %s, amount %d", node.NodeAddr().Hex(), addAmount)
+				return
+			} else {
+				depoistHashList = append(depoistHashList, hash)
+				balances[i] += addAmount
+			}
+		}
+	}
+	wait(2)
+	if err := DumpHashList(depoistHashList, "deposit for validator"); err != nil {
+		log.Error(err)
+		return
 	}
 
 	// stake and dump event log
-	stakeAmt := plt.MultiPLT(sv.ValidatorInitAmount)
-	hashList := make([]common.Hash, 0)
+	stakeHashList := make([]common.Hash, 0)
 	log.Infof("validators stake at block %d", admcli.GetBlockNumber())
-	for i := start; i <= end; i++ {
-		node := config.Conf.Nodes[i]
-		nodecli := sdk.NewSender(config.Conf.BaseRPCUrl, node.StakePrivateKey())
-		hash, err := nodecli.Stake(node.NodeAddr(), node.StakeAddr(), stakeAmt, false)
+	for i, node := range nodes {
+		nodecli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
+		stkAmt := balances[i]
+		hash, err := nodecli.Stake(node.NodeAddr(), node.StakeAddr(), plt.MultiPLT(stkAmt), false)
 		if err != nil {
-			log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), sv.ValidatorInitAmount)
+			log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), stkAmt)
 			return
 		}
-		hashList = append(hashList, hash)
+		stakeHashList = append(stakeHashList, hash)
 	}
 	wait(2)
-	if err := DumpHashList(hashList, "stake"); err != nil {
+	if err := DumpHashList(stakeHashList, "stake"); err != nil {
 		return
 	}
 	wait(2 * config.Conf.RewardEffectivePeriod)
 
 	// check balance after stake
-	for i := start; i <= end; i++ {
-		node := config.Conf.Nodes[i]
+	for _, node := range nodes {
 		data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
 		if err != nil {
-			log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), sv.ValidatorInitAmount)
+			log.Error("failed to check %s's balance after stake, err :%v", node.NodeAddr().Hex(), err)
 			return
 		}
 		log.Infof("%s balance after stake %d", node.NodeAddr().Hex(), plt.PrintUPLT(data))
 	}
 
 	// admin add validators
-	hashList = make([]common.Hash, 0)
-	for i := start; i <= end; i++ {
-		node := config.Conf.Nodes[i]
+	adminAddValidatorHashList := make([]common.Hash, 0)
+	for _, node := range nodes {
 		hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), false)
 		if err != nil {
 			log.Errorf("failed to add validator %s, hash %s, [%v]", node.NodeAddr().Hex(), hash.Hex(), err)
 			return
 		}
-		hashList = append(hashList, hash)
+		adminAddValidatorHashList = append(adminAddValidatorHashList, hash)
 	}
 	log.Infof("add validator at block %d", admcli.GetBlockNumber())
 	wait(2)
-	if err := DumpHashList(hashList, "addValidator"); err != nil {
+	if err := DumpHashList(adminAddValidatorHashList, "admin add validators"); err != nil {
 		return
 	}
 
 	log.Infof("check pending validators at block %d", admcli.GetBlockNumber())
+	expectNodeAddrList := make([]common.Address, len(nodes))
+	for i, node := range nodes {
+		expectNodeAddrList[i] = node.NodeAddr()
+	}
 	validators := admcli.GetAllValidators("latest")
-	if !HasAddrs(validators, nodeList) {
+	if !HasAddrs(validators, expectNodeAddrList) {
 		log.Error("validators not pending, check palette log")
 		return
 	}
@@ -143,7 +113,7 @@ func AddValidators() (succeed bool) {
 	wait(config.Conf.RewardEffectivePeriod)
 	log.Infof("check effective validators at block %d", admcli.GetBlockNumber())
 	effectiveValidators := admcli.GetEffectiveValidators("latest")
-	if !HasAddrs(effectiveValidators, nodeList) {
+	if !HasAddrs(effectiveValidators, expectNodeAddrList) {
 		log.Error("validators not effective, check palette log")
 		return
 	}
@@ -155,7 +125,8 @@ func AddValidators() (succeed bool) {
 }
 
 func GetValidators() bool {
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	baseUrl := config.Conf.Nodes[0].RPCAddr()
+	admcli = sdk.NewSender(baseUrl, config.AdminKey)
 	effectiveValidators := admcli.GetEffectiveValidators("latest")
 	for _, v := range effectiveValidators {
 		log.Infof("validator %s", v.Hex())
@@ -181,8 +152,8 @@ func Reward() (succeed bool) {
 		log.Error(err)
 		return
 	}
-
-	admcli = sdk.NewSender(config.Conf.BaseRPCUrl, config.AdminKey)
+	baseUrl := config.Conf.Nodes[0].RPCAddr()
+	admcli = sdk.NewSender(baseUrl, config.AdminKey)
 	rewardPool := common.HexToAddress(config.Conf.BaseRewardPool)
 
 	// check balance before reward
