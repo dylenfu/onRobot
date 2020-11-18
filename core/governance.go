@@ -145,7 +145,7 @@ func Reward() (succeed bool) {
 		ExpectRewardAmountPerValidator int
 	}
 
-	if err := config.LoadParams("CheckReward.json", &params); err != nil {
+	if err := config.LoadParams("Reward.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
@@ -294,14 +294,18 @@ func Proposal() (succeed bool) {
 	}
 
 	// check global params
-	newvalue, err := admcli.GetGlobalParams(params.ProposalType, "latest")
+	data, err := admcli.GetGlobalParams(params.ProposalType, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	log.Infof("global params changed to %d", plt.PrintUPLT(newvalue))
-
+	expect, actual := params.ProposalValue, int(plt.PrintUPLT(data))
+	if expect != actual {
+		log.Errorf("proposal failed to set global params, expect %d, actual %d", expect, actual)
+	} else {
+		log.Infof("global params changed to %d", actual)
+	}
 	return true
 }
 
