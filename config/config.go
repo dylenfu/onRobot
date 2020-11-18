@@ -79,13 +79,13 @@ func (c *Config) IpList() []string {
 	return list
 }
 
-func (c *Config) GenesisNodes() []*Node {
+func (c *Config) GenesisNodes() Nodes {
 	start := c.Network.NodeIndexStart
 	end := start + c.Network.GenesisNodeNumber - 1
 	return c.getRangeNodes(start, end)
 }
 
-func (c *Config) ValidatorNodes() []*Node {
+func (c *Config) ValidatorNodes() Nodes {
 	genesisStart := c.Network.NodeIndexStart
 	genesisEnd := genesisStart + c.Network.GenesisNodeNumber - 1
 
@@ -94,17 +94,35 @@ func (c *Config) ValidatorNodes() []*Node {
 	return c.getRangeNodes(start, end)
 }
 
-func (c *Config) AllNodes() []*Node {
+func (c *Config) AllNodes() Nodes {
 	start := c.Network.NodeIndexStart
 	num := c.Network.GenesisNodeNumber + c.Network.ValidatorsNumber
 	end := start + num - 1
 	return c.getRangeNodes(start, end)
 }
 
-func (c *Config) getRangeNodes(start, end int) []*Node {
+func (c *Config) getRangeNodes(start, end int) Nodes {
 	list := make([]*Node, 0)
 	for i := start; i <= end; i++ {
 		list = append(list, c.Nodes[i])
+	}
+	return list
+}
+
+type Nodes []*Node
+
+func (n Nodes) Validators() []common.Address {
+	list := make([]common.Address, len(n))
+	for i, node := range n {
+		list[i] = node.NodeAddr()
+	}
+	return list
+}
+
+func (n Nodes) StakeAccounts() []common.Address {
+	list := make([]common.Address, len(n))
+	for i, node := range n {
+		list[i] = node.StakeAddr()
 	}
 	return list
 }

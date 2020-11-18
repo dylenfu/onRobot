@@ -3,6 +3,7 @@ package core
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"strconv"
 	"time"
 
@@ -70,6 +71,20 @@ func HasAddrs(src, dst []common.Address) bool {
 	}
 
 	return true
+}
+
+func getBalances(list []common.Address, curBlkNoHex string) (map[common.Address]int, error) {
+	balancesMap := make(map[common.Address]int)
+	for _, addr := range list {
+		data, err := admcli.BalanceOf(addr, curBlkNoHex)
+		if err != nil {
+			return nil, err
+		}
+		balance := plt.PrintUPLT(data)
+		balancesMap[addr] = int(balance)
+		log.Infof("%s balance %d PLT", addr.Hex(), balance)
+	}
+	return balancesMap, nil
 }
 
 const (
