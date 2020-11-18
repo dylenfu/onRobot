@@ -1,8 +1,5 @@
 {
-  "StakeAmountIsSame": true,
-  "RewardBlocks": 10,
-  "ValidatorsIndexStart": 5,
-  "ValidatorsNumber": 3,
+  "RewardBlocks": 12,
   "ExpectRewardPoolAmount": 32,
   "ExpectRewardAmountPerValidator": 48
 }

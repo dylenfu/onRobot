@@ -15,12 +15,12 @@ compile:
 
 compile-local:
 	cp config/local.json build/target/config.json
+	cp build/target/setup/local-nodes.json build/target/setup/static-nodes.json
 	make compile
 
 compile-remote:
 	cp config/remote.json build/target/config.json
-	rm -rf build/target/setup/static-nodes.json
-	mv build/target/setup/scp-nodes.json build/target/setup/static-nodes.json
+	cp build/target/setup/remote-nodes.json build/target/setup/static-nodes.json
 	make compile
 
 compile-linux:

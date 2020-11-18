@@ -140,10 +140,7 @@ func DelValidators() bool {
 
 func Reward() (succeed bool) {
 	var params struct {
-		StakeAmountIsSame              bool
 		RewardBlocks                   int
-		ValidatorsIndexStart           int
-		ValidatorsNumber               int
 		ExpectRewardPoolAmount         int
 		ExpectRewardAmountPerValidator int
 	}
@@ -152,52 +149,55 @@ func Reward() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	baseUrl := config.Conf.Nodes[0].RPCAddr()
-	admcli = sdk.NewSender(baseUrl, config.AdminKey)
 	rewardPool := common.HexToAddress(config.Conf.BaseRewardPool)
+	nodes := config.Conf.ValidatorNodes()
+
+	setBalance := func(addr common.Address, curBlkNoHex string, balancesMap map[common.Address]int) error {
+		data, err := admcli.BalanceOf(addr, curBlkNoHex)
+		if err != nil {
+			return err
+		}
+		balance := plt.PrintUPLT(data)
+		balancesMap[addr] = int(balance)
+		log.Infof("%s balance %d", addr.Hex(), balance)
+		return nil
+	}
+
+	checkNodesBalance := func(curBlkNo uint64) (map[common.Address]int, error) {
+		curBlkNoHex := BlockNumber2Hex(curBlkNo)
+		balancesMap := make(map[common.Address]int)
+		// check validators
+		for _, node := range nodes {
+			if err := setBalance(node.NodeAddr(), curBlkNoHex, balancesMap); err != nil {
+				return nil, err
+			}
+		}
+		// check reward pool
+		if err := setBalance(rewardPool, curBlkNoHex, balancesMap); err != nil {
+			return nil, err
+		}
+		return balancesMap, nil
+	}
 
 	// check balance before reward
-	start, end := params.ValidatorsIndexStart, params.ValidatorsIndexStart+params.ValidatorsNumber-1
-	balancesBeforeCheckReward := make(map[common.Address]int)
-	log.Infof("check balance before testing reward at block %d", admcli.GetBlockNumber())
-	for i := start; i <= end; i++ {
-		node := config.Conf.Nodes[i]
-		addr := node.NodeAddr()
-		if balance, err := admcli.BalanceOf(addr, "latest"); err != nil {
-			log.Errorf("%s check balance err %v", addr.Hex(), err)
-			return
-		} else {
-			balancesBeforeCheckReward[addr] = int(plt.PrintUPLT(balance))
-		}
-	}
-	if balance, err := admcli.BalanceOf(rewardPool, "latest"); err != nil {
-		log.Errorf("%s check balance err %v", rewardPool.Hex(), err)
+	blkBeforeCheckBalance := admcli.GetBlockNumber()
+
+	log.Infof("check balance before testing reward at block %d", blkBeforeCheckBalance)
+	balancesBeforeCheckReward, err := checkNodesBalance(blkBeforeCheckBalance)
+	if err != nil {
+		log.Error("failed to check balance before testing, err: %v", err)
 		return
-	} else {
-		balancesBeforeCheckReward[rewardPool] = int(plt.PrintUPLT(balance))
 	}
 
 	// waiting for blocks
-	wait(params.RewardBlocks + 2)
+	wait(params.RewardBlocks)
 
 	// check balance after reward
-	balancesAfterCheckReward := make(map[common.Address]int)
-	log.Infof("check balance after testing reward at block %d, waited for %d blocks", admcli.GetBlockNumber(), params.RewardBlocks)
-	for i := start; i <= end; i++ {
-		node := config.Conf.Nodes[i]
-		addr := node.NodeAddr()
-		balance, err := admcli.BalanceOf(addr, "latest")
-		if err != nil {
-			log.Errorf("%s check balance err %v", addr.Hex(), err)
-			return
-		}
-		balancesAfterCheckReward[addr] = int(plt.PrintUPLT(balance))
-	}
-	if balance, err := admcli.BalanceOf(rewardPool, "latest"); err != nil {
-		log.Errorf("%s check balance err %v", rewardPool.Hex(), err)
+	log.Infof("check balance after testing reward at block %d", blkBeforeCheckBalance)
+	balancesAfterCheckReward, err := checkNodesBalance(blkBeforeCheckBalance)
+	if err != nil {
+		log.Error("failed to check balance after testing, err: %v", err)
 		return
-	} else {
-		balancesAfterCheckReward[rewardPool] = int(plt.PrintUPLT(balance))
 	}
 
 	for addr, bBefRd := range balancesBeforeCheckReward {

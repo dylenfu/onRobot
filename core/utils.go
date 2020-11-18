@@ -3,6 +3,7 @@ package core
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -28,6 +29,11 @@ func gc() {
 
 func wait(nBlock int) {
 	time.Sleep(time.Duration(config.Conf.BlockPeriod) * time.Duration(nBlock))
+}
+
+func BlockNumber2Hex(data uint64) string {
+	str := strconv.FormatInt(int64(data), 16)
+	return "0x" + str
 }
 
 func PrivKey2Addr(pk *ecdsa.PrivateKey) common.Address {
