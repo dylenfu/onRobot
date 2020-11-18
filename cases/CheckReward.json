@@ -1,5 +1,5 @@
 {
   "RewardBlocks": 12,
-  "ExpectRewardPoolAmount": 32,
-  "ExpectRewardAmountPerValidator": 48
+  "ExpectRewardPoolAmount": 24,
+  "ExpectRewardAmountPerValidator": 32
 }

@@ -101,6 +101,15 @@ func (c *Config) AllNodes() Nodes {
 	return c.getRangeNodes(start, end)
 }
 
+func (c *Config) GetNodeByIndex(index int) *Node {
+	for _, n := range c.Nodes {
+		if n.Index == index {
+			return n
+		}
+	}
+	return nil
+}
+
 func (c *Config) getRangeNodes(start, end int) Nodes {
 	list := make([]*Node, 0)
 	for i := start; i <= end; i++ {

@@ -160,10 +160,9 @@ func (c *Client) SendRawTransaction(hash common.Hash, signedTx string) (common.H
 }
 
 func (c *Client) DumpEventLog(hash common.Hash) error {
-	raw := &types.Receipt{}
-
-	if err := c.Call(raw, "eth_getTransactionReceipt", hash.Hex()); err != nil {
-		return fmt.Errorf("failed to get nonce: [%v]", err)
+	raw, err := c.GetReceipt(hash)
+	if err != nil {
+		return fmt.Errorf("faild to get receipt %s", hash.Hex())
 	}
 
 	for _, event := range raw.Logs {
@@ -174,6 +173,14 @@ func (c *Client) DumpEventLog(hash common.Hash) error {
 		}
 	}
 	return nil
+}
+
+func (c *Client) GetReceipt(hash common.Hash) (*types.Receipt, error) {
+	raw := &types.Receipt{}
+	if err := c.Call(raw, "eth_getTransactionReceipt", hash.Hex()); err != nil {
+		return nil, err
+	}
+	return raw, nil
 }
 
 func (c *Client) CallContract(caller, contractAddr common.Address, payload []byte, blockNum string) ([]byte, error) {

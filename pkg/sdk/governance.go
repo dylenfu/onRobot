@@ -26,6 +26,26 @@ func (c *Client) Stake(validator, stakeAccount common.Address, amount *big.Int, 
 	return c.SendGovernanceTx(payload)
 }
 
+func (c *Client) CheckValidator(validator common.Address, blockNum string) bool {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodCheckValidator, validator)
+	if err != nil {
+		return false
+	}
+
+	enc, err := c.CallGovernance(payload, blockNum)
+	if err != nil {
+		return false
+	}
+
+	output := new(governance.MethodCheckValidatorOutput)
+	err = utils.UnpackOutputs(GovernanceABI, governance.MethodCheckValidator, output, enc)
+	if err != nil {
+		return false
+	}
+
+	return output.Succeed
+}
+
 func (c *Client) GetEffectiveValidators(blockNum string) []common.Address {
 	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetEffectiveValidators)
 	if err != nil {
@@ -121,6 +141,83 @@ func (c *Client) GetLastRewardBlock(blockNum string) (*big.Int, error) {
 	err = utils.UnpackOutputs(GovernanceABI, governance.MethodGetLastRewardBlockHeight, output, enc)
 	if err != nil {
 		return utils.EmptyBig, fmt.Errorf("failed to unpack encode bytes [%v]: [%v]", common.Bytes2Hex(enc), err)
+	}
+
+	return output.Value, nil
+}
+
+func (c *Client) Propose(proposalType uint8, value *big.Int) (common.Hash, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodPropose, proposalType, value)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	return c.SendGovernanceTx(payload)
+}
+
+func (c *Client) GetProposalFromReceipt(hash common.Hash) (common.Address, *governance.MethodGetProposalOutput, error) {
+	raw, err := c.GetReceipt(hash)
+	if err != nil {
+		return utils.EmptyAddress, nil, err
+	}
+	if len(raw.Logs) < 1 {
+		return utils.EmptyAddress, nil, fmt.Errorf("receipt %s has no logs", hash.Hex())
+	}
+	event := raw.Logs[0]
+
+	output := new(governance.MethodGetProposalOutput)
+	output.Proposer = utils.Hash2Address(event.Topics[1])
+	proposalID := utils.Hash2Address(event.Topics[2])
+	output.ProposalType = utils.Hash2Uint8(event.Topics[3])
+	output.EndBlock = utils.Hash2Big(event.Topics[4])
+
+	return proposalID, output, nil
+}
+
+func (c *Client) GetProposal(proposalID common.Address, blockNum string) (*governance.MethodGetProposalOutput, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetProposal, proposalID)
+	if err != nil {
+		return nil, err
+	}
+
+	enc, err := c.CallGovernance(payload, blockNum)
+	if err != nil {
+		return nil, err
+	}
+
+	output := new(governance.MethodGetProposalOutput)
+	err = utils.UnpackOutputs(GovernanceABI, governance.MethodGetProposal, output, enc)
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func (c *Client) Vote(proposalID common.Address) (common.Hash, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodVote, proposalID)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	return c.SendGovernanceTx(payload)
+}
+
+func (c *Client) GetGlobalParams(proposalType uint8, blockNum string) (*big.Int, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetGlobalParams, proposalType)
+	if err != nil {
+		return nil, err
+	}
+
+	enc, err := c.CallGovernance(payload, blockNum)
+	if err != nil {
+		return nil, err
+	}
+
+	output := new(governance.MethodGetGlobalParamsOutput)
+	err = utils.UnpackOutputs(GovernanceABI, governance.MethodGetGlobalParams, output, enc)
+	if err != nil {
+		return nil, err
 	}
 
 	return output.Value, nil

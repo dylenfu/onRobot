@@ -65,7 +65,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("delValidators", DelValidators)
 	frame.Tool.RegMethod("getValidators", GetValidators)
 	frame.Tool.RegMethod("reward", Reward)
-	frame.Tool.RegMethod("stake", Stake)
-	frame.Tool.RegMethod("propose", Propose)
-	frame.Tool.RegMethod("vote", Vote)
+	frame.Tool.RegMethod("delegate", Delegate)
+	frame.Tool.RegMethod("proposal", Proposal)
+	frame.Tool.RegMethod("globalParams", GlobalParams)
 }

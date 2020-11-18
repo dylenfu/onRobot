@@ -3,11 +3,11 @@ package core
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
@@ -85,6 +85,33 @@ func getBalances(list []common.Address, curBlkNoHex string) (map[common.Address]
 		log.Infof("%s balance %d PLT", addr.Hex(), balance)
 	}
 	return balancesMap, nil
+}
+
+func subBalanceMap(m1, m2 map[common.Address]int) (map[common.Address]int, error) {
+	res := make(map[common.Address]int)
+	for addr, v1 := range m1 {
+		v2, exist := m2[addr]
+		if !exist {
+			return nil, fmt.Errorf("missing check %s's balance after reward", addr.Hex())
+		}
+		res[addr] = v2 - v1
+	}
+	return res, nil
+}
+
+func getAndCheckValidator(nodeIndexList []int) (config.Nodes, error) {
+	nodes := make(config.Nodes, 0)
+	for _, nodeIndex := range nodeIndexList {
+		node := config.Conf.GetNodeByIndex(nodeIndex)
+		if node == nil {
+			return nil, fmt.Errorf("failed to get validator node %d", nodeIndex)
+		}
+		if !admcli.CheckValidator(node.NodeAddr(), "latest") {
+			return nil, fmt.Errorf("%s is not valid validator", node.NodeAddr().Hex())
+		}
+		nodes = append(nodes, node)
+	}
+	return nodes, nil
 }
 
 const (
