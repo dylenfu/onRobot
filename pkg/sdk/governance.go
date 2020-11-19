@@ -223,6 +223,15 @@ func (c *Client) GetGlobalParams(proposalType uint8, blockNum string) (*big.Int,
 	return output.Value, nil
 }
 
+func (c *Client) Reward(validators []common.Address, blockNum *big.Int) (common.Hash, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodReward, validators, blockNum)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	return c.SendGovernanceTx(payload)
+}
+
 func (c *Client) packGovernance(method string, args ...interface{}) ([]byte, error) {
 	return utils.PackMethod(GovernanceABI, method, args...)
 }

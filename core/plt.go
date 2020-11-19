@@ -150,7 +150,7 @@ func Transfer() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	wait(1)
+	wait(2)
 	if err := admcli.DumpEventLog(hash); err != nil {
 		log.Error(err)
 		return
@@ -221,7 +221,7 @@ func Approve() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	wait(1)
+	wait(2)
 	if err := cli.DumpEventLog(hash); err != nil {
 		log.Error(err)
 		return

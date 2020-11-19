@@ -32,6 +32,11 @@ func (c *Client) Address() common.Address {
 	return crypto.PubkeyToAddress(c.Key.PublicKey)
 }
 
+func (c *Client) Reset(key *ecdsa.PrivateKey) *Client {
+	c.Key = key
+	return c
+}
+
 func dialNode(url string) *rpc.Client {
 	client, err := rpc.Dial(url)
 	if err != nil {

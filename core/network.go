@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/palettechain/onRobot/config"
+	"time"
 )
 
 // --------------------------------
@@ -145,6 +146,7 @@ func ReStartAllNetwork() (succeed bool) {
 	if !StopAllNetwork() {
 		return
 	}
+	time.Sleep(3 * time.Second)
 	if !StartAllNetwork() {
 		return
 	}

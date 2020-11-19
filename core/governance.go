@@ -248,6 +248,35 @@ func Reward() (succeed bool) {
 	return true
 }
 
+// 分润动作不允许外部调用，palette中通过在miner.worker中对proposer的交易进行过滤实现这一屏蔽功能
+// 构造一笔reward交易，选择任意一个validator发送，日志观察该交易是否进入到native contract,
+// 通过查询latestRewardRecordBlock确认这笔交易并没有写入梅克尔树
+func FakeReward() (succeed bool) {
+	curBlkNo := admcli.GetBlockNumber()
+	blockNum := new(big.Int).SetUint64(curBlkNo + 100)
+	validators := config.Conf.ValidatorNodes().Validators()
+	cli := admcli.Reset(config.Conf.ValidatorNodes()[0].PrivateKey())
+
+	if hash, err := cli.Reward(validators, blockNum); err != nil {
+		log.Error(err)
+		return
+	} else {
+		log.Infof("fake reward tx hash %s", hash.Hex())
+	}
+
+	for i:=0;i<3;i++ {
+		latestBlk, err := cli.GetRewardRecordBlock("latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		log.Infof("current block number %d, latest record block %d", admcli.GetBlockNumber(), latestBlk)
+		wait(1)
+	}
+	return true
+}
+
 // 节点代理用户质押一定数量的PLT
 func Delegate() bool {
 	return true
