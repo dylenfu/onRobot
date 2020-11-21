@@ -1,7 +1,7 @@
 {
   "ProposerNodeIndex": 5,
-  "ProposalType": 1,
-  "ProposalValue": 13,
+  "ProposalType": 2,
+  "ProposalValue": 0,
   "VoteNodeIndexList": [
     6,
     7

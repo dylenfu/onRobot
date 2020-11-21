@@ -35,10 +35,12 @@ func Endpoint() {
 	frame.Tool.RegMethod("resetValidator", ResetValidatorNetwork)
 
 	// total network
+	frame.Tool.RegMethod("init", InitAllNetwork)
 	frame.Tool.RegMethod("start", StartAllNetwork)
 	frame.Tool.RegMethod("stop", StopAllNetwork)
 	frame.Tool.RegMethod("clear", ClearAllNetwork)
 	frame.Tool.RegMethod("restart", ReStartAllNetwork)
+	frame.Tool.RegMethod("reset", ResetAllNetwork)
 
 	// sync node
 	//frame.Tool.RegMethod("startSyncNode", StartSyncNode)

@@ -166,7 +166,142 @@ func GetValidators() bool {
 	return true
 }
 
-func DelValidators() bool {
+// todo:
+func DelValidators() (succeed bool) {
+	var (
+		params struct {
+			InitAmount int
+		}
+
+		nodes              = config.Conf.ValidatorNodes()
+		balances           = make([]int, len(nodes))
+		expectNodeAddrList = make([]common.Address, len(nodes))
+		err                error
+	)
+
+	if err = config.LoadParams("AddValidators.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	// check balance before stake
+	{
+		for i, node := range nodes {
+			data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
+			if err != nil {
+				log.Error("failed to check %s balance", node.NodeAddr().Hex())
+				return
+			}
+			balances[i] = int(plt.PrintUPLT(data))
+			log.Infof("%s balance before stake %d", node.NodeAddr().Hex(), plt.PrintUPLT(data))
+		}
+	}
+
+	// deposit and dump event log
+	{
+		depositHashList := make([]common.Hash, 0)
+		for i, balance := range balances {
+			if balance < params.InitAmount {
+				addAmount := params.InitAmount - balance
+				node := nodes[i]
+				hash, err := admcli.PLTTransfer(node.StakeAddr(), plt.MultiPLT(addAmount))
+				if err != nil {
+					log.Errorf("failed to deposit to node %s, amount %d", node.NodeAddr().Hex(), addAmount)
+					return
+				} else {
+					depositHashList = append(depositHashList, hash)
+					balances[i] += addAmount
+				}
+			}
+		}
+		wait(2)
+		if err := DumpHashList(depositHashList, "deposit for validator"); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// stake and dump event log
+	{
+		stakeHashList := make([]common.Hash, 0)
+		log.Infof("validators stake at block %d", admcli.GetBlockNumber())
+		for i, node := range nodes {
+			nodecli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
+			stkAmt := balances[i]
+			hash, err := nodecli.Stake(node.NodeAddr(), node.StakeAddr(), plt.MultiPLT(stkAmt), false)
+			if err != nil {
+				log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), stkAmt)
+				return
+			}
+			stakeHashList = append(stakeHashList, hash)
+		}
+		wait(2)
+		if err := DumpHashList(stakeHashList, "stake"); err != nil {
+			return
+		}
+	}
+
+	wait(2 * config.Conf.RewardEffectivePeriod)
+
+	// check balance after stake
+	{
+		for _, node := range nodes {
+			data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
+			if err != nil {
+				log.Error("failed to check %s's balance after stake, err :%v", node.NodeAddr().Hex(), err)
+				return
+			}
+			log.Infof("%s balance after stake %d", node.NodeAddr().Hex(), plt.PrintUPLT(data))
+		}
+	}
+
+	// admin add validators and dump event logs
+	{
+		adminAddValidatorHashList := make([]common.Hash, 0)
+		for _, node := range nodes {
+			hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), false)
+			if err != nil {
+				log.Errorf("failed to add validator %s, hash %s, [%v]", node.NodeAddr().Hex(), hash.Hex(), err)
+				return
+			}
+			adminAddValidatorHashList = append(adminAddValidatorHashList, hash)
+		}
+		log.Infof("add validator at block %d", admcli.GetBlockNumber())
+		wait(2)
+		if err := DumpHashList(adminAddValidatorHashList, "admin add validators"); err != nil {
+			return
+		}
+	}
+
+	// check pending validators
+	{
+		log.Infof("check pending validators at block %d", admcli.GetBlockNumber())
+		for i, node := range nodes {
+			expectNodeAddrList[i] = node.NodeAddr()
+		}
+		validators := admcli.GetAllValidators("latest")
+		if !HasAddrs(validators, expectNodeAddrList) {
+			log.Error("validators not pending, check palette log")
+			return
+		}
+		log.Infof("check pending validators success")
+	}
+
+	wait(config.Conf.RewardEffectivePeriod)
+
+	// check effective validators
+	{
+		log.Infof("check effective validators at block %d", admcli.GetBlockNumber())
+		effectiveValidators := admcli.GetEffectiveValidators("latest")
+		if !HasAddrs(effectiveValidators, expectNodeAddrList) {
+			log.Error("validators not effective, check palette log")
+			return
+		}
+		for _, v := range effectiveValidators {
+			log.Infof("add validator %s success", v.Hex())
+		}
+	}
+
 	return true
 }
 
@@ -315,12 +450,12 @@ func Proposal() (succeed bool) {
 		}
 
 		// check proposal type
-		if params.ProposalType == 0 || params.ProposalType > 3 {
+		if params.ProposalType == 0 || params.ProposalType > 2 {
 			log.Errorf("invalid proposal type %d", params.ProposalType)
 			return
 		}
 		// check proposal value
-		if params.ProposalValue <= 0 {
+		if params.ProposalValue < 0 {
 			log.Errorf("invalid proposal value %d", params.ProposalValue)
 			return
 		}
@@ -355,8 +490,8 @@ func Proposal() (succeed bool) {
 			log.Error(err)
 			return
 		} else {
-			log.Infof("proposalID %s, proposer %s, proposal type %d, value %v, end block %d",
-				proposalID.Hex(), proposerNode.NodeAddr().Hex(), proposal.ProposalType, proposalValue, proposal.EndBlock.Uint64())
+			log.Infof("proposalID %s, hash %s, proposer %s, proposal type %d, value %v, end block %d",
+				proposalID.Hex(), hash.Hex(), proposerNode.NodeAddr().Hex(), proposal.ProposalType, proposalValue, proposal.EndBlock.Uint64())
 		}
 	}
 
@@ -386,7 +521,7 @@ func Proposal() (succeed bool) {
 	// check proposal status
 	{
 		if proposal, err = admcli.GetProposal(proposalID, "latest"); err != nil {
-			log.Error(err)
+			log.Errorf("failed to get proposal, err %v", err)
 			return
 		}
 		if proposal.Passed != true {
@@ -399,7 +534,7 @@ func Proposal() (succeed bool) {
 	{
 		data, err := admcli.GetGlobalParams(params.ProposalType, "latest")
 		if err != nil {
-			log.Error(err)
+			log.Error("failed to get global params, err %v", err)
 			return
 		}
 

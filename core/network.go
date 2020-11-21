@@ -153,6 +153,16 @@ func ReStartAllNetwork() (succeed bool) {
 	return true
 }
 
+func InitAllNetwork() (succeed bool) {
+	if !InitGenesisNetwork() {
+		return
+	}
+	if !InitValidatorNetwork() {
+		return
+	}
+	return true
+}
+
 func StartAllNetwork() (succeed bool) {
 	nodes := config.Conf.AllNodes()
 	for _, node := range nodes {
@@ -180,6 +190,19 @@ func ClearAllNetwork() (succeed bool) {
 	}
 
 	return true
+}
+
+func ResetAllNetwork() (succeed bool) {
+	if !StopAllNetwork() {
+		return
+	}
+	if !ClearAllNetwork() {
+		return
+	}
+	if !InitAllNetwork() {
+		return
+	}
+	return StartAllNetwork()
 }
 
 //// --------------------------------
