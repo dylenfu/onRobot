@@ -495,7 +495,18 @@ func SpareNode() (succeed bool) {
 	return true
 }
 
-// 1.检查节点路径是否存在，如果是remote需要
+// 添加/删除节点
+// 1.使用spareNode初始化节点
+// 2.启动节点, 同步块高度, 这里默认sleep 5个块，根据实际情况调整
+// 3.充值5000w PLT, 余额足够则不充
+// 4.质押5000w PLT
+// 5.管理员添加节点
+// 6.检查质押量
+// 7.检查reward的PLT数量，观察log中proposer size应该是多了一个
+// 8.管理员删除节点
+// 9.取消质押
+// 10.查看余额
+// 11.关停节点
 func DelValidator() (succeed bool) {
 	var params struct {
 		InitAmount int
@@ -775,6 +786,123 @@ func Proposal() (succeed bool) {
 		} else {
 			log.Infof("global params changed to %d", actual)
 		}
+	}
+
+	return true
+}
+
+// 提案修改分润周期
+// 1.node5提案修改分润周期，默认为5，这里修改为10(测试完后修改json文件中参数为5，再次运行将period改回来)
+// 2.观察log
+func RewardPeriod() (succeed bool) {
+	var params struct {
+		RewardPeriod int64
+	}
+
+	vals := config.Conf.ValidatorNodes()
+	proposerNode := vals[0]
+	voteNodes := vals[1:]
+	ptyp := uint8(governance.ProposalTypeRewardPeriod)
+
+	if err := config.LoadParams("RewardPeriod.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	// proposer send proposal
+	var proposalID common.Address
+	{
+		log.Infof("propose new proposal......")
+		proposerCli := sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), proposerNode.PrivateKey())
+
+		hash, err := proposerCli.Propose(ptyp, big.NewInt(params.RewardPeriod))
+		if err != nil {
+			log.Errorf("%s failed to propose, err %v", proposerNode.NodeAddr().Hex(), err)
+			return
+		}
+		wait(2)
+
+		if id, proposal, err := admcli.GetProposalFromReceipt(hash); err != nil {
+			log.Error(err)
+			return
+		} else {
+			log.Infof("proposalID %s, hash %s, proposer %s, end block %d",
+				id.Hex(), hash.Hex(), proposerNode.NodeAddr().Hex(), proposal.EndBlock.Uint64())
+			proposalID = id
+		}
+	}
+
+	// vote and dump hash list
+	{
+		logsplit()
+		log.Infof("voting......")
+		voteHashList := make([]common.Hash, 0)
+		for _, voteNode := range voteNodes {
+			voteNodeCli := sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), voteNode.PrivateKey())
+			if hash, err := voteNodeCli.Vote(proposalID); err != nil {
+				log.Error(err)
+				return
+			} else {
+				voteHashList = append(voteHashList, hash)
+				log.Infof("%s vote to proposalID %s, hash %s", voteNode.NodeAddr().Hex(), proposalID.Hex(), hash.Hex())
+			}
+		}
+		wait(2)
+		if err := DumpHashList(voteHashList, "vote"); err != nil {
+			log.Error(err)
+			return
+		}
+		wait(config.Conf.RewardEffectivePeriod + 2)
+	}
+
+	// check proposal status
+	{
+		log.Infof("checking proposal status......")
+		if proposal, err := admcli.GetProposal(proposalID, "latest"); err != nil {
+			log.Errorf("failed to get proposal, err %v", err)
+			return
+		} else if proposal.Passed != true {
+			log.Errorf("proposal %s should be passed", proposalID.Hex())
+			return
+		}
+	}
+
+	// check reward period
+	{
+		logsplit()
+		log.Infof("checking reward period......")
+		data, err := admcli.GetGlobalParams(ptyp, "latest")
+		if err != nil {
+			log.Error("failed to get global params, err %v", err)
+			return
+		}
+
+		expect, actual := params.RewardPeriod, data.Int64()
+		if expect != actual {
+			log.Errorf("proposal failed to set global params, expect %d, actual %d", expect, actual)
+		} else {
+			log.Infof("reward period changed changed to %d", actual)
+		}
+	}
+
+	{
+		var rdBlk1, rdBlk2 uint64 = 0, 0
+		data, err := admcli.GetLastRewardBlock("latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		rdBlk1 = data.Uint64()
+		wait(int(params.RewardPeriod))
+
+		if data, err = admcli.GetLastRewardBlock("latest"); err != nil {
+			log.Error(err)
+			return
+		} else {
+			rdBlk2 = data.Uint64()
+		}
+
+		log.Infof("pre reward block %d, cur reward block %d", rdBlk1, rdBlk2)
 	}
 
 	return true
