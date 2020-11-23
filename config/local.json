@@ -41,8 +41,7 @@
       "NodeKey":"49e26aa4d60196153153388a24538c2693d65f0010a3a488c0c4c2b2a64b2de4",
       "Host": "127.0.0.1",
       "RPCPort": "22000",
-      "P2PPort": "30300",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node0"
+      "P2PPort": "30300"
     },
     {
       "Index": 1,
@@ -51,8 +50,7 @@
       "NodeKey":"9fc1723cff3bc4c11e903a53edb3b31c57b604bfc88a5d16cfec6a64fbf3141c",
       "Host": "127.0.0.1",
       "RPCPort": "22001",
-      "P2PPort": "30301",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node1"
+      "P2PPort": "30301"
     },
     {
       "Index": 2,
@@ -61,8 +59,7 @@
       "NodeKey":"4b0c9b9d685db17ac9f295cb12f9d7d2369f5bf524b3ce52ce424031cafda1ae",
       "Host": "127.0.0.1",
       "RPCPort": "22002",
-      "P2PPort": "30302",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node2"
+      "P2PPort": "30302"
     },
     {
       "Index": 3,
@@ -71,8 +68,7 @@
       "NodeKey":"cc69b13ca2c5cd4d76bb881f6ad18d93bd947042c0f3a7adc80bdd17dac68210",
       "Host": "127.0.0.1",
       "RPCPort": "22003",
-      "P2PPort": "30303",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node3"
+      "P2PPort": "30303"
     },
     {
       "Index": 4,
@@ -81,8 +77,7 @@
       "NodeKey":"5555ebb339d3d5ed1efbf0ca96f5b145134e5ce8044fec693558056d268776ae",
       "Host": "127.0.0.1",
       "RPCPort": "22004",
-      "P2PPort": "30304",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node4"
+      "P2PPort": "30304"
     },
     {
       "Index": 5,
@@ -91,8 +86,7 @@
       "NodeKey":"3d9c828244d3b2da70233a0a2aea7430feda17bded6edd7f0c474163802a431c",
       "Host": "127.0.0.1",
       "RPCPort": "22005",
-      "P2PPort": "30305",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node5"
+      "P2PPort": "30305"
     },
     {
       "Index": 6,
@@ -101,8 +95,7 @@
       "NodeKey":"018c71d5e3b245117ffba0975e46129371473c6a1d231c5eddf7a8364d704846",
       "Host": "127.0.0.1",
       "RPCPort": "22006",
-      "P2PPort": "30306",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node6"
+      "P2PPort": "30306"
     },
     {
       "Index": 7,
@@ -111,8 +104,7 @@
       "NodeKey":"c8d3e5e3fbc72898d1b90dedff34d6043fcbaaadeecd0bcb211a05c7c9a33af7",
       "Host": "127.0.0.1",
       "RPCPort": "22007",
-      "P2PPort": "30307",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node7"
+      "P2PPort": "30307"
     },
     {
       "Index": 8,
@@ -121,8 +113,7 @@
       "NodeKey":"e0f5429b336cb2c803383d0ef39cb0a0003d4d701c96a2e7b15e468740ed72f7",
       "Host": "127.0.0.1",
       "RPCPort": "22008",
-      "P2PPort": "30308",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node8"
+      "P2PPort": "30308"
     },
     {
       "Index": 9,
@@ -131,8 +122,7 @@
       "NodeKey":"c124e7f77166ee5cd4ba490b838db0ee251d9d5a7ce64cbb3cababf8ae99bd37",
       "Host": "127.0.0.1",
       "RPCPort": "22009",
-      "P2PPort": "30309",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node9"
+      "P2PPort": "30309"
     },
     {
       "Index": 10,
@@ -141,8 +131,7 @@
       "NodeKey":"1992e51194f5e1179c759881df0a2343e4f5cfc06575578d51cc641895b3a197",
       "Host": "127.0.0.1",
       "RPCPort": "22010",
-      "P2PPort": "30310",
-      "NodeDir": "/Users/dylen/software/onRobot/build/target/node10"
+      "P2PPort": "30310"
     }
   ]
 }

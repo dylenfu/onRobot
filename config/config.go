@@ -144,7 +144,7 @@ type Node struct {
 	Host         string `json:"Host"`
 	RPCPort      string `json:"RPCPort"`
 	P2PPort      string `json:"P2PPort"`
-	NodeDir      string `json:"NodeDir"`
+	NodeDir      string
 
 	once       sync.Once
 	ndpk, sapk *ecdsa.PrivateKey
@@ -173,6 +173,19 @@ func (n *Node) init() {
 	} else {
 		n.sapk = ks.PrivateKey
 	}
+
+	// load node workspace
+	nodedir := fmt.Sprintf("node%d", n.Index)
+	if Conf.Environment.Remote {
+		n.NodeDir = path.Join(Conf.Environment.RemoteWorkspace, nodedir)
+	} else {
+		n.NodeDir = path.Join(Conf.Environment.LocalWorkspace, nodedir)
+	}
+}
+
+func (n *Node) NodeDirPath() string {
+	n.once.Do(n.init)
+	return n.NodeDir
 }
 
 func (n *Node) PrivateKey() *ecdsa.PrivateKey {
@@ -181,6 +194,7 @@ func (n *Node) PrivateKey() *ecdsa.PrivateKey {
 }
 
 func (n *Node) NodeAddr() common.Address {
+	n.once.Do(n.init)
 	return common.HexToAddress(n.Address)
 }
 
@@ -195,6 +209,7 @@ func (n *Node) StakeAddr() common.Address {
 }
 
 func (n *Node) RPCAddr() string {
+	n.once.Do(n.init)
 	return fmt.Sprintf("http://%s:%s", n.Host, n.RPCPort)
 }
 

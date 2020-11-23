@@ -214,7 +214,7 @@ func execStartNode(node *config.Node) {
 	args[2] = fmt.Sprintf("%d", config.Conf.Environment.NetworkID)
 	args[3] = "127.0.0.1"
 	args[4] = fmt.Sprintf("%d", node.Index)
-	args[5] = node.NodeDir
+	args[5] = node.NodeDirPath()
 	args[6] = node.RPCPort
 	args[7] = node.P2PPort
 

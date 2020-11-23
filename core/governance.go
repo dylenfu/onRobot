@@ -166,7 +166,12 @@ func GetValidators() bool {
 	return true
 }
 
-// todo:
+// 初始化单个节点为后续add/del validator做准备
+func PrepareSingleNode() (succeed bool) {
+	return true
+}
+
+// 1.检查节点路径是否存在，如果是remote需要
 func DelValidators() (succeed bool) {
 	var (
 		params struct {
