@@ -384,12 +384,12 @@ func Delegate() (succeed bool) {
 	// waiting for reward
 	{
 		log.Infof("waiting for delegate taking effective......")
-		wait(config.Conf.RewardEffectivePeriod * 2 + 2)
+		wait(config.Conf.RewardEffectivePeriod*2 + 2)
 
 		checkStkAmt("after delegate")
 
 		logsplit()
-		for i:=0;i<params.WaitBlock;i++ {
+		for i := 0; i < params.WaitBlock; i++ {
 			checkBalance("after delegate")
 			wait(1)
 		}
@@ -433,7 +433,7 @@ func Delegate() (succeed bool) {
 			stkAmt := plt.PrintFPLT(utils.DecimalFromBigInt(value))
 			log.Infof("%s stake amount %f", fan.Address, stkAmt)
 		}
-		for i:=0;i<params.WaitBlock;i++ {
+		for i := 0; i < params.WaitBlock; i++ {
 			checkBalance("after revoke delegate")
 			wait(1)
 		}
@@ -489,140 +489,160 @@ func ShowDelegateAmount() (succeed bool) {
 	return true
 }
 
+func SpareNode() (succeed bool) {
+	node := config.Conf.SpareNodes()[0]
+	execInitNode(node)
+	return true
+}
+
 // 1.检查节点路径是否存在，如果是remote需要
-func DelValidators() (succeed bool) {
-	var (
-		params struct {
-			InitAmount int
-		}
+func DelValidator() (succeed bool) {
+	var params struct {
+		InitAmount int
+	}
 
-		nodes              = config.Conf.ValidatorNodes()
-		balances           = make([]int, len(nodes))
-		expectNodeAddrList = make([]common.Address, len(nodes))
-		err                error
-	)
-
-	if err = config.LoadParams("AddValidators.json", &params); err != nil {
+	if err := config.LoadParams("DelValidator.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
 
+	// spare node
+	node := config.Conf.SpareNodes()[0]
+
+	// start node and sync blocks
+	{
+		execStartNode(node)
+		wait(5)
+	}
+
 	// check balance before stake
-	{
-		for i, node := range nodes {
-			data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
-			if err != nil {
-				log.Error("failed to check %s balance", node.NodeAddr().Hex())
-				return
-			}
-			balances[i] = int(plt.PrintUPLT(data))
-			log.Infof("%s balance before stake %d", node.NodeAddr().Hex(), plt.PrintUPLT(data))
+	checkBalance := func(mark string) int {
+		data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
+		if err != nil {
+			log.Error("failed to check %s balance", node.NodeAddr().Hex())
+			return 0
 		}
+		balance := plt.PrintUPLT(data)
+		log.Infof("%s balance %s %d", node.NodeAddr().Hex(), mark, balance)
+		return int(balance)
 	}
 
-	// deposit and dump event log
-	{
-		depositHashList := make([]common.Hash, 0)
-		for i, balance := range balances {
-			if balance < params.InitAmount {
-				addAmount := params.InitAmount - balance
-				node := nodes[i]
-				hash, err := admcli.PLTTransfer(node.StakeAddr(), plt.MultiPLT(addAmount))
-				if err != nil {
-					log.Errorf("failed to deposit to node %s, amount %d", node.NodeAddr().Hex(), addAmount)
-					return
-				} else {
-					depositHashList = append(depositHashList, hash)
-					balances[i] += addAmount
-				}
-			}
-		}
-		wait(2)
-		if err := DumpHashList(depositHashList, "deposit for validator"); err != nil {
-			log.Error(err)
-			return
-		}
-	}
-
-	// stake and dump event log
-	{
+	stakeAndDumpEvent := func(revoke bool) {
 		stakeHashList := make([]common.Hash, 0)
-		log.Infof("validators stake at block %d", admcli.GetBlockNumber())
-		for i, node := range nodes {
-			nodecli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
-			stkAmt := balances[i]
-			hash, err := nodecli.Stake(node.NodeAddr(), node.StakeAddr(), plt.MultiPLT(stkAmt), false)
-			if err != nil {
-				log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), stkAmt)
-				return
-			}
-			stakeHashList = append(stakeHashList, hash)
+		cli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
+		stkAmt := plt.MultiPLT(params.InitAmount)
+		if revoke {
+			stkAmt = cli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
 		}
+		hash, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), stkAmt, revoke)
+		if err != nil {
+			log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), stkAmt)
+			return
+		} else {
+			log.Infof("stake for validator, hash %s", hash.Hex())
+		}
+		stakeHashList = append(stakeHashList, hash)
 		wait(2)
 		if err := DumpHashList(stakeHashList, "stake"); err != nil {
 			return
 		}
 	}
 
-	wait(2 * config.Conf.RewardEffectivePeriod)
+	checkStakeAmt := func(mark string) {
+		data := admcli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
+		value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
+		log.Infof("check stake amount %f %s", value, mark)
+	}
 
-	// check balance after stake
+	adminAddValidator := func(revoke bool) {
+		hs := make([]common.Hash, 0)
+		hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), revoke)
+		if err != nil {
+			log.Errorf("failed to add validator %s, hash %s, [%v]", node.NodeAddr().Hex(), hash.Hex(), err)
+			return
+		}
+		hs = append(hs, hash)
+		wait(2)
+		if err := DumpHashList(hs, "admin add validators"); err != nil {
+			return
+		}
+	}
+
+	// 1.deposit and dump event log
 	{
-		for _, node := range nodes {
+		log.Infof("admin deposit to validator")
+		hs := make([]common.Hash, 0)
+		balance := checkBalance("before stake")
+		if balance < params.InitAmount {
+			addAmount := params.InitAmount - balance
+			hash, err := admcli.PLTTransfer(node.StakeAddr(), plt.MultiPLT(addAmount))
+			if err != nil {
+				log.Errorf("failed to deposit to node %s, amount %d", node.NodeAddr().Hex(), addAmount)
+				return
+			} else {
+				hs = append(hs, hash)
+			}
+		}
+		wait(2)
+		if err := DumpHashList(hs, "deposit for validator"); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// 2.stake and dump event log
+	{
+		log.Infof("validators stake at block %d", admcli.GetBlockNumber())
+		stakeAndDumpEvent(false)
+		wait(2 * config.Conf.RewardEffectivePeriod)
+		checkStakeAmt("after stake")
+	}
+
+	// 3.admin add validator
+	{
+		log.Infof("admin add validator at block %d", admcli.GetBlockNumber())
+		adminAddValidator(false)
+		wait(config.Conf.RewardEffectivePeriod + 2)
+	}
+
+	// 4.check reward
+	{
+		log.Infof("checking reward amount......")
+		for i := 0; i < 10; i++ {
 			data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
 			if err != nil {
-				log.Error("failed to check %s's balance after stake, err :%v", node.NodeAddr().Hex(), err)
+				log.Errorf("failed to get balance after stake, err: %v", err)
 				return
 			}
-			log.Infof("%s balance after stake %d", node.NodeAddr().Hex(), plt.PrintUPLT(data))
+			value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
+			log.Infof("check rewarding, new validator's balance after stake, current block number %d, %f PLT ", admcli.GetBlockNumber(), value)
+			wait(1)
 		}
 	}
 
-	// admin add validators and dump event logs
+	// 5.admin del validator
 	{
-		adminAddValidatorHashList := make([]common.Hash, 0)
-		for _, node := range nodes {
-			hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), false)
-			if err != nil {
-				log.Errorf("failed to add validator %s, hash %s, [%v]", node.NodeAddr().Hex(), hash.Hex(), err)
-				return
-			}
-			adminAddValidatorHashList = append(adminAddValidatorHashList, hash)
-		}
-		log.Infof("add validator at block %d", admcli.GetBlockNumber())
-		wait(2)
-		if err := DumpHashList(adminAddValidatorHashList, "admin add validators"); err != nil {
-			return
-		}
+		logsplit()
+		log.Infof("admin del validator at block %d", admcli.GetBlockNumber())
+		adminAddValidator(true)
+		wait(config.Conf.RewardEffectivePeriod + 2)
 	}
 
-	// check pending validators
+	// 6.revoke stake
 	{
-		log.Infof("check pending validators at block %d", admcli.GetBlockNumber())
-		for i, node := range nodes {
-			expectNodeAddrList[i] = node.NodeAddr()
-		}
-		validators := admcli.GetAllValidators("latest")
-		if !HasAddrs(validators, expectNodeAddrList) {
-			log.Error("validators not pending, check palette log")
-			return
-		}
-		log.Infof("check pending validators success")
+		log.Infof("revoking stake......")
+		stakeAndDumpEvent(true)
+		wait(config.Conf.RewardEffectivePeriod)
+		checkStakeAmt("after revoke stake")
 	}
 
-	wait(config.Conf.RewardEffectivePeriod)
-
-	// check effective validators
+	// 7.check balance after revoke stake
 	{
-		log.Infof("check effective validators at block %d", admcli.GetBlockNumber())
-		effectiveValidators := admcli.GetEffectiveValidators("latest")
-		if !HasAddrs(effectiveValidators, expectNodeAddrList) {
-			log.Error("validators not effective, check palette log")
-			return
+		for i := 0; i < 10; i++ {
+			checkBalance("after revoke stake")
+			wait(1)
 		}
-		for _, v := range effectiveValidators {
-			log.Infof("add validator %s success", v.Hex())
-		}
+		execStopNode(node)
 	}
 
 	return true

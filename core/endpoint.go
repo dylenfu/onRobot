@@ -66,7 +66,6 @@ func Endpoint() {
 
 	// governance
 	frame.Tool.RegMethod("addValidators", AddValidators)
-	frame.Tool.RegMethod("delValidators", DelValidators)
 	frame.Tool.RegMethod("getValidators", GetValidators)
 	frame.Tool.RegMethod("reward", Reward)
 	frame.Tool.RegMethod("fakeReward", FakeReward)
@@ -74,4 +73,6 @@ func Endpoint() {
 	frame.Tool.RegMethod("showDelegate", ShowDelegateAmount)
 	frame.Tool.RegMethod("proposal", Proposal)
 	frame.Tool.RegMethod("globalParams", GlobalParams)
+	frame.Tool.RegMethod("spare", SpareNode)
+	frame.Tool.RegMethod("delValidator", DelValidator)
 }
