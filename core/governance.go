@@ -384,8 +384,8 @@ func Reward() (succeed bool) {
 }
 
 // 分润动作不允许外部调用，palette中通过在miner.worker中对proposer的交易进行过滤实现这一屏蔽功能
-// 构造一笔reward交易，选择任意一个validator发送，日志观察该交易是否进入到native contract,
-// 通过查询latestRewardRecordBlock确认这笔交易并没有写入梅克尔树
+// 构造一笔reward交易，选择任意一个validator发送交易，交易内容包含一个不正确的blockNum，观察交易后
+// 的blockNum是否正确
 func FakeReward() (succeed bool) {
 	curBlkNo := admcli.GetBlockNumber()
 	blockNum := new(big.Int).SetUint64(curBlkNo + 100)
