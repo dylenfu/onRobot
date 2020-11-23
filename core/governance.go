@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/governance"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
@@ -166,8 +167,325 @@ func GetValidators() bool {
 	return true
 }
 
-// 初始化单个节点为后续add/del validator做准备
-func PrepareSingleNode() (succeed bool) {
+// 分润:
+// 1.在已经完成addValidators的情况下，测试分润结果
+// 2.查询分润前账户余额
+// 3.等待`rewardBlocks`，比如分润周期为5，`rewardBlocks`为12，横跨2个周期，那么真实的分润应该是每个区块的分润*10，也有可能因为等待时间过程横跨3个周期。
+// 4.比较expect和分润前后余额差额
+func Reward() (succeed bool) {
+	var (
+		params struct {
+			RewardBlocks                   int
+			ExpectRewardPoolAmount         float64
+			ExpectRewardAmountPerValidator float64
+		}
+
+		rewardPool = common.HexToAddress(config.Conf.BaseRewardPool)
+		nodes      = config.Conf.ValidatorNodes()
+		addrs      = append(nodes.StakeAccounts(), rewardPool)
+
+		blkBeforeCheckReward, blkAfterCheckReward           uint64
+		balancesBeforeCheckReward, balancesAfterCheckReward map[common.Address]float64
+
+		err error
+	)
+
+	if err = config.LoadParams("Reward.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	// check balance before reward
+	{
+		blkBeforeCheckReward = admcli.GetBlockNumber()
+		log.Infof("check balance before testing reward at block %d", blkBeforeCheckReward)
+		if balancesBeforeCheckReward, err = getBalances(addrs, BlockNumber2Hex(blkBeforeCheckReward)); err != nil {
+			log.Error("failed to check balance before testing, err: %v", err)
+			return
+		}
+	}
+
+	// waiting for blocks
+	wait(params.RewardBlocks)
+
+	// check balance after reward
+	{
+		blkAfterCheckReward = blkBeforeCheckReward + uint64(params.RewardBlocks)
+		log.Infof("check balance after testing reward at block %d", blkAfterCheckReward)
+		if balancesAfterCheckReward, err = getBalances(addrs, BlockNumber2Hex(blkAfterCheckReward)); err != nil {
+			log.Error("failed to check balance after testing, err: %v", err)
+			return
+		}
+	}
+
+	// check expect
+	{
+		res, err := subBalanceMap(balancesBeforeCheckReward, balancesAfterCheckReward)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		var expect float64
+		for addr, v := range res {
+			if addr == rewardPool {
+				expect = params.ExpectRewardPoolAmount
+			} else {
+				expect = params.ExpectRewardAmountPerValidator
+			}
+
+			if v != expect {
+				log.Errorf("%s reward amount, expect %d = actual %d", addr.Hex(), expect, v)
+				return
+			} else {
+				log.Infof("%s reward amount %d", addr.Hex(), v)
+			}
+		}
+	}
+
+	return true
+}
+
+// 分润动作不允许外部调用，palette中通过在miner.worker中对proposer的交易进行过滤实现这一屏蔽功能
+// 构造一笔reward交易，选择任意一个validator发送交易，交易内容包含一个不正确的blockNum，观察交易后
+// 的blockNum是否正确
+func FakeReward() (succeed bool) {
+	curBlkNo := admcli.GetBlockNumber()
+	blockNum := new(big.Int).SetUint64(curBlkNo + 100)
+	validators := config.Conf.ValidatorNodes().Validators()
+	cli := admcli.Reset(config.Conf.ValidatorNodes()[0].PrivateKey())
+
+	if hash, err := cli.Reward(validators, blockNum); err != nil {
+		log.Error(err)
+		return
+	} else {
+		log.Infof("fake reward tx hash %s", hash.Hex())
+	}
+
+	for i := 0; i < 3; i++ {
+		latestBlk, err := cli.GetRewardRecordBlock("latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		log.Infof("current block number %d, latest record block %d", admcli.GetBlockNumber(), latestBlk)
+		wait(1)
+	}
+	return true
+}
+
+// 节点代理用户质押:
+// 1. admin给用户充值
+// 2. 检查节点是否为可用节点
+// 2. fans delegate
+// 3. 等待一定周期查询奖励
+// 4. 取消质押
+// 5. 等待一定周期查询奖励应该为0
+func Delegate() (succeed bool) {
+	var params struct {
+		Fans []struct {
+			Address   string
+			Amount    int
+			NodeIndex int
+		}
+		WaitBlock int
+	}
+
+	if err := config.LoadParams("Delegate.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	checkBalance := func(mark string) map[common.Address]float64 {
+		res := make(map[common.Address]float64)
+		log.Infof("check balance %s", mark)
+		for _, fan := range params.Fans {
+			addr := common.HexToAddress(fan.Address)
+			data, err := admcli.BalanceOf(addr, "latest")
+			if err != nil {
+				log.Errorf("%s check balance err: %v", fan.Address, err)
+				return nil
+			}
+			value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
+			res[addr] = value
+			log.Infof("%s balance %s %f", addr.Hex(), mark, value)
+		}
+		return res
+	}
+
+	checkStkAmt := func(mark string) {
+		for _, fan := range params.Fans {
+			node := config.Conf.Nodes[fan.NodeIndex]
+			stkAcc := common.HexToAddress(fan.Address)
+			value := admcli.GetStakeAmount(node.NodeAddr(), stkAcc, "latest")
+			stkAmt := plt.PrintFPLT(utils.DecimalFromBigInt(value))
+			log.Infof("%s stake amount %s %f", fan.Address, mark, stkAmt)
+		}
+	}
+
+	// fans transfer back to admin
+	clients := make(map[string]*sdk.Client)
+	for _, fan := range params.Fans {
+		clients[fan.Address] = sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), config.LoadAccount(fan.Address))
+	}
+
+	// admin batch transfer to fans
+	{
+		balanceBeforeDeposit := checkBalance("before deposit")
+		log.Infof("admin deposit to fans")
+		hs := make([]common.Hash, 0)
+		for _, fan := range params.Fans {
+			to := common.HexToAddress(fan.Address)
+			curAmt := balanceBeforeDeposit[to]
+			if curAmt > float64(fan.Amount) {
+				continue
+			}
+			amt := plt.MultiPLT(fan.Amount - int(curAmt))
+			if hash, err := admcli.PLTTransfer(to, amt); err != nil {
+				log.Errorf("admin transfer to %s failed, err: %v", to.Hex(), err)
+				return
+			} else {
+				hs = append(hs, hash)
+			}
+		}
+		wait(2)
+		if err := DumpHashList(hs, "admin deposit"); err != nil {
+			log.Errorf("dump hash list for delegate admin transfer err, %v", err)
+			return
+		}
+		checkBalance("after deposit")
+	}
+
+	// fans delegate
+	{
+		hs := make([]common.Hash, 0)
+		for _, fan := range params.Fans {
+			cli := clients[fan.Address]
+			node := config.Conf.Nodes[fan.NodeIndex]
+			amt := plt.MultiPLT(fan.Amount)
+			hash, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), amt, false)
+			if err != nil {
+				log.Errorf("%s stake to node%d failed, hash %s, err: %v", fan.Address, node.Index, hash.Hex(), err)
+				return
+			} else {
+				log.Infof("%s stake to node%d, hash %s", fan.Address, node.Index, hash.Hex())
+			}
+			hs = append(hs, hash)
+		}
+
+		wait(2)
+
+		if err := DumpHashList(hs, "delegate"); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// waiting for reward
+	{
+		log.Infof("waiting for delegate taking effective......")
+		wait(config.Conf.RewardEffectivePeriod * 2 + 2)
+
+		checkStkAmt("after delegate")
+
+		logsplit()
+		for i:=0;i<params.WaitBlock;i++ {
+			checkBalance("after delegate")
+			wait(1)
+		}
+	}
+
+	// revoke delegate
+	{
+		logsplit()
+		log.Infof("revoke delegate")
+		hs := make([]common.Hash, 0)
+		for _, fan := range params.Fans {
+			cli := clients[fan.Address]
+			node := config.Conf.Nodes[fan.NodeIndex]
+			amt := plt.MultiPLT(fan.Amount)
+			hash, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), amt, true)
+			if err != nil {
+				log.Errorf("%s revoke stake failed, hash %s, err: %v", fan.Address, hash.Hex(), err)
+				return
+			} else {
+				log.Infof("%s revoke stake, hash %s", fan.Address, hash.Hex())
+			}
+			hs = append(hs, hash)
+		}
+
+		wait(2)
+		if err := DumpHashList(hs, "revoke delegate"); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	{
+		log.Infof("waiting for revoke delegate taking effective......")
+		wait(config.Conf.RewardEffectivePeriod + 2)
+
+		checkStkAmt("after revoke delegate")
+
+		for _, fan := range params.Fans {
+			node := config.Conf.Nodes[fan.NodeIndex]
+			value := admcli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
+			stkAmt := plt.PrintFPLT(utils.DecimalFromBigInt(value))
+			log.Infof("%s stake amount %f", fan.Address, stkAmt)
+		}
+		for i:=0;i<params.WaitBlock;i++ {
+			checkBalance("after revoke delegate")
+			wait(1)
+		}
+	}
+
+	// transfer back PLT to admin
+	{
+		logsplit()
+		log.Infof("transfer back PLT to admin account")
+		hs := make([]common.Hash, 0)
+		to := config.AdminAddr
+		for _, fan := range params.Fans {
+			cli := clients[fan.Address]
+			amt := plt.MultiPLT(fan.Amount)
+			if hash, err := cli.PLTTransfer(to, amt); err != nil {
+				log.Errorf("admin transfer to %s failed, err: %v", to.Hex(), err)
+				return
+			} else {
+				hs = append(hs, hash)
+			}
+		}
+		wait(2)
+		if err := DumpHashList(hs, ""); err != nil {
+			log.Errorf("dump hash list for delegate admin transfer err, %v", err)
+			return
+		}
+
+		checkBalance("after testing")
+	}
+
+	return true
+}
+
+func ShowDelegateAmount() (succeed bool) {
+	var params []struct {
+		Address   string
+		NodeIndex int
+	}
+
+	if err := config.LoadParams("ShowDelegate.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	for _, fan := range params {
+		owner := common.HexToAddress(fan.Address)
+		validator := config.Conf.AllNodes()[fan.NodeIndex].NodeAddr()
+		data := admcli.GetStakeAmount(owner, validator, "latest")
+		value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
+		log.Infof("fan %s stake to %s %f PLT", owner.Hex(), validator.Hex(), value)
+	}
+
 	return true
 }
 
@@ -307,118 +625,6 @@ func DelValidators() (succeed bool) {
 		}
 	}
 
-	return true
-}
-
-// 分润:
-// 1.在已经完成addValidators的情况下，测试分润结果
-// 2.查询分润前账户余额
-// 3.等待`rewardBlocks`，比如分润周期为5，`rewardBlocks`为12，横跨2个周期，那么真实的分润应该是每个区块的分润*10，也有可能因为等待时间过程横跨3个周期。
-// 4.比较expect和分润前后余额差额
-func Reward() (succeed bool) {
-	var (
-		params struct {
-			RewardBlocks                   int
-			ExpectRewardPoolAmount         int
-			ExpectRewardAmountPerValidator int
-		}
-
-		rewardPool = common.HexToAddress(config.Conf.BaseRewardPool)
-		nodes      = config.Conf.ValidatorNodes()
-		addrs      = append(nodes.StakeAccounts(), rewardPool)
-
-		blkBeforeCheckReward, blkAfterCheckReward           uint64
-		balancesBeforeCheckReward, balancesAfterCheckReward map[common.Address]int
-
-		err error
-	)
-
-	if err = config.LoadParams("Reward.json", &params); err != nil {
-		log.Error(err)
-		return
-	}
-
-	// check balance before reward
-	{
-		blkBeforeCheckReward = admcli.GetBlockNumber()
-		log.Infof("check balance before testing reward at block %d", blkBeforeCheckReward)
-		if balancesBeforeCheckReward, err = getBalances(addrs, BlockNumber2Hex(blkBeforeCheckReward)); err != nil {
-			log.Error("failed to check balance before testing, err: %v", err)
-			return
-		}
-	}
-
-	// waiting for blocks
-	wait(params.RewardBlocks)
-
-	// check balance after reward
-	{
-		blkAfterCheckReward = blkBeforeCheckReward + uint64(params.RewardBlocks)
-		log.Infof("check balance after testing reward at block %d", blkAfterCheckReward)
-		if balancesAfterCheckReward, err = getBalances(addrs, BlockNumber2Hex(blkAfterCheckReward)); err != nil {
-			log.Error("failed to check balance after testing, err: %v", err)
-			return
-		}
-	}
-
-	// check expect
-	{
-		res, err := subBalanceMap(balancesBeforeCheckReward, balancesAfterCheckReward)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		var expect int
-		for addr, v := range res {
-			if addr == rewardPool {
-				expect = params.ExpectRewardPoolAmount
-			} else {
-				expect = params.ExpectRewardAmountPerValidator
-			}
-
-			if v != expect {
-				log.Errorf("%s reward amount, expect %d = actual %d", addr.Hex(), expect, v)
-				return
-			} else {
-				log.Infof("%s reward amount %d", addr.Hex(), v)
-			}
-		}
-	}
-
-	return true
-}
-
-// 分润动作不允许外部调用，palette中通过在miner.worker中对proposer的交易进行过滤实现这一屏蔽功能
-// 构造一笔reward交易，选择任意一个validator发送交易，交易内容包含一个不正确的blockNum，观察交易后
-// 的blockNum是否正确
-func FakeReward() (succeed bool) {
-	curBlkNo := admcli.GetBlockNumber()
-	blockNum := new(big.Int).SetUint64(curBlkNo + 100)
-	validators := config.Conf.ValidatorNodes().Validators()
-	cli := admcli.Reset(config.Conf.ValidatorNodes()[0].PrivateKey())
-
-	if hash, err := cli.Reward(validators, blockNum); err != nil {
-		log.Error(err)
-		return
-	} else {
-		log.Infof("fake reward tx hash %s", hash.Hex())
-	}
-
-	for i:=0;i<3;i++ {
-		latestBlk, err := cli.GetRewardRecordBlock("latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		log.Infof("current block number %d, latest record block %d", admcli.GetBlockNumber(), latestBlk)
-		wait(1)
-	}
-	return true
-}
-
-// 节点代理用户质押一定数量的PLT
-func Delegate() bool {
 	return true
 }
 

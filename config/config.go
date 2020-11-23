@@ -101,6 +101,11 @@ func (c *Config) AllNodes() Nodes {
 	return c.getRangeNodes(start, end)
 }
 
+func (c *Config) SpareNodes() Nodes {
+	end := c.Network.GenesisNodeNumber + c.Network.ValidatorsNumber
+	return c.Nodes[end:]
+}
+
 func (c *Config) GetNodeByIndex(index int) *Node {
 	for _, n := range c.Nodes {
 		if n.Index == index {
@@ -267,8 +272,8 @@ func LoadParams(fileName string, data interface{}) error {
 	return json.Unmarshal(bz, data)
 }
 
-func LoadAccount(keyhex string) *ecdsa.PrivateKey {
-	filepath := files.FullPath(Conf.Environment.LocalWorkspace, keystoreDir, keyhex)
+func LoadAccount(address string) *ecdsa.PrivateKey {
+	filepath := files.FullPath(Conf.Environment.LocalWorkspace, keystoreDir, address)
 	keyJson, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		panic(fmt.Errorf("failed to read file: [%v]", err))

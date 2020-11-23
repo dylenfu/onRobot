@@ -1,0 +1,15 @@
+{
+  "Fans": [
+    {
+      "Address": "0x4cf477a37521b3fca951d49e32b9999bc7f97ff5",
+      "Amount": 1000,
+      "NodeIndex": 5
+    },
+    {
+      "Address": "0x2cd9d589d46122e4eddc495b49feda0b526c1af7",
+      "Amount": 500,
+      "NodeIndex": 5
+    }
+  ],
+  "WaitBlock": 12
+}

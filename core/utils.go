@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
@@ -49,8 +50,12 @@ func DumpHashList(hashlist []common.Hash, mark string) error {
 		}
 	}
 	log.Infof("dump %s event log success", mark)
-	log.Info("------------------------------------------------------------------")
+	logsplit()
 	return nil
+}
+
+func logsplit() {
+	log.Info("------------------------------------------------------------------")
 }
 
 func HasAddrs(src, dst []common.Address) bool {
@@ -73,22 +78,22 @@ func HasAddrs(src, dst []common.Address) bool {
 	return true
 }
 
-func getBalances(list []common.Address, curBlkNoHex string) (map[common.Address]int, error) {
-	balancesMap := make(map[common.Address]int)
+func getBalances(list []common.Address, curBlkNoHex string) (map[common.Address]float64, error) {
+	balancesMap := make(map[common.Address]float64)
 	for _, addr := range list {
 		data, err := admcli.BalanceOf(addr, curBlkNoHex)
 		if err != nil {
 			return nil, err
 		}
-		balance := plt.PrintUPLT(data)
-		balancesMap[addr] = int(balance)
-		log.Infof("%s balance %d PLT", addr.Hex(), balance)
+		balance := plt.PrintFPLT(utils.DecimalFromBigInt(data))
+		balancesMap[addr] = balance
+		log.Infof("%s balance %f PLT", addr.Hex(), balance)
 	}
 	return balancesMap, nil
 }
 
-func subBalanceMap(m1, m2 map[common.Address]int) (map[common.Address]int, error) {
-	res := make(map[common.Address]int)
+func subBalanceMap(m1, m2 map[common.Address]float64) (map[common.Address]float64, error) {
+	res := make(map[common.Address]float64)
 	for addr, v1 := range m1 {
 		v2, exist := m2[addr]
 		if !exist {

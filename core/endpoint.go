@@ -42,6 +42,8 @@ func Endpoint() {
 	frame.Tool.RegMethod("restart", ReStartAllNetwork)
 	frame.Tool.RegMethod("reset", ResetAllNetwork)
 
+	// spare nodes
+
 	// sync node
 	//frame.Tool.RegMethod("startSyncNode", StartSyncNode)
 	//frame.Tool.RegMethod("stopSyncNode", StopSyncNode)
@@ -69,6 +71,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("reward", Reward)
 	frame.Tool.RegMethod("fakeReward", FakeReward)
 	frame.Tool.RegMethod("delegate", Delegate)
+	frame.Tool.RegMethod("showDelegate", ShowDelegateAmount)
 	frame.Tool.RegMethod("proposal", Proposal)
 	frame.Tool.RegMethod("globalParams", GlobalParams)
 }
