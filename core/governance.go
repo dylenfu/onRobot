@@ -234,10 +234,10 @@ func Reward() (succeed bool) {
 			}
 
 			if v != expect {
-				log.Errorf("%s reward amount, expect %d = actual %d", addr.Hex(), expect, v)
+				log.Errorf("%s reward amount, expect %f = actual %f", addr.Hex(), expect, v)
 				return
 			} else {
-				log.Infof("%s reward amount %d", addr.Hex(), v)
+				log.Infof("%s reward amount %f", addr.Hex(), v)
 			}
 		}
 	}
@@ -881,7 +881,7 @@ func RewardPeriod() (succeed bool) {
 		if expect != actual {
 			log.Errorf("proposal failed to set global params, expect %d, actual %d", expect, actual)
 		} else {
-			log.Infof("reward period changed changed to %d", actual)
+			log.Infof("reward period changed to %d", actual)
 		}
 	}
 
