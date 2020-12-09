@@ -1,8 +1,11 @@
 package core
 
 import (
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"math/big"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
@@ -117,6 +120,114 @@ func Deposit() (succeed bool) {
 
 	if err := DumpHashList(hashList, "deposit"); err != nil {
 		return
+	}
+
+	return true
+}
+
+type EVMTestOps struct {
+	Object    string `json:"object"`
+	Opcodes   string `json:"opcodes"`
+	SourceMap string `json:"sourceMap"`
+	ABI       string `json:"abi"`
+	Address   string `json:"address"`
+}
+
+// 只有validator拥有部署solidity合约的权限，在调用该方法前，先调用addValidators
+func Deploy() (succeed bool) {
+	var params EVMTestOps
+
+	if err := config.LoadParams("evm.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+	// send transaction
+	if err := cli.DeployContract(params.ABI, params.Object); err != nil {
+		log.Errorf("failed to deploy contract, err: %v", err)
+		return
+	}
+
+	return true
+}
+
+//nativeTransfer(address _to, uint _value)
+func EVM() (succeed bool) {
+	var params EVMTestOps
+
+	if err := config.LoadParams("evm.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	type TransferInput struct {
+		To common.Address
+		Value   *big.Int
+	}
+
+	abiJs, err := abi.JSON(strings.NewReader(params.ABI))
+	if err != nil {
+		log.Errorf("failed to read abj json string, err: %v", err)
+		return
+	}
+
+	to := common.HexToAddress("0xecce5f1346afee82990cccc52fe521005bd54ff0")
+	contract := common.HexToAddress(params.Address)
+	amount := plt.MultiPLT(1)
+
+	// transfer plt to contract
+	{
+		if _, err := admcli.PLTTransfer(contract, amount); err != nil {
+			log.Errorf("failed to transfer PLT to contract, err: %v", err)
+			return
+		}
+		wait(1)
+		balance, err := admcli.BalanceOf(contract, "latest")
+		if err != nil {
+			log.Errorf("failed to get balance of contract, err: %v", err)
+			return
+		}
+		log.Infof("contract %s balance %d", contract.Hex(), plt.PrintUPLT(balance))
+	}
+
+	b1, err := admcli.BalanceOf(to, "latest")
+	if err != nil {
+		log.Errorf("failed to get balance before transfer, err: %v", err)
+		return
+	}
+
+	enc, err := utils.PackMethod(abiJs, "nativeTransfer",  to, amount)
+	if err != nil {
+		log.Errorf("failed to pack `nativeTransfer`, err: %v", err)
+		return
+	}
+
+	hash, err := admcli.SendTransaction(contract, enc)
+	if err != nil {
+		log.Errorf("failed to send transaction to new deployed contract, err: %v", err)
+		return
+	} else {
+		log.Infof("send tx %s success", hash.Hex())
+	}
+
+	wait(2)
+
+	if err := admcli.DumpEventLog(hash); err != nil {
+		log.Errorf("failed to dump tx %s, err: %v", hash.Hex(), err)
+		return
+	}
+
+	b2, err := admcli.BalanceOf(to, "latest")
+	if err != nil {
+		log.Errorf("failed to get balance after transfer, err: %v", err)
+		return
+	}
+
+	if utils.SafeSub(b2, b1).Cmp(amount) != 0 {
+		log.Errorf("balance before transfer %d, balance after transfer %d, amount %d is not correct",
+			plt.PrintUPLT(b1), plt.PrintUPLT(b2), plt.PrintUPLT(amount))
 	}
 
 	return true

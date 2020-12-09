@@ -76,4 +76,8 @@ func Endpoint() {
 	frame.Tool.RegMethod("spare", SpareNode)
 	frame.Tool.RegMethod("delValidator", DelValidator)
 	frame.Tool.RegMethod("period", RewardPeriod)
+
+	// evm
+	frame.Tool.RegMethod("deploy", Deploy)
+	frame.Tool.RegMethod("evm", EVM)
 }

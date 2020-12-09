@@ -23,6 +23,11 @@ compile-remote:
 	cp build/target/setup/remote-nodes.json build/target/setup/static-nodes.json
 	make compile
 
+compile-dev:
+	cp config/dev.json build/target/config.json
+	cp build/target/setup/dev-nodes.json build/target/setup/static-nodes.json
+	make compile
+
 compile-linux:
 	GOOS=linux GOARCH=amd64 $(GOBUILD) -o build/target/robot-linux cmd/main.go
 

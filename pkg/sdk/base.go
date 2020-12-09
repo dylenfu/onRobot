@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"math/big"
 	"strings"
 	"time"
@@ -159,10 +161,37 @@ func (c *Client) SendRawTransaction(hash common.Hash, signedTx string) (common.H
 	return result, nil
 }
 
+func (c *Client) DeployContract(abiStr, binStr string) error {
+	auth := bind.NewKeyedTransactor(c.Key)
+	auth.GasLimit = 1e9
+
+	parsedABI, err := abi.JSON(strings.NewReader(abiStr))
+	if err != nil {
+		log.Errorf("failed to read abi json, err: %v", err)
+		return err
+	}
+	parsedBin := common.FromHex(binStr)
+	backend := ethclient.NewClient(c.Client)
+
+	address, tx, contract, err := bind.DeployContract(auth, parsedABI, parsedBin, backend)
+	if err != nil {
+		log.Errorf("failed to bind and deploy contract, err: %v", err)
+		return err
+	} else {
+		log.Infof("deploy contract tx %v\r\n, contract %v\r\n, address %s\r\n", tx, contract, address.Hex())
+	}
+
+	return nil
+}
+
 func (c *Client) DumpEventLog(hash common.Hash) error {
 	raw, err := c.GetReceipt(hash)
 	if err != nil {
 		return fmt.Errorf("faild to get receipt %s", hash.Hex())
+	}
+
+	if raw.Status == 0 {
+		return fmt.Errorf("receipt failed %s", hash.Hex())
 	}
 
 	for _, event := range raw.Logs {
