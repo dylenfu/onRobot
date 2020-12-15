@@ -124,6 +124,49 @@ func (c *Client) PLTAllowance(owner, spender common.Address, blockNum string) (*
 	return output.Value, nil
 }
 
+func (c *Client) PLTMint(to common.Address, val *big.Int) (common.Hash, error) {
+	payload, err := c.packPLT(plt.MethodMint, to, val)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return c.sendPLTTx(payload)
+}
+
+func (c *Client) PLTBurn(val *big.Int) (common.Hash, error) {
+	payload, err := c.packPLT(plt.MethodBurn, val)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return c.sendPLTTx(payload)
+}
+
+func (c *Client) PLTGetCCMP(blockNum string) (common.Address, error) {
+	payload, err := c.packPLT(plt.MethodGetManagerProxy)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	enc, err := c.callPLT(payload, blockNum)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	var proxy common.Address
+	if err := c.unpackPLT(plt.MethodGetManagerProxy, &proxy, enc); err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return proxy, nil
+}
+
+func (c *Client) PLTSetCCMP(ccmp common.Address) (common.Hash, error) {
+	payload, err := c.packPLT(plt.MethodSetManagerProxy, ccmp)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return c.sendPLTTx(payload)
+}
+
 func (c *Client) packPLT(method string, args ...interface{}) ([]byte, error) {
 	return utils.PackMethod(PLTABI, method, args...)
 }

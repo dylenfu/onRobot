@@ -63,6 +63,9 @@ func Endpoint() {
 	frame.Tool.RegMethod("balanceOf", BalanceOf)
 	frame.Tool.RegMethod("transfer", Transfer)
 	frame.Tool.RegMethod("approve", Approve)
+	frame.Tool.RegMethod("mint", Mint)
+	frame.Tool.RegMethod("burn", Burn)
+	frame.Tool.RegMethod("setManagerProxy", SetCCMP)
 
 	// governance
 	frame.Tool.RegMethod("addValidators", AddValidators)

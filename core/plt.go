@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -243,5 +244,115 @@ func Approve() (succeed bool) {
 		return
 	}
 
+	return true
+}
+
+func Mint() (succeed bool) {
+	var p struct{
+		To common.Address
+		Value *big.Int
+	}
+	if err := config.LoadParams("Mint.json", &p); err != nil {
+		log.Error(err)
+		return
+	}
+
+	toBalanceBeforeTrans, err := admcli.BalanceOf(p.To, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	tx, err := admcli.PLTMint(p.To, p.Value)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	wait(2)
+	if err := admcli.DumpEventLog(tx); err != nil {
+		log.Error(err)
+		return
+	}
+
+	toBalanceAfterTrans, err := admcli.BalanceOf(p.To, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	if utils.SafeSub(toBalanceAfterTrans, toBalanceBeforeTrans).Cmp(p.Value) != 0 {
+		log.Errorf("wrong mint value %s and should be %s",
+			utils.SafeSub(toBalanceAfterTrans, toBalanceBeforeTrans), p.Value)
+	}
+	return true
+}
+
+func Burn() (succeed bool) {
+	var p struct{
+		Value *big.Int
+	}
+	if err := config.LoadParams("Burn.json", &p); err != nil {
+		log.Error(err)
+		return
+	}
+
+	toBalanceBeforeTrans, err := admcli.BalanceOf(admcli.Address(), "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if toBalanceBeforeTrans.Cmp(p.Value) == -1 {
+		log.Error(err)
+		return
+	}
+
+	tx, err := admcli.PLTBurn(p.Value)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	wait(2)
+	if err := admcli.DumpEventLog(tx); err != nil {
+		log.Error(err)
+		return
+	}
+
+	toBalanceAfterTrans, err := admcli.BalanceOf(admcli.Address(), "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	if utils.SafeSub(toBalanceBeforeTrans, toBalanceAfterTrans).Cmp(p.Value) != 0 {
+		log.Errorf("wrong mint value %s and should be %s",
+			utils.SafeSub(toBalanceAfterTrans, toBalanceBeforeTrans), p.Value)
+	}
+
+	return true
+}
+
+func SetCCMP() (succeed bool) {
+	var p struct{
+		Ccmp common.Address
+	}
+	if err := config.LoadParams("SetManagerProxy.json", &p); err != nil {
+		log.Error(err)
+		return
+	}
+	tx, err := admcli.PLTSetCCMP(p.Ccmp)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Infof("tx hash: %s", tx.Hex())
+	wait(2)
+	proxy, err := admcli.PLTGetCCMP("latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(proxy.Bytes(), p.Ccmp.Bytes()) {
+		log.Errorf("wrong ccmp: should be %s but get %s", p.Ccmp.Hex(), proxy.Hex())
+		return
+	}
 	return true
 }
