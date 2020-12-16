@@ -248,21 +248,22 @@ func Approve() (succeed bool) {
 }
 
 func Mint() (succeed bool) {
-	var p struct{
-		To common.Address
-		Value *big.Int
+	var p struct {
+		To    common.Address
+		Value int
 	}
 	if err := config.LoadParams("Mint.json", &p); err != nil {
 		log.Error(err)
 		return
 	}
+	amount := plt.MultiPLT(p.Value)
 
 	toBalanceBeforeTrans, err := admcli.BalanceOf(p.To, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	tx, err := admcli.PLTMint(p.To, p.Value)
+	tx, err := admcli.PLTMint(p.To, amount)
 	if err != nil {
 		log.Error(err)
 		return
@@ -279,7 +280,7 @@ func Mint() (succeed bool) {
 		return
 	}
 
-	if utils.SafeSub(toBalanceAfterTrans, toBalanceBeforeTrans).Cmp(p.Value) != 0 {
+	if utils.SafeSub(toBalanceAfterTrans, toBalanceBeforeTrans).Cmp(amount) != 0 {
 		log.Errorf("wrong mint value %s and should be %s",
 			utils.SafeSub(toBalanceAfterTrans, toBalanceBeforeTrans), p.Value)
 	}
@@ -287,25 +288,26 @@ func Mint() (succeed bool) {
 }
 
 func Burn() (succeed bool) {
-	var p struct{
-		Value *big.Int
+	var p struct {
+		Value int
 	}
 	if err := config.LoadParams("Burn.json", &p); err != nil {
 		log.Error(err)
 		return
 	}
+	amount := plt.MultiPLT(p.Value)
 
 	toBalanceBeforeTrans, err := admcli.BalanceOf(admcli.Address(), "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	if toBalanceBeforeTrans.Cmp(p.Value) == -1 {
+	if toBalanceBeforeTrans.Cmp(amount) == -1 {
 		log.Error(err)
 		return
 	}
 
-	tx, err := admcli.PLTBurn(p.Value)
+	tx, err := admcli.PLTBurn(amount)
 	if err != nil {
 		log.Error(err)
 		return
@@ -322,7 +324,7 @@ func Burn() (succeed bool) {
 		return
 	}
 
-	if utils.SafeSub(toBalanceBeforeTrans, toBalanceAfterTrans).Cmp(p.Value) != 0 {
+	if utils.SafeSub(toBalanceBeforeTrans, toBalanceAfterTrans).Cmp(amount) != 0 {
 		log.Errorf("wrong mint value %s and should be %s",
 			utils.SafeSub(toBalanceAfterTrans, toBalanceBeforeTrans), p.Value)
 	}
@@ -331,7 +333,7 @@ func Burn() (succeed bool) {
 }
 
 func SetCCMP() (succeed bool) {
-	var p struct{
+	var p struct {
 		Ccmp common.Address
 	}
 	if err := config.LoadParams("SetManagerProxy.json", &p); err != nil {
@@ -353,6 +355,248 @@ func SetCCMP() (succeed bool) {
 	if !bytes.Equal(proxy.Bytes(), p.Ccmp.Bytes()) {
 		log.Errorf("wrong ccmp: should be %s but get %s", p.Ccmp.Hex(), proxy.Hex())
 		return
+	}
+	return true
+}
+
+func BindProxy() (succeed bool) {
+	var params struct {
+		ChainID uint64
+		Proxy common.Address
+	}
+	if err := config.LoadParams("BindProxy.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	// bind proxy
+	{
+		log.Infof("bind proxy...")
+		tx, err := admcli.BindProxy(params.ChainID, params.Proxy)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Infof("tx hash: %s", tx.Hex())
+		wait(2)
+
+		if err := admcli.DumpEventLog(tx); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// get and compare proxy
+	{
+		log.Infof("get bind proxy...")
+		proxy, err := admcli.GetBindProxy(params.ChainID,"latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		if !bytes.Equal(proxy.Bytes(), params.Proxy.Bytes()) {
+			log.Errorf("wrong proxy: expect  %s but get %s", params.Proxy.Hex(), proxy.Hex())
+			return
+		} else {
+			log.Infof("bind proxy success %s", proxy.Hex())
+		}
+	}
+
+	return true
+}
+
+func BindAsset() (succeed bool) {
+	var params struct {
+		ChainID uint64
+		Asset common.Address
+	}
+
+	if err := config.LoadParams("BindAsset.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	// bind asset
+	{
+		log.Infof("bind asset...")
+		tx, err := admcli.BindAsset(params.ChainID, params.Asset)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		wait(2)
+		if err := admcli.DumpEventLog(tx); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// get and compare asset
+	{
+		log.Infof("get bind asset...")
+		asset, err := admcli.GetBindAsset(params.ChainID, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if asset != params.Asset {
+			log.Errorf("asset err, expect %s, actual %s", params.Asset.Hex(), asset.Hex())
+			return
+		} else {
+			log.Infof("get asset %s success", asset.Hex())
+		}
+	}
+
+	return true
+}
+
+func Lock() (succeed bool) {
+	var params struct {
+		ChainID uint64
+		AccountIndex int
+		Proxy common.Address
+		Asset common.Address
+		BindTo common.Address
+		Amount int
+	}
+
+	if err := config.LoadParams("Lock.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	if params.AccountIndex > len(config.Conf.Accounts) - 1{
+		log.Errorf("account index out of range")
+		return
+	}
+
+	user := config.Conf.Accounts[params.AccountIndex]
+	privKey := config.LoadAccount(user)
+	baseUrl := config.Conf.Nodes[0].RPCAddr()
+	userAddr := common.HexToAddress(user)
+	cli := sdk.NewSender(baseUrl, privKey)
+	amount := plt.MultiPLT(params.Amount)
+
+	// prepare balance
+	{
+		log.Infof("prepare test account balance...")
+		hash, err := admcli.PLTTransfer(userAddr, amount)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		wait(2)
+		if err := admcli.DumpEventLog(hash); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// lock plt
+	{
+		log.Infof("lock PLT...")
+		balanceBeforeLock, err := cli.BalanceOf(userAddr, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		bindToBalanceBeforeLock, err := cli.BalanceOf(params.BindTo, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		hash, err := cli.Lock(params.ChainID, params.BindTo, amount)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		wait(2)
+		if err := cli.DumpEventLog(hash); err != nil {
+			log.Error(err)
+			return
+		}
+
+		balanceAfterLock, err := cli.BalanceOf(userAddr, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		bindToBalanceAfterLock, err := cli.BalanceOf(params.BindTo, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		subAmount := utils.SafeSub(balanceBeforeLock, balanceAfterLock)
+		bindToSubAmount:= utils.SafeSub(bindToBalanceAfterLock, bindToBalanceBeforeLock)
+
+		if subAmount.Cmp(amount) != 0{
+			log.Errorf("balance before lock %d, after lock %d, the sub amount should be %d",
+				plt.PrintUPLT(balanceBeforeLock), plt.PrintUPLT(balanceAfterLock), plt.PrintUPLT(amount))
+			return
+		}
+		if bindToSubAmount.Cmp(amount) != 0{
+			log.Errorf("bindTo balance before lock %d, after lock %d, the sub amount should be %d",
+				plt.PrintUPLT(bindToBalanceBeforeLock), plt.PrintUPLT(bindToBalanceAfterLock), plt.PrintUPLT(amount))
+			return
+		}
+	}
+
+	// unlock
+	{
+		log.Infof("unlock PLT...")
+		balanceBeforeUnLock, err := cli.BalanceOf(userAddr, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		unbindToBalanceBeforeLock, err := cli.BalanceOf(params.BindTo, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		args := &plt.TxArgs{
+			ToAssetHash: []byte{},
+			ToAddress: params.BindTo.Bytes(),
+			Amount: amount,
+		}
+		hash, err := cli.UnLock(args, params.BindTo, params.ChainID)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		wait(2)
+		if err := cli.DumpEventLog(hash); err != nil {
+			log.Error(err)
+			return
+		}
+
+		balanceAfterUnLock, err := cli.BalanceOf(userAddr, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		unbindToBalanceAfterLock, err := cli.BalanceOf(params.BindTo, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		subAmount := utils.SafeSub(balanceAfterUnLock, balanceBeforeUnLock)
+		unbindToSubAmount := utils.SafeSub(unbindToBalanceBeforeLock, unbindToBalanceAfterLock)
+		if subAmount.Cmp(amount) != 0 {
+			log.Errorf("balance before unlock %d, after unlock %d, the sub amount should be %d",
+				plt.PrintUPLT(balanceBeforeUnLock), plt.PrintUPLT(balanceAfterUnLock), plt.PrintUPLT(amount))
+			return
+		}
+		if unbindToSubAmount.Cmp(amount) != 0{
+			log.Errorf("unbindTo balance before lock %d, after lock %d, the sub amount should be %d",
+				plt.PrintUPLT(unbindToBalanceBeforeLock), plt.PrintUPLT(unbindToBalanceAfterLock), plt.PrintUPLT(amount))
+			return
+		}
 	}
 	return true
 }

@@ -63,9 +63,14 @@ func Endpoint() {
 	frame.Tool.RegMethod("balanceOf", BalanceOf)
 	frame.Tool.RegMethod("transfer", Transfer)
 	frame.Tool.RegMethod("approve", Approve)
+
+	// lock proxy and cross chain manager
 	frame.Tool.RegMethod("mint", Mint)
 	frame.Tool.RegMethod("burn", Burn)
 	frame.Tool.RegMethod("setManagerProxy", SetCCMP)
+	frame.Tool.RegMethod("bindProxy", BindProxy)
+	frame.Tool.RegMethod("bindAsset", BindAsset)
+	frame.Tool.RegMethod("lock", Lock)
 
 	// governance
 	frame.Tool.RegMethod("addValidators", AddValidators)

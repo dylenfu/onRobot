@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
+	pcom "github.com/polynetwork/poly/common"
 )
 
 func (c *Client) BalanceOf(owner common.Address, blockNum string) (*big.Int, error) {
@@ -84,7 +85,7 @@ func (c *Client) PLTDecimals() (uint64, error) {
 func (c *Client) PLTTransfer(to common.Address, amount *big.Int) (common.Hash, error) {
 	payload, err := c.packPLT(plt.MethodTransfer, to, amount)
 	if err != nil {
-		return common.Hash{}, err
+		return utils.EmptyHash, err
 	}
 	return c.sendPLTTx(payload)
 }
@@ -92,7 +93,7 @@ func (c *Client) PLTTransfer(to common.Address, amount *big.Int) (common.Hash, e
 func (c *Client) PLTTransferFrom(from, to common.Address, amount *big.Int) (common.Hash, error) {
 	payload, err := c.packPLT(plt.MethodTransferFrom, from, to, amount)
 	if err != nil {
-		return common.Hash{}, err
+		return utils.EmptyHash, err
 	}
 	return c.sendPLTTx(payload)
 }
@@ -100,7 +101,7 @@ func (c *Client) PLTTransferFrom(from, to common.Address, amount *big.Int) (comm
 func (c *Client) PLTApprove(spender common.Address, amount *big.Int) (common.Hash, error) {
 	payload, err := c.packPLT(plt.MethodApprove, spender, amount)
 	if err != nil {
-		return common.Hash{}, err
+		return utils.EmptyHash, err
 	}
 	return c.sendPLTTx(payload)
 }
@@ -127,7 +128,7 @@ func (c *Client) PLTAllowance(owner, spender common.Address, blockNum string) (*
 func (c *Client) PLTMint(to common.Address, val *big.Int) (common.Hash, error) {
 	payload, err := c.packPLT(plt.MethodMint, to, val)
 	if err != nil {
-		return common.Hash{}, err
+		return utils.EmptyHash, err
 	}
 	return c.sendPLTTx(payload)
 }
@@ -135,7 +136,7 @@ func (c *Client) PLTMint(to common.Address, val *big.Int) (common.Hash, error) {
 func (c *Client) PLTBurn(val *big.Int) (common.Hash, error) {
 	payload, err := c.packPLT(plt.MethodBurn, val)
 	if err != nil {
-		return common.Hash{}, err
+		return utils.EmptyHash, err
 	}
 	return c.sendPLTTx(payload)
 }
@@ -162,7 +163,82 @@ func (c *Client) PLTGetCCMP(blockNum string) (common.Address, error) {
 func (c *Client) PLTSetCCMP(ccmp common.Address) (common.Hash, error) {
 	payload, err := c.packPLT(plt.MethodSetManagerProxy, ccmp)
 	if err != nil {
-		return common.Hash{}, err
+		return utils.EmptyHash, err
+	}
+	return c.sendPLTTx(payload)
+}
+
+func (c *Client) BindProxy(chainID uint64, proxy common.Address) (common.Hash, error) {
+	payload, err := c.packPLT(plt.MethodBindProxy, chainID, proxy.Bytes())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	return c.sendPLTTx(payload)
+}
+
+func (c *Client) GetBindProxy(chainID uint64, blockNum string) (common.Address, error) {
+	payload, err := c.packPLT(plt.MethodGetBindedProxy, chainID)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	enc, err := c.callPLT(payload, blockNum)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	var proxy []byte
+	if err := c.unpackPLT(plt.MethodGetBindedProxy, &proxy, enc); err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return common.BytesToAddress(proxy), nil
+}
+
+func (c *Client) BindAsset(chainID uint64, asset common.Address) (common.Hash, error) {
+	payload, err := c.packPLT(plt.MethodBindAsset, chainID, asset.Bytes())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	return c.sendPLTTx(payload)
+}
+
+func (c *Client) GetBindAsset(chainID uint64, blockNum string) (common.Address, error) {
+	payload, err := c.packPLT(plt.MethodGetBindedAsset, chainID)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	enc, err := c.callPLT(payload, blockNum)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	var asset []byte
+	if err := c.unpackPLT(plt.MethodGetBindedAsset, &asset, enc); err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return common.BytesToAddress(asset), nil
+}
+
+func (c *Client) Lock(chainID uint64, dstAddr common.Address, amount *big.Int) (common.Hash, error) {
+	payload, err := c.packPLT(plt.MethodLock, chainID, dstAddr.Bytes(), amount)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	return c.sendPLTTx(payload)
+}
+
+func (c *Client) UnLock(args *plt.TxArgs, srcContract common.Address, chainID uint64) (common.Hash, error) {
+	var buf []byte
+	sink := pcom.NewZeroCopySink(buf)
+	args.Serialization(sink)
+	payload, err := c.packPLT(plt.MethodUnlock, buf, srcContract.Bytes(), chainID)
+	if err != nil {
+		return utils.EmptyHash, err
 	}
 	return c.sendPLTTx(payload)
 }
