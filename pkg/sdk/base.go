@@ -164,6 +164,7 @@ func (c *Client) SendRawTransaction(hash common.Hash, signedTx string) (common.H
 func (c *Client) DeployContract(abiStr, binStr string) error {
 	auth := bind.NewKeyedTransactor(c.Key)
 	auth.GasLimit = 1e9
+	auth.Nonce = new(big.Int).SetUint64(c.GetNonce(c.Address().Hex()))
 
 	parsedABI, err := abi.JSON(strings.NewReader(abiStr))
 	if err != nil {
