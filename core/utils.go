@@ -54,6 +54,12 @@ func DumpHashList(hashlist []common.Hash, mark string) error {
 	return nil
 }
 
+func deployContract(abiJson, objectCode string) error {
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+	return cli.DeployContract(abiJson, objectCode)
+}
+
 func logsplit() {
 	log.Info("------------------------------------------------------------------")
 }

@@ -1,11 +1,12 @@
 package core
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"math/big"
 	"strconv"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
@@ -142,10 +143,49 @@ func Deploy() (succeed bool) {
 		return
 	}
 
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-	// send transaction
-	if err := cli.DeployContract(params.ABI, params.Object); err != nil {
+	if err := deployContract(params.ABI, params.Object); err != nil {
+		log.Errorf("failed to deploy contract, err: %v", err)
+		return
+	}
+
+	return true
+}
+
+type DeployContractParams struct {
+	Abi    string `json:"Abi"`
+	Object string `json:"Object"`
+}
+
+func DeployCrossChainContract() (succeed bool) {
+	eccdFileName := "ECCD-raw.json"
+	eccmFileName := "ECCM-raw.json"
+	ecmpFileName := "ECCMP-raw.json"
+	eccdParams := new(DeployContractParams)
+	eccmParams := new(DeployContractParams)
+	ecmpParams := new(DeployContractParams)
+
+	if err := config.LoadContract(eccdFileName, eccdParams); err != nil {
+		log.Errorf("failed to load contract %s, err: %v", eccdFileName, err)
+		return
+	}
+	if err := config.LoadContract(eccmFileName, eccmParams); err != nil {
+		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
+		return
+	}
+	if err := config.LoadContract(ecmpFileName, ecmpParams); err != nil {
+		log.Errorf("failed to load contract %s, err: %v", ecmpFileName, err)
+		return
+	}
+
+	if err := deployContract(eccdParams.Abi, eccdParams.Object); err != nil {
+		log.Errorf("failed to deploy contract, err: %v", err)
+		return
+	}
+	if err := deployContract(eccmParams.Abi, eccmParams.Object); err != nil {
+		log.Errorf("failed to deploy contract, err: %v", err)
+		return
+	}
+	if err := deployContract(ecmpParams.Abi, ecmpParams.Object); err != nil {
 		log.Errorf("failed to deploy contract, err: %v", err)
 		return
 	}
@@ -163,8 +203,8 @@ func EVM() (succeed bool) {
 	}
 
 	type TransferInput struct {
-		To common.Address
-		Value   *big.Int
+		To    common.Address
+		Value *big.Int
 	}
 
 	abiJs, err := abi.JSON(strings.NewReader(params.ABI))
@@ -198,7 +238,7 @@ func EVM() (succeed bool) {
 		return
 	}
 
-	enc, err := utils.PackMethod(abiJs, "nativeTransfer",  to, amount)
+	enc, err := utils.PackMethod(abiJs, "nativeTransfer", to, amount)
 	if err != nil {
 		log.Errorf("failed to pack `nativeTransfer`, err: %v", err)
 		return

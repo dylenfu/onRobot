@@ -287,6 +287,16 @@ func LoadAccount(address string) *ecdsa.PrivateKey {
 	return key.PrivateKey
 }
 
+func LoadContract(fileName string, data interface{}) error {
+	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, fileName)
+	keyJson, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(keyJson, data)
+}
+
 func ShellPath(fileName string) string {
 	return files.FullPath(Conf.Environment.LocalWorkspace, "", fileName)
 }
