@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"math/big"
 	"strings"
@@ -161,7 +162,7 @@ func (c *Client) SendRawTransaction(hash common.Hash, signedTx string) (common.H
 	return result, nil
 }
 
-func (c *Client) DeployContract(abiStr, binStr string) error {
+func (c *Client) DeployContract(abiStr, binStr string, params ...interface{}) (common.Address, *bind.BoundContract, error) {
 	auth := bind.NewKeyedTransactor(c.Key)
 	auth.GasLimit = 1e9
 	auth.Nonce = new(big.Int).SetUint64(c.GetNonce(c.Address().Hex()))
@@ -169,20 +170,20 @@ func (c *Client) DeployContract(abiStr, binStr string) error {
 	parsedABI, err := abi.JSON(strings.NewReader(abiStr))
 	if err != nil {
 		log.Errorf("failed to read abi json, err: %v", err)
-		return err
+		return utils.EmptyAddress, nil, err
 	}
 	parsedBin := common.FromHex(binStr)
 	backend := ethclient.NewClient(c.Client)
 
-	address, tx, contract, err := bind.DeployContract(auth, parsedABI, parsedBin, backend)
+	address, tx, contract, err := bind.DeployContract(auth, parsedABI, parsedBin, backend, params)
 	if err != nil {
 		log.Errorf("failed to bind and deploy contract, err: %v", err)
-		return err
+		return utils.EmptyAddress, nil, err
 	} else {
 		log.Infof("deploy contract tx %v\r\n, contract %v\r\n, address %s\r\n", tx, contract, address.Hex())
 	}
 
-	return nil
+	return address, contract, nil
 }
 
 func (c *Client) DumpEventLog(hash common.Hash) error {

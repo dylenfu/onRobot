@@ -3,6 +3,7 @@ package core
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"strconv"
 	"time"
 
@@ -54,10 +55,10 @@ func DumpHashList(hashlist []common.Hash, mark string) error {
 	return nil
 }
 
-func deployContract(abiJson, objectCode string) error {
+func deployContract(abiJson, objectCode string, params ...interface{}) (common.Address, *bind.BoundContract, error) {
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-	return cli.DeployContract(abiJson, objectCode)
+	return cli.DeployContract(abiJson, objectCode, params)
 }
 
 func logsplit() {

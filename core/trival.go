@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
 	"strconv"
 	"strings"
@@ -143,7 +144,7 @@ func Deploy() (succeed bool) {
 		return
 	}
 
-	if err := deployContract(params.ABI, params.Object); err != nil {
+	if _, _, err := deployContract(params.ABI, params.Object); err != nil {
 		log.Errorf("failed to deploy contract, err: %v", err)
 		return
 	}
@@ -177,18 +178,56 @@ func DeployCrossChainContract() (succeed bool) {
 		return
 	}
 
-	if err := deployContract(eccdParams.Abi, eccdParams.Object); err != nil {
+	ccdAddr, ccd, err := deployContract(eccdParams.Abi, eccdParams.Object)
+	if err != nil {
 		log.Errorf("failed to deploy contract, err: %v", err)
 		return
 	}
-	if err := deployContract(eccmParams.Abi, eccmParams.Object); err != nil {
+	ccmAddr, ccm, err := deployContract(eccmParams.Abi, eccmParams.Object, ccdAddr, uint64(8))
+	if err != nil {
 		log.Errorf("failed to deploy contract, err: %v", err)
 		return
 	}
-	if err := deployContract(ecmpParams.Abi, ecmpParams.Object); err != nil {
+	ccmpAddr, _, err := deployContract(ecmpParams.Abi, ecmpParams.Object, ccmAddr)
+	if err != nil {
 		log.Errorf("failed to deploy contract, err: %v", err)
 		return
 	}
+
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+	auth := bind.NewKeyedTransactor(node.PrivateKey())
+	auth.GasLimit = 1e9
+	auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
+
+	logsplit()
+	log.Info("ccd transferOwnership")
+	tx, err := ccd.Transact(auth, "transferOwnership", ccmAddr)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	wait(2)
+	if err := admcli.DumpEventLog(tx.Hash()); err != nil {
+		log.Error(err)
+		return
+	}
+
+	logsplit()
+	log.Info("ccm transferOwnership")
+	tx, err = ccm.Transact(auth, "transferOwnership", ccmpAddr)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	wait(2)
+	if err := admcli.DumpEventLog(tx.Hash()); err != nil {
+		log.Error(err)
+		return
+	}
+
+	logsplit()
+	log.Infof(" {\n\tccd: %s\n\tccm: %s\n\tccmp: %s\n}", ccdAddr.Hex(), ccmAddr.Hex(), ccmpAddr.Hex())
 
 	return true
 }
