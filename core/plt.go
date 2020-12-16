@@ -511,12 +511,12 @@ func Lock() (succeed bool) {
 
 		hash, err := cli.Lock(params.ChainID, params.BindTo, amount)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to call `lock` err: %v", err)
 			return
 		}
 		wait(2)
 		if err := cli.DumpEventLog(hash); err != nil {
-			log.Error(err)
+			log.Error("failed to dump `lock` event hash %s, err: %v", hash.Hex(), err)
 			return
 		}
 
@@ -535,44 +535,44 @@ func Lock() (succeed bool) {
 	}
 
 	// unlock
-	{
-		logsplit()
-		log.Infof("unlock PLT...")
-		balanceBeforeUnLock, err := cli.BalanceOf(userAddr, "latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		args := &plt.TxArgs{
-			ToAssetHash: []byte{},
-			ToAddress:   params.BindTo.Bytes(),
-			Amount:      amount,
-		}
-		hash, err := cli.UnLock(args, params.BindTo, params.ChainID)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		wait(2)
-		if err := cli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
-
-		balanceAfterUnLock, err := cli.BalanceOf(userAddr, "latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		subAmount := utils.SafeSub(balanceAfterUnLock, balanceBeforeUnLock)
-		if subAmount.Cmp(amount) != 0 {
-			log.Errorf("balance before unlock %d, after unlock %d, the sub amount should be %d",
-				plt.PrintUPLT(balanceBeforeUnLock), plt.PrintUPLT(balanceAfterUnLock), plt.PrintUPLT(amount))
-			return
-		}
-	}
+	//{
+	//	logsplit()
+	//	log.Infof("unlock PLT...")
+	//	balanceBeforeUnLock, err := cli.BalanceOf(userAddr, "latest")
+	//	if err != nil {
+	//		log.Error(err)
+	//		return
+	//	}
+	//
+	//	args := &plt.TxArgs{
+	//		ToAssetHash: []byte{},
+	//		ToAddress:   params.BindTo.Bytes(),
+	//		Amount:      amount,
+	//	}
+	//	hash, err := cli.UnLock(args, params.BindTo, params.ChainID)
+	//	if err != nil {
+	//		log.Error(err)
+	//		return
+	//	}
+	//	wait(2)
+	//	if err := cli.DumpEventLog(hash); err != nil {
+	//		log.Error(err)
+	//		return
+	//	}
+	//
+	//	balanceAfterUnLock, err := cli.BalanceOf(userAddr, "latest")
+	//	if err != nil {
+	//		log.Error(err)
+	//		return
+	//	}
+	//
+	//	subAmount := utils.SafeSub(balanceAfterUnLock, balanceBeforeUnLock)
+	//	if subAmount.Cmp(amount) != 0 {
+	//		log.Errorf("balance before unlock %d, after unlock %d, the sub amount should be %d",
+	//			plt.PrintUPLT(balanceBeforeUnLock), plt.PrintUPLT(balanceAfterUnLock), plt.PrintUPLT(amount))
+	//		return
+	//	}
+	//}
 	return true
 }
 

@@ -3,6 +3,7 @@
 currentIp=$1;
 
 cmdstr="\
+killall -9 geth;\
 source /etc/profile;\
 cd ~/gohome/src/palette/;\
 pwd;\
