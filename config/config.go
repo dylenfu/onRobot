@@ -297,6 +297,51 @@ func LoadContract(fileName string, data interface{}) error {
 	return json.Unmarshal(keyJson, data)
 }
 
+type CrossChainContracts struct {
+	ECCD common.Address `json:"eccd"`
+	ECCM common.Address `json:"eccm"`
+	ECMP common.Address `json:"ecmp"`
+}
+
+const crossChainContractsFile = "cross-chain-contracts.json"
+
+func RecordContractAddress(eccd, eccm, ecmp common.Address) error {
+	data := &CrossChainContracts{
+		ECCD: eccd,
+		ECCM: eccm,
+		ECMP: ecmp,
+	}
+
+	content, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, crossChainContractsFile)
+	return ioutil.WriteFile(filePath, content, 0644)
+}
+
+func ReadContracts() (eccd, eccm, ecmp common.Address, err error) {
+	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, crossChainContractsFile)
+
+	var (
+		keyJson []byte
+		data    = new(CrossChainContracts)
+	)
+	if keyJson, err = ioutil.ReadFile(filePath); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(keyJson, data); err != nil {
+		return
+	}
+
+	eccd = data.ECCD
+	eccm = data.ECCM
+	ecmp = data.ECMP
+	return
+}
+
 func ShellPath(fileName string) string {
 	return files.FullPath(Conf.Environment.LocalWorkspace, "", fileName)
 }

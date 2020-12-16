@@ -58,7 +58,7 @@ func DumpHashList(hashlist []common.Hash, mark string) error {
 func deployContract(abiJson, objectCode string, params ...interface{}) (common.Address, *bind.BoundContract, error) {
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-	return cli.DeployContract(abiJson, objectCode, params)
+	return cli.DeployContract(abiJson, objectCode, params...)
 }
 
 func logsplit() {

@@ -1,10 +1,11 @@
 package core
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
 	"strconv"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
@@ -180,17 +181,19 @@ func DeployCrossChainContract() (succeed bool) {
 
 	ccdAddr, ccd, err := deployContract(eccdParams.Abi, eccdParams.Object)
 	if err != nil {
-		log.Errorf("failed to deploy contract, err: %v", err)
+		log.Errorf("failed to deploy eccd contract, err: %v", err)
 		return
 	}
+
 	ccmAddr, ccm, err := deployContract(eccmParams.Abi, eccmParams.Object, ccdAddr, uint64(8))
 	if err != nil {
-		log.Errorf("failed to deploy contract, err: %v", err)
+		log.Errorf("failed to deploy eccm contract, err: %v", err)
 		return
 	}
+
 	ccmpAddr, _, err := deployContract(ecmpParams.Abi, ecmpParams.Object, ccmAddr)
 	if err != nil {
-		log.Errorf("failed to deploy contract, err: %v", err)
+		log.Errorf("failed to deploy ecmp contract, err: %v", err)
 		return
 	}
 
@@ -198,36 +201,50 @@ func DeployCrossChainContract() (succeed bool) {
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 	auth := bind.NewKeyedTransactor(node.PrivateKey())
 	auth.GasLimit = 1e9
-	auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
 
-	logsplit()
-	log.Info("ccd transferOwnership")
-	tx, err := ccd.Transact(auth, "transferOwnership", ccmAddr)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	wait(2)
-	if err := admcli.DumpEventLog(tx.Hash()); err != nil {
-		log.Error(err)
-		return
-	}
-
-	logsplit()
-	log.Info("ccm transferOwnership")
-	tx, err = ccm.Transact(auth, "transferOwnership", ccmpAddr)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	wait(2)
-	if err := admcli.DumpEventLog(tx.Hash()); err != nil {
-		log.Error(err)
-		return
+	// eccd contract transfer ownership
+	{
+		logsplit()
+		auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
+		log.Info("ccd transferOwnership")
+		tx, err := ccd.Transact(auth, "transferOwnership", ccmAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		wait(2)
+		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
+			log.Error(err)
+			return
+		}
 	}
 
-	logsplit()
-	log.Infof(" {\n\tccd: %s\n\tccm: %s\n\tccmp: %s\n}", ccdAddr.Hex(), ccmAddr.Hex(), ccmpAddr.Hex())
+	// eccm contract transfer ownership
+	{
+		logsplit()
+		log.Info("ccm transferOwnership")
+		auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
+		tx, err := ccm.Transact(auth, "transferOwnership", ccmpAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		wait(2)
+		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// record contracts address
+	{
+		logsplit()
+		if err := config.RecordContractAddress(ccdAddr, ccmAddr, ccmpAddr); err != nil {
+			log.Error(err)
+			return
+		}
+		log.Infof(" {\n\tccd: %s\n\tccm: %s\n\tccmp: %s\n}", ccdAddr.Hex(), ccmAddr.Hex(), ccmpAddr.Hex())
+	}
 
 	return true
 }

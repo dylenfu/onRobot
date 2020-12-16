@@ -175,14 +175,12 @@ func (c *Client) DeployContract(abiStr, binStr string, params ...interface{}) (c
 	parsedBin := common.FromHex(binStr)
 	backend := ethclient.NewClient(c.Client)
 
-	address, tx, contract, err := bind.DeployContract(auth, parsedABI, parsedBin, backend, params)
+	address, tx, contract, err := bind.DeployContract(auth, parsedABI, parsedBin, backend, params...)
 	if err != nil {
-		log.Errorf("failed to bind and deploy contract, err: %v", err)
 		return utils.EmptyAddress, nil, err
-	} else {
-		log.Infof("deploy contract tx %v\r\n, contract %v\r\n, address %s\r\n", tx, contract, address.Hex())
 	}
 
+	log.Infof("deploy contract tx %v\r\n, contract %v\r\n, address %s\r\n", tx, contract, address.Hex())
 	return address, contract, nil
 }
 
