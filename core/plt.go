@@ -247,6 +247,7 @@ func Approve() (succeed bool) {
 	return true
 }
 
+// 在palette native plt合约mint一定量的PLT token到某个已经存在的用户地址
 func Mint() (succeed bool) {
 	var p struct {
 		To    common.Address
@@ -287,6 +288,7 @@ func Mint() (succeed bool) {
 	return true
 }
 
+// 在palette native plt合约烧毁合约PLT总供应量对应的amount
 func Burn() (succeed bool) {
 	var p struct {
 		Value int
@@ -332,6 +334,7 @@ func Burn() (succeed bool) {
 	return true
 }
 
+// 在palette合约部署ccmp合约成功之后，需要在plt合约记录管理合约地址
 func SetCCMP() (succeed bool) {
 	var p struct {
 		Ccmp common.Address
@@ -359,10 +362,11 @@ func SetCCMP() (succeed bool) {
 	return true
 }
 
+// 在palette native合约上记录以太坊localProxy地址
 func BindProxy() (succeed bool) {
 	var params struct {
 		ChainID uint64
-		Proxy common.Address
+		Proxy   common.Address
 	}
 	if err := config.LoadParams("BindProxy.json", &params); err != nil {
 		log.Error(err)
@@ -389,7 +393,7 @@ func BindProxy() (succeed bool) {
 	// get and compare proxy
 	{
 		log.Infof("get bind proxy...")
-		proxy, err := admcli.GetBindProxy(params.ChainID,"latest")
+		proxy, err := admcli.GetBindProxy(params.ChainID, "latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -406,10 +410,11 @@ func BindProxy() (succeed bool) {
 	return true
 }
 
+// 在palette native合约上记录以太坊erc20资产地址
 func BindAsset() (succeed bool) {
 	var params struct {
 		ChainID uint64
-		Asset common.Address
+		Asset   common.Address
 	}
 
 	if err := config.LoadParams("BindAsset.json", &params); err != nil {
@@ -453,12 +458,12 @@ func BindAsset() (succeed bool) {
 
 func Lock() (succeed bool) {
 	var params struct {
-		ChainID uint64
+		ChainID      uint64
 		AccountIndex int
-		Proxy common.Address
-		Asset common.Address
-		BindTo common.Address
-		Amount int
+		Proxy        common.Address
+		Asset        common.Address
+		BindTo       common.Address
+		Amount       int
 	}
 
 	if err := config.LoadParams("Lock.json", &params); err != nil {
@@ -466,7 +471,7 @@ func Lock() (succeed bool) {
 		return
 	}
 
-	if params.AccountIndex > len(config.Conf.Accounts) - 1{
+	if params.AccountIndex > len(config.Conf.Accounts)-1 {
 		log.Errorf("account index out of range")
 		return
 	}
@@ -480,6 +485,7 @@ func Lock() (succeed bool) {
 
 	// prepare balance
 	{
+		logsplit()
 		log.Infof("prepare test account balance...")
 		hash, err := admcli.PLTTransfer(userAddr, amount)
 		if err != nil {
@@ -495,13 +501,9 @@ func Lock() (succeed bool) {
 
 	// lock plt
 	{
+		logsplit()
 		log.Infof("lock PLT...")
 		balanceBeforeLock, err := cli.BalanceOf(userAddr, "latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		bindToBalanceBeforeLock, err := cli.BalanceOf(params.BindTo, "latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -523,36 +525,20 @@ func Lock() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		bindToBalanceAfterLock, err := cli.BalanceOf(params.BindTo, "latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
 
 		subAmount := utils.SafeSub(balanceBeforeLock, balanceAfterLock)
-		bindToSubAmount:= utils.SafeSub(bindToBalanceAfterLock, bindToBalanceBeforeLock)
-
-		if subAmount.Cmp(amount) != 0{
+		if subAmount.Cmp(amount) != 0 {
 			log.Errorf("balance before lock %d, after lock %d, the sub amount should be %d",
 				plt.PrintUPLT(balanceBeforeLock), plt.PrintUPLT(balanceAfterLock), plt.PrintUPLT(amount))
-			return
-		}
-		if bindToSubAmount.Cmp(amount) != 0{
-			log.Errorf("bindTo balance before lock %d, after lock %d, the sub amount should be %d",
-				plt.PrintUPLT(bindToBalanceBeforeLock), plt.PrintUPLT(bindToBalanceAfterLock), plt.PrintUPLT(amount))
 			return
 		}
 	}
 
 	// unlock
 	{
+		logsplit()
 		log.Infof("unlock PLT...")
 		balanceBeforeUnLock, err := cli.BalanceOf(userAddr, "latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		unbindToBalanceBeforeLock, err := cli.BalanceOf(params.BindTo, "latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -560,8 +546,8 @@ func Lock() (succeed bool) {
 
 		args := &plt.TxArgs{
 			ToAssetHash: []byte{},
-			ToAddress: params.BindTo.Bytes(),
-			Amount: amount,
+			ToAddress:   params.BindTo.Bytes(),
+			Amount:      amount,
 		}
 		hash, err := cli.UnLock(args, params.BindTo, params.ChainID)
 		if err != nil {
@@ -579,24 +565,18 @@ func Lock() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		unbindToBalanceAfterLock, err := cli.BalanceOf(params.BindTo, "latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
 
 		subAmount := utils.SafeSub(balanceAfterUnLock, balanceBeforeUnLock)
-		unbindToSubAmount := utils.SafeSub(unbindToBalanceBeforeLock, unbindToBalanceAfterLock)
 		if subAmount.Cmp(amount) != 0 {
 			log.Errorf("balance before unlock %d, after unlock %d, the sub amount should be %d",
 				plt.PrintUPLT(balanceBeforeUnLock), plt.PrintUPLT(balanceAfterUnLock), plt.PrintUPLT(amount))
 			return
 		}
-		if unbindToSubAmount.Cmp(amount) != 0{
-			log.Errorf("unbindTo balance before lock %d, after lock %d, the sub amount should be %d",
-				plt.PrintUPLT(unbindToBalanceBeforeLock), plt.PrintUPLT(unbindToBalanceAfterLock), plt.PrintUPLT(amount))
-			return
-		}
 	}
+	return true
+}
+
+// 获取并打印跨链事件
+func GetProof() (succeed bool) {
 	return true
 }

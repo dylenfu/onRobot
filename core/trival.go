@@ -170,32 +170,34 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to load contract %s, err: %v", eccdFileName, err)
 		return
 	}
-	if err := config.LoadContract(eccmFileName, eccmParams); err != nil {
-		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
-		return
-	}
-	if err := config.LoadContract(ecmpFileName, ecmpParams); err != nil {
-		log.Errorf("failed to load contract %s, err: %v", ecmpFileName, err)
-		return
-	}
-
 	ccdAddr, ccd, err := deployContract(eccdParams.Abi, eccdParams.Object)
 	if err != nil {
 		log.Errorf("failed to deploy eccd contract, err: %v", err)
 		return
 	}
+	wait(2)
 
+	if err := config.LoadContract(eccmFileName, eccmParams); err != nil {
+		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
+		return
+	}
 	ccmAddr, ccm, err := deployContract(eccmParams.Abi, eccmParams.Object, ccdAddr, uint64(8))
 	if err != nil {
 		log.Errorf("failed to deploy eccm contract, err: %v", err)
 		return
 	}
+	wait(2)
 
+	if err := config.LoadContract(ecmpFileName, ecmpParams); err != nil {
+		log.Errorf("failed to load contract %s, err: %v", ecmpFileName, err)
+		return
+	}
 	ccmpAddr, _, err := deployContract(ecmpParams.Abi, ecmpParams.Object, ccmAddr)
 	if err != nil {
 		log.Errorf("failed to deploy ecmp contract, err: %v", err)
 		return
 	}
+	wait(2)
 
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())

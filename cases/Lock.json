@@ -1,8 +1,8 @@
 {
-  "ChainID": 1011,
+  "ChainID": 2,
   "AccountIndex": 0,
   "Proxy": "0xbbbbca6a901c926f240b89eacb641d8aec7aeafd",
-  "Asset": "0x0000000000000000000000000000000000000103",
-  "BindTo": "0xa2ec66f9dee661e096db3c4de1187d32e48cc959",
+  "Asset": "0xef68e7c694f40c8202821edf525de3782458639f",
+  "BindTo": "0x5593b2b8dc63d0ed68aa8f885707b2dc5787e391",
   "Amount": 12
 }

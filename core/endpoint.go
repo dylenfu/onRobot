@@ -72,6 +72,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("bindProxy", BindProxy)
 	frame.Tool.RegMethod("bindAsset", BindAsset)
 	frame.Tool.RegMethod("lock", Lock)
+	frame.Tool.RegMethod("getProof", GetProof)
 
 	// governance
 	frame.Tool.RegMethod("addValidators", AddValidators)

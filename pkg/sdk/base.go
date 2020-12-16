@@ -4,21 +4,21 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/contracts/native/utils"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"math/big"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/governance"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/palettechain/onRobot/pkg/log"
 )
@@ -194,6 +194,7 @@ func (c *Client) DumpEventLog(hash common.Hash) error {
 		return fmt.Errorf("receipt failed %s", hash.Hex())
 	}
 
+	log.Infof("txhash %s", hash.Hex())
 	for _, event := range raw.Logs {
 		log.Infof("eventlog address %s", event.Address.Hex())
 		log.Infof("eventlog data %s", new(big.Int).SetBytes(event.Data).String())
@@ -210,6 +211,48 @@ func (c *Client) GetReceipt(hash common.Hash) (*types.Receipt, error) {
 		return nil, err
 	}
 	return raw, nil
+}
+
+type ProofRsp struct {
+	JsonRPC string       `json:"jsonrpc"`
+	Result  PaletteProof `json:"result,omitempty"`
+	Error   *JsonError   `json:"error,omitempty"`
+	Id      uint         `json:"id"`
+}
+
+type PaletteProof struct {
+	Address       string         `json:"address"`
+	Balance       string         `json:"balance"`
+	CodeHash      string         `json:"codeHash"`
+	Nonce         string         `json:"nonce"`
+	StorageHash   string         `json:"storageHash"`
+	AccountProof  []string       `json:"accountProof"`
+	StorageProofs []StorageProof `json:"StorageProof"`
+}
+
+type StorageProof struct {
+	Key   string   `json:"key"`
+	Value string   `json:"value"`
+	Proof []string `json:"proof"`
+}
+
+type JsonError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+func (c *Client) GetProof(contractAddr common.Address, key string, blockNum string) (*PaletteProof, error) {
+	res := new(ProofRsp)
+	if err := c.Call(res, "eth_getProof", contractAddr, []string{key}, blockNum); err != nil {
+		return nil, err
+	}
+
+	if res.Error != nil {
+		return nil, fmt.Errorf(res.Error.Message)
+	}
+
+	return &res.Result, nil
 }
 
 func (c *Client) CallContract(caller, contractAddr common.Address, payload []byte, blockNum string) ([]byte, error) {
