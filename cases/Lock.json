@@ -2,6 +2,7 @@
   "ChainID": 2,
   "AccountIndex": 0,
   "Proxy": "0xbbbbca6a901c926f240b89eacb641d8aec7aeafd",
+  "CrossChainManager": "0xe6b21cd1042fda65a122d0cd3787718e2118d104",
   "Asset": "0xef68e7c694f40c8202821edf525de3782458639f",
   "BindTo": "0x5593b2b8dc63d0ed68aa8f885707b2dc5787e391",
   "Amount": 12

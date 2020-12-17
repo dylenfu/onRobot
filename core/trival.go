@@ -5,13 +5,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/palettechain/palette/accounts/abi/bind"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/contracts/native/utils"
+	"github.com/palettechain/palette/accounts/abi"
+	"github.com/palettechain/palette/contracts/native/utils"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/native/plt"
+	"github.com/palettechain/palette/common"
+	"github.com/palettechain/palette/contracts/native/plt"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"

@@ -3,14 +3,14 @@ package core
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/palettechain/palette/accounts/abi/bind"
 	"strconv"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/native/plt"
-	"github.com/ethereum/go-ethereum/contracts/native/utils"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/palettechain/palette/common"
+	"github.com/palettechain/palette/contracts/native/plt"
+	"github.com/palettechain/palette/contracts/native/utils"
+	"github.com/palettechain/palette/crypto"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
@@ -125,6 +125,16 @@ func getAndCheckValidator(nodeIndexList []int) (config.Nodes, error) {
 	}
 	return nodes, nil
 }
+
+func mockCrossChainEvent() {
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+//
+// exec shell scripts
+//
+///////////////////////////////////////////////////////////////////////////////////////
 
 const (
 	shGrep        = "grep.sh"

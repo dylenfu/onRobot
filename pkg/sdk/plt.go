@@ -3,10 +3,9 @@ package sdk
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/native/plt"
-	"github.com/ethereum/go-ethereum/contracts/native/utils"
-	pcom "github.com/polynetwork/poly/common"
+	"github.com/palettechain/palette/common"
+	"github.com/palettechain/palette/contracts/native/plt"
+	"github.com/palettechain/palette/contracts/native/utils"
 )
 
 func (c *Client) BalanceOf(owner common.Address, blockNum string) (*big.Int, error) {
@@ -232,16 +231,16 @@ func (c *Client) Lock(chainID uint64, dstAddr common.Address, amount *big.Int) (
 	return c.sendPLTTx(payload)
 }
 
-func (c *Client) UnLock(args *plt.TxArgs, srcContract common.Address, chainID uint64) (common.Hash, error) {
-	var buf []byte
-	sink := pcom.NewZeroCopySink(buf)
-	args.Serialization(sink)
-	payload, err := c.packPLT(plt.MethodUnlock, buf, srcContract.Bytes(), chainID)
-	if err != nil {
-		return utils.EmptyHash, err
-	}
-	return c.sendPLTTx(payload)
-}
+//func (c *Client) UnLock(args *plt.TxArgs, srcContract common.Address, chainID uint64) (common.Hash, error) {
+//	var buf []byte
+//	sink := pcom.NewZeroCopySink(buf)
+//	args.Serialization(sink)
+//	payload, err := c.packPLT(plt.MethodUnlock, buf, srcContract.Bytes(), chainID)
+//	if err != nil {
+//		return utils.EmptyHash, err
+//	}
+//	return c.sendPLTTx(payload)
+//}
 
 func (c *Client) packPLT(method string, args ...interface{}) ([]byte, error) {
 	return utils.PackMethod(PLTABI, method, args...)

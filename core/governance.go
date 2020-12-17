@@ -3,10 +3,10 @@ package core
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/native/governance"
-	"github.com/ethereum/go-ethereum/contracts/native/plt"
-	"github.com/ethereum/go-ethereum/contracts/native/utils"
+	"github.com/palettechain/palette/common"
+	"github.com/palettechain/palette/contracts/native/governance"
+	"github.com/palettechain/palette/contracts/native/plt"
+	"github.com/palettechain/palette/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"

@@ -3,7 +3,7 @@ package hdwallet
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/palettechain/palette/accounts"
 )
 
 const mnemonic = "tag volcano eight thank tide danger coast health above argue embrace heavy"
