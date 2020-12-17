@@ -65,7 +65,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("approve", Approve)
 
 	// lock proxy and cross chain manager
-	frame.Tool.RegMethod("deployCrossChainContract", DeployCrossChainContract)
+	frame.Tool.RegMethod("deploy", DeployCrossChainContract)
 	frame.Tool.RegMethod("mint", Mint)
 	frame.Tool.RegMethod("burn", Burn)
 	frame.Tool.RegMethod("setManagerProxy", SetCCMP)
@@ -88,6 +88,6 @@ func Endpoint() {
 	frame.Tool.RegMethod("period", RewardPeriod)
 
 	// evm
-	frame.Tool.RegMethod("deploy", Deploy)
-	frame.Tool.RegMethod("evm", EVM)
+	//frame.Tool.RegMethod("deploy", Deploy)
+	//frame.Tool.RegMethod("evm", EVM)
 }
