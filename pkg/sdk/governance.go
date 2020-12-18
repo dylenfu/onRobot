@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/palettechain/palette/common"
-	"github.com/palettechain/palette/contracts/native/governance"
-	"github.com/palettechain/palette/contracts/native/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/contracts/native/governance"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 )
 
 // params are validator and isRevoke

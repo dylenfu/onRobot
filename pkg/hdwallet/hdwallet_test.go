@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/palettechain/palette/common"
-	"github.com/palettechain/palette/common/hexutil"
-	"github.com/palettechain/palette/core/types"
-	"github.com/palettechain/palette/crypto"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func TestWallet(t *testing.T) {

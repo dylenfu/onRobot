@@ -1,15 +1,15 @@
 package core
 
 import (
-	"github.com/palettechain/palette/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
 	"strconv"
 
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
-	"github.com/palettechain/palette/common"
-	"github.com/palettechain/palette/contracts/native/plt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/contracts/native/plt"
 )
 
 func BlockNumber() bool {

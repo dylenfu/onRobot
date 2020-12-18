@@ -3,9 +3,9 @@ package sdk
 import (
 	"math/big"
 
-	"github.com/palettechain/palette/common"
-	"github.com/palettechain/palette/contracts/native/plt"
-	"github.com/palettechain/palette/contracts/native/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/contracts/native/plt"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 )
 
 func (c *Client) BalanceOf(owner common.Address, blockNum string) (*big.Int, error) {

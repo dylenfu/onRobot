@@ -4,9 +4,9 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 
-	"github.com/palettechain/palette/common"
-	"github.com/palettechain/palette/crypto"
-	"github.com/palettechain/palette/rpc"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type Client struct {

@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/palettechain/palette/accounts/keystore"
-	"github.com/palettechain/palette/common"
-	"github.com/palettechain/palette/crypto"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/palettechain/onRobot/pkg/encode"
 	"github.com/palettechain/onRobot/pkg/files"
 	"github.com/palettechain/onRobot/pkg/sdk"

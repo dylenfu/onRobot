@@ -10,12 +10,12 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
-	ethereum "github.com/palettechain/palette"
-	"github.com/palettechain/palette/accounts"
-	"github.com/palettechain/palette/common"
-	"github.com/palettechain/palette/common/hexutil"
-	"github.com/palettechain/palette/core/types"
-	"github.com/palettechain/palette/crypto"
+	ethereum "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tyler-smith/go-bip39"
 )
 

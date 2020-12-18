@@ -1,7 +1,7 @@
 package hdwallet
 
 import (
-	"github.com/palettechain/palette/common"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
