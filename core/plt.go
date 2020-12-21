@@ -336,14 +336,15 @@ func Burn() (succeed bool) {
 
 // 在palette合约部署ccmp合约成功之后，需要在plt合约记录管理合约地址
 func SetCCMP() (succeed bool) {
-	var p struct {
-		Ccmp common.Address
-	}
-	if err := config.LoadParams("SetManagerProxy.json", &p); err != nil {
-		log.Error(err)
+	_,_, ccmp, err := config.ReadContracts()
+	if err != nil {
+		log.Error("read ccmp contract err")
 		return
+	} else {
+		log.Infof("ccmp contract addr %s", ccmp.Hex())
 	}
-	tx, err := admcli.PLTSetCCMP(p.Ccmp)
+
+	tx, err := admcli.PLTSetCCMP(ccmp)
 	if err != nil {
 		log.Error(err)
 		return
@@ -355,8 +356,8 @@ func SetCCMP() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	if !bytes.Equal(proxy.Bytes(), p.Ccmp.Bytes()) {
-		log.Errorf("wrong ccmp: should be %s but get %s", p.Ccmp.Hex(), proxy.Hex())
+	if !bytes.Equal(proxy.Bytes(), ccmp.Bytes()) {
+		log.Errorf("wrong ccmp: should be %s but get %s", ccmp.Hex(), proxy.Hex())
 		return
 	}
 	return true
