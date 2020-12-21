@@ -176,7 +176,8 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
 		return
 	}
-	ccmAddr, ccm, err := deployContract(eccmParams.Abi, eccmParams.Object, ccdAddr, uint64(8))
+	otherChainID := uint64(config.Conf.Environment.NetworkID)
+	ccmAddr, ccm, err := deployContract(eccmParams.Abi, eccmParams.Object, ccdAddr, otherChainID)
 	if err != nil {
 		log.Errorf("failed to deploy eccm contract, err: %v", err)
 		return

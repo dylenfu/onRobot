@@ -362,7 +362,9 @@ func SetCCMP() (succeed bool) {
 	return true
 }
 
-// 在palette native合约上记录以太坊localProxy地址
+// 在palette native合约上记录以太坊localProxy地址,
+// 这里我们将实现palette->poly->palette的循环，不走ethereum，那么proxy就直接是plt地址，
+// asset的地址也是palette plt地址
 func BindProxy() (succeed bool) {
 	var params struct {
 		ChainID uint64

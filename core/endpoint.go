@@ -68,7 +68,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("deploy", DeployCrossChainContract)
 	frame.Tool.RegMethod("mint", Mint)
 	frame.Tool.RegMethod("burn", Burn)
-	frame.Tool.RegMethod("setManagerProxy", SetCCMP)
+	frame.Tool.RegMethod("ccmp", SetCCMP)
 	frame.Tool.RegMethod("bindProxy", BindProxy)
 	frame.Tool.RegMethod("bindAsset", BindAsset)
 	frame.Tool.RegMethod("lock", Lock)
