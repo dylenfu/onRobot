@@ -2,4 +2,5 @@
 target
 peers.recent
 *.log
-build/target/backup/poly_keystore
+build/poly_keystore
+config/*.json
