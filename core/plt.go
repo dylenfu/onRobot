@@ -5,11 +5,13 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
+	"github.com/palettechain/onRobot/pkg/poly"
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
@@ -336,7 +338,7 @@ func Burn() (succeed bool) {
 
 // 在palette合约部署ccmp合约成功之后，需要在plt合约记录管理合约地址
 func SetCCMP() (succeed bool) {
-	_,_, ccmp, err := config.ReadContracts()
+	_, _, ccmp, err := config.ReadContracts()
 	if err != nil {
 		log.Error("read ccmp contract err")
 		return
@@ -576,6 +578,87 @@ func Lock() (succeed bool) {
 	//		return
 	//	}
 	//}
+	return true
+}
+
+// 同步区块头到poly链上
+func SyncGenesis() (succeed bool) {
+
+	polyRPC := config.Conf.Poly.RPCAddress
+	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
+	if err != nil {
+		log.Errorf("failed to generate poly client, err: %s", err)
+		return
+	} else {
+		log.Infof("generate poly client success!")
+	}
+
+	// get palette current block header
+	logsplit()
+	cli := admcli
+	curr, hdr, err := cli.GetCurrentBlockHeader()
+	if err != nil {
+		log.Errorf("failed to get block header, err: %s", err)
+		return
+	}
+	pltHeaderEnc, err := hdr.MarshalJSON()
+	if err != nil {
+		log.Errorf("marshal header failed, err: %s", err)
+		return
+	}
+	log.Infof("get palette block header with current height %d, header %s", curr, hexutil.Encode(pltHeaderEnc))
+
+	// sync palette header to poly
+	{
+		logsplit()
+		chainID := uint64(config.Conf.Environment.NetworkID)
+		txhash, err := polyCli.SyncGenesisBlock(chainID, pltHeaderEnc)
+		if err != nil {
+			log.Errorf("SyncEthGenesisHeader failed: %v", err)
+			return
+		}
+		if err := polyCli.WaitPolyTx(txhash); err != nil {
+			log.Errorf("waiting for poly tx err: %s", err)
+			return
+		}
+		log.Infof("successful to sync eth genesis header: txhash %s", txhash.Hex())
+	}
+
+	// get poly block and assemble book keepers to header
+	{
+		logsplit()
+		_, eccmAddr, _, err := config.ReadContracts()
+		if err != nil {
+			log.Errorf("failed to read eccm contract address, err: %s", err)
+			return
+		}
+
+		// `epoch` related with the poly validators changing,
+		// we can set it as 0 if poly validators never changed on develop environment.
+		var epoch uint32 = 0
+		gB, err := polyCli.GetBlockByHeight(epoch)
+		if err != nil {
+			log.Errorf("failed to get block, err: %s", err)
+			return
+		}
+		bookeepers, err := poly.GetBookeeper(gB)
+		if err != nil {
+			log.Errorf("failed to get bookeepers, err: %s", err)
+			return
+		}
+		bookeepersEnc := poly.AssembleNoCompressBookeeper(bookeepers)
+		headerEnc := gB.Header.ToArray()
+
+		txhash, err := cli.InitGenesisBlock(eccmAddr, headerEnc, bookeepersEnc)
+		if err != nil {
+			log.Errorf("failed to initGenesisBlock, err: %s", err)
+			return
+		} else {
+			log.Infof("sync genesis header success, txhash %s", txhash.Hex())
+		}
+	}
+
 	return true
 }
 

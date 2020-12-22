@@ -17,12 +17,14 @@ import (
 	"github.com/palettechain/onRobot/pkg/encode"
 	"github.com/palettechain/onRobot/pkg/files"
 	"github.com/palettechain/onRobot/pkg/sdk"
+	polysdk "github.com/polynetwork/poly-go-sdk"
 )
 
 const (
-	testCaseDir = "cases"
-	keystoreDir = "keystore"
-	setupDir    = "setup"
+	testCaseDir     = "cases"
+	keystoreDir     = "keystore"
+	setupDir        = "setup"
+	polyKeystoreDir = "poly_keystore"
 )
 
 var (
@@ -43,6 +45,7 @@ type Config struct {
 	BlockPeriod           encode.Duration
 	RewardEffectivePeriod int // 区块奖励周期/参数生效周期
 	Nodes                 []*Node
+	Poly                  *PolyConfig
 }
 
 func (c *Config) DeepCopy() *Config {
@@ -285,6 +288,45 @@ func LoadAccount(address string) *ecdsa.PrivateKey {
 	}
 
 	return key.PrivateKey
+}
+
+type PolyConfig struct {
+	PolyAccountDefaultPassphrase string
+	RPCAddress                   string
+	NetworkID                    uint64
+}
+
+func (c *PolyConfig) LoadPolyAccountList() []*polysdk.Account {
+
+	list := make([]*polysdk.Account, 0)
+	pwd := []byte(c.PolyAccountDefaultPassphrase)
+	dir := path.Join(Conf.Environment.LocalWorkspace, polyKeystoreDir)
+	polySDK := polysdk.NewPolySdk()
+
+	fs, _ := ioutil.ReadDir(dir)
+	for _, f := range fs {
+		fullPath := path.Join(dir, f.Name())
+		acc, err := getPolyAccountByPassword(polySDK, fullPath, pwd)
+		if err != nil {
+			panic(fmt.Sprintf("failed to get poly account, err: %s", err))
+		}
+		list = append(list, acc)
+	}
+
+	return list
+}
+
+func getPolyAccountByPassword(sdk *polysdk.PolySdk, path string, pwd []byte) (
+	*polysdk.Account, error) {
+	wallet, err := sdk.OpenWallet(path)
+	if err != nil {
+		return nil, fmt.Errorf("open wallet error: %v", err)
+	}
+	acc, err := wallet.GetDefaultAccount(pwd)
+	if err != nil {
+		return nil, fmt.Errorf("getDefaultAccount error: %v", err)
+	}
+	return acc, nil
 }
 
 func LoadContract(fileName string, data interface{}) error {

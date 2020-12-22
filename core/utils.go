@@ -3,10 +3,10 @@ package core
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"strconv"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
@@ -124,10 +124,6 @@ func getAndCheckValidator(nodeIndexList []int) (config.Nodes, error) {
 		nodes = append(nodes, node)
 	}
 	return nodes, nil
-}
-
-func mockCrossChainEvent() {
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

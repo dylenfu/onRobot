@@ -1,11 +1,16 @@
 package sdk
 
 import (
+	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/palettechain/onRobot/pkg/log"
+	"github.com/polynetwork/eth-contracts/go_abi/eccm_abi"
 )
 
 func (c *Client) BalanceOf(owner common.Address, blockNum string) (*big.Int, error) {
@@ -229,6 +234,38 @@ func (c *Client) Lock(chainID uint64, dstAddr common.Address, amount *big.Int) (
 		return utils.EmptyHash, err
 	}
 	return c.sendPLTTx(payload)
+}
+
+func (c *Client) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickeys []byte) (common.Hash, error) {
+	backend := ethclient.NewClient(c.Client)
+	eccm, err := eccm_abi.NewEthCrossChainManager(eccmAddr, backend)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManager err: %s", err)
+	}
+
+	auth := c.getBindAuth()
+	tx, err := eccm.InitGenesisBlock(auth, rawHdr, publickeys)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("call eccm InitGenesisBlock err: %s", err)
+	}
+
+	c.WaitTransaction(tx.Hash())
+	return tx.Hash(), nil
+}
+
+func (c *Client) WaitTransaction(txhash common.Hash) {
+	for {
+		time.Sleep(time.Millisecond * 100)
+		receipt, err := c.GetReceipt(txhash)
+		if err != nil {
+			log.Errorf("failed to call TransactionByHash: %v", err)
+			continue
+		}
+		if receipt != nil {
+			log.Infof("tx %s status %d", txhash.Hex(), receipt.Status)
+			break
+		}
+	}
 }
 
 //func (c *Client) UnLock(args *plt.TxArgs, srcContract common.Address, chainID uint64) (common.Hash, error) {

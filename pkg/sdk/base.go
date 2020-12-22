@@ -47,7 +47,6 @@ func Init(_gasLimit, _deployGasLimit uint64, _blockPeriod time.Duration) {
 
 func (c *Client) GetBlockNumber() uint64 {
 	var raw string
-
 	if err := c.Call(
 		&raw,
 		"eth_blockNumber",
@@ -58,6 +57,13 @@ func (c *Client) GetBlockNumber() uint64 {
 	without0xStr := strings.Replace(raw, "0x", "", -1)
 	bigNonce, _ := new(big.Int).SetString(without0xStr, 16)
 	return bigNonce.Uint64()
+}
+
+func (c *Client) GetBlockByNumber(height uint64) (*types.Block, error) {
+	cli := ethclient.NewClient(c.Client)
+	data := new(big.Int).SetUint64(height)
+	ctx := context.Background()
+	return cli.BlockByNumber(ctx, data)
 }
 
 func (c *Client) GetNonce(address string) uint64 {
@@ -75,6 +81,20 @@ func (c *Client) GetNonce(address string) uint64 {
 	without0xStr := strings.Replace(raw, "0x", "", -1)
 	bigNonce, _ := new(big.Int).SetString(without0xStr, 16)
 	return bigNonce.Uint64()
+}
+
+func (c *Client) GetCurrentBlockHeader() (uint64, *types.Header, error) {
+	curr := c.GetBlockNumber()
+	block, err := c.GetBlockByNumber(curr)
+	if err != nil {
+		return 0, nil, fmt.Errorf("getBlockByNumber err: %s", err)
+	}
+	if block == nil {
+		return 0, nil, fmt.Errorf("getBlockByNumber, block is nil")
+	}
+	hdr := block.Header()
+
+	return curr, hdr, nil
 }
 
 func (c *Client) SendTransaction(contractAddr common.Address, payload []byte) (common.Hash, error) {
@@ -163,9 +183,7 @@ func (c *Client) SendRawTransaction(hash common.Hash, signedTx string) (common.H
 }
 
 func (c *Client) DeployContract(abiStr, binStr string, params ...interface{}) (common.Address, *bind.BoundContract, error) {
-	auth := bind.NewKeyedTransactor(c.Key)
-	auth.GasLimit = 1e9
-	auth.Nonce = new(big.Int).SetUint64(c.GetNonce(c.Address().Hex()))
+	auth := c.getBindAuth()
 
 	parsedABI, err := abi.JSON(strings.NewReader(abiStr))
 	if err != nil {
@@ -182,6 +200,13 @@ func (c *Client) DeployContract(abiStr, binStr string, params ...interface{}) (c
 
 	log.Infof("deploy contract tx %v\r\n, contract %v\r\n, address %s\r\n", tx, contract, address.Hex())
 	return address, contract, nil
+}
+
+func (c *Client) getBindAuth() *bind.TransactOpts{
+	auth := bind.NewKeyedTransactor(c.Key)
+	auth.GasLimit = 1e9
+	auth.Nonce = new(big.Int).SetUint64(c.GetNonce(c.Address().Hex()))
+	return auth
 }
 
 func (c *Client) DumpEventLog(hash common.Hash) error {

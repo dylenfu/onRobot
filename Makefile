@@ -7,6 +7,7 @@ prepare:
 	mkdir -p build/target
 	cp -r build/keystore build/target
 	cp -r build/setup build/target
+	cp -r build/poly_keystore build/target
 	cp -r scripts/*.sh build/target/
 
 compile:

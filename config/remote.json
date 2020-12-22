@@ -140,5 +140,10 @@
       "RPCPort": "22002",
       "P2PPort": "30302"
     }
-  ]
+  ],
+  "Poly": {
+    "PolyAccountDefaultPassphrase": "4cUYqGj2yib718E7ZmGQc",
+    "RPCAddress": "http://106.75.226.11:40336",
+    "NetworkID": 123
+  }
 }
