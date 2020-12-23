@@ -508,7 +508,7 @@ func SpareNode() (succeed bool) {
 // 9.取消质押
 // 10.查看余额
 // 11.关停节点
-func DelValidator() (succeed bool) {
+func DelValidators() (succeed bool) {
 	var params struct {
 		InitAmount int
 		NodeNumber int
