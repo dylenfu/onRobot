@@ -219,7 +219,7 @@ func (c *Client) DumpEventLog(hash common.Hash) error {
 		return fmt.Errorf("receipt failed %s", hash.Hex())
 	}
 
-	log.Infof("txhash %s", hash.Hex())
+	log.Infof("txhash %s, block height %d", hash.Hex(), raw.BlockNumber.Uint64())
 	for _, event := range raw.Logs {
 		log.Infof("eventlog address %s", event.Address.Hex())
 		log.Infof("eventlog data %s", new(big.Int).SetBytes(event.Data).String())

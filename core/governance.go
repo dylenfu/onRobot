@@ -2,6 +2,7 @@ package core
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/governance"
@@ -510,6 +511,7 @@ func SpareNode() (succeed bool) {
 func DelValidator() (succeed bool) {
 	var params struct {
 		InitAmount int
+		NodeNumber int
 	}
 
 	if err := config.LoadParams("DelValidator.json", &params); err != nil {
@@ -518,16 +520,30 @@ func DelValidator() (succeed bool) {
 	}
 
 	// spare node
-	node := config.Conf.SpareNodes()[0]
+	if params.NodeNumber > len(config.Conf.SpareNodes()) {
+		log.Errorf("node number out of range")
+		return
+	}
+	nodes := config.Conf.SpareNodes()[0:params.NodeNumber]
+
+	// init nodes
+	{
+		for _, node := range nodes {
+			execInitNode(node)
+		}
+		time.Sleep(2 * time.Second)
+	}
 
 	// start node and sync blocks
 	{
-		execStartNode(node)
+		for _, node := range nodes {
+			execStartNode(node)
+		}
 		wait(5)
 	}
 
 	// check balance before stake
-	checkBalance := func(mark string) int {
+	checkBalance := func(node *config.Node, mark string) int {
 		data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
 		if err != nil {
 			log.Error("failed to check %s balance", node.NodeAddr().Hex())
@@ -540,19 +556,21 @@ func DelValidator() (succeed bool) {
 
 	stakeAndDumpEvent := func(revoke bool) {
 		stakeHashList := make([]common.Hash, 0)
-		cli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
-		stkAmt := plt.MultiPLT(params.InitAmount)
-		if revoke {
-			stkAmt = cli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
-		}
-		hash, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), stkAmt, revoke)
-		if err != nil {
-			log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), stkAmt)
-			return
-		} else {
+		for _, node := range nodes {
+			cli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
+			stkAmt := plt.MultiPLT(params.InitAmount)
+			if revoke {
+				stkAmt = cli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
+			}
+
+			hash, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), stkAmt, revoke)
+			if err != nil {
+				log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), stkAmt)
+				return
+			}
 			log.Infof("stake for validator, hash %s", hash.Hex())
+			stakeHashList = append(stakeHashList, hash)
 		}
-		stakeHashList = append(stakeHashList, hash)
 		wait(2)
 		if err := DumpHashList(stakeHashList, "stake"); err != nil {
 			return
@@ -560,19 +578,24 @@ func DelValidator() (succeed bool) {
 	}
 
 	checkStakeAmt := func(mark string) {
-		data := admcli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
-		value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
-		log.Infof("check stake amount %f %s", value, mark)
+		for _, node := range nodes {
+			data := admcli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
+			value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
+			log.Infof("check stake amount %f %s", value, mark)
+		}
 	}
 
 	adminAddValidator := func(revoke bool) {
 		hs := make([]common.Hash, 0)
-		hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), revoke)
-		if err != nil {
-			log.Errorf("failed to add validator %s, hash %s, [%v]", node.NodeAddr().Hex(), hash.Hex(), err)
-			return
+		for _, node := range nodes {
+			hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), revoke)
+			if err != nil {
+				log.Errorf("failed to add validator %s, err: %s", node.NodeAddr().Hex(), err)
+				return
+			}
+			log.Infof("admin add validator %s success, tx hash %s", node.NodeAddr().Hex(), hash.Hex())
+			hs = append(hs, hash)
 		}
-		hs = append(hs, hash)
 		wait(2)
 		if err := DumpHashList(hs, "admin add validators"); err != nil {
 			return
@@ -583,16 +606,20 @@ func DelValidator() (succeed bool) {
 	{
 		log.Infof("admin deposit to validator")
 		hs := make([]common.Hash, 0)
-		balance := checkBalance("before stake")
-		if balance < params.InitAmount {
+		for _, node := range nodes {
+			balance := checkBalance(node,"before deposit")
+			if balance >= params.InitAmount {
+				continue
+			}
 			addAmount := params.InitAmount - balance
 			hash, err := admcli.PLTTransfer(node.StakeAddr(), plt.MultiPLT(addAmount))
 			if err != nil {
-				log.Errorf("failed to deposit to node %s, amount %d", node.NodeAddr().Hex(), addAmount)
+				log.Errorf("failed to deposit to node %s, err: %s", node.NodeAddr().Hex(), err)
 				return
 			} else {
-				hs = append(hs, hash)
+				log.Infof("admin deposit to %s %d PLT, hash %s", node.NodeAddr().Hex(), addAmount, hash.Hex())
 			}
+			hs = append(hs, hash)
 		}
 		wait(2)
 		if err := DumpHashList(hs, "deposit for validator"); err != nil {
@@ -603,6 +630,7 @@ func DelValidator() (succeed bool) {
 
 	// 2.stake and dump event log
 	{
+		logsplit()
 		log.Infof("validators stake at block %d", admcli.GetBlockNumber())
 		stakeAndDumpEvent(false)
 		wait(2 * config.Conf.RewardEffectivePeriod)
@@ -620,13 +648,16 @@ func DelValidator() (succeed bool) {
 	{
 		log.Infof("checking reward amount......")
 		for i := 0; i < 10; i++ {
-			data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
-			if err != nil {
-				log.Errorf("failed to get balance after stake, err: %v", err)
-				return
+			for _, node := range nodes {
+				data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
+				if err != nil {
+					log.Errorf("failed to get balance after stake, err: %v", err)
+					return
+				}
+				value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
+				log.Infof("check rewarding, new validator's balance after stake, current block number %d, %f PLT ",
+					admcli.GetBlockNumber(), value)
 			}
-			value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
-			log.Infof("check rewarding, new validator's balance after stake, current block number %d, %f PLT ", admcli.GetBlockNumber(), value)
 			wait(1)
 		}
 	}
@@ -649,13 +680,20 @@ func DelValidator() (succeed bool) {
 
 	// 7.check balance after revoke stake
 	{
-		for i := 0; i < 10; i++ {
-			checkBalance("after revoke stake")
-			wait(1)
+		for _, node := range nodes {
+			checkBalance(node,"after revoke stake")
 		}
-		execStopNode(node)
 	}
 
+	// 8. stop and clear nodes
+	{
+		for _, node := range nodes {
+			execStopNode(node)
+		}
+		for _, node := range nodes {
+			execClearNode(node)
+		}
+	}
 	return true
 }
 
