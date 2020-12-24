@@ -60,6 +60,10 @@ func (c *PolyClient) GetBlockByHeight(height uint32) (*ptyp.Block, error) {
 	return c.sdk.GetBlockByHeight(height)
 }
 
+func (c *PolyClient) GetCurrentBlockHeight() (uint32, error) {
+	return c.sdk.GetCurrentBlockHeight()
+}
+
 func GetBookeeper(block *ptyp.Block) ([]keypair.PublicKey, error) {
 	info := &vconfig.VbftBlockInfo{}
 	if err := json.Unmarshal(block.Header.ConsensusPayload, info); err != nil {

@@ -581,9 +581,16 @@ func Lock() (succeed bool) {
 	return true
 }
 
-// 同步区块头到poly链上
+// 同步palette区块头到poly链上
+// 1. 环境准备，palette cli: 使用任意palette签名者对应的cli, poly cli: 必须是poly验证节点的validators作为多签地址
+// 2. 获取palette当前块高的区块头, 并使用json序列化为bytes
+// 3. 使用poly cli同步第二步的bytes以及palette network id到poly native管理合约,
+//	  这笔交易发出后等待poly当前块高超过交易块高, 作为落账的判断条件
+// 4. 获取poly当前块高作为写入palette管理合约的genesis块高，获取对应的block，将block header及block book keeper
+//    序列化，提交到palette管理合约
 func SyncGenesis() (succeed bool) {
 
+	// 1. prepare
 	polyRPC := config.Conf.Poly.RPCAddress
 	polyValidators := config.Conf.Poly.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
@@ -594,7 +601,7 @@ func SyncGenesis() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	// get palette current block header
+	// 2. get palette current block header
 	logsplit()
 	cli := admcli
 	curr, hdr, err := cli.GetCurrentBlockHeader()
@@ -609,7 +616,7 @@ func SyncGenesis() (succeed bool) {
 	}
 	log.Infof("get palette block header with current height %d, header %s", curr, hexutil.Encode(pltHeaderEnc))
 
-	// sync palette header to poly
+	// 3. sync palette header to poly
 	{
 		logsplit()
 		chainID := uint64(config.Conf.Environment.NetworkID)
@@ -625,18 +632,17 @@ func SyncGenesis() (succeed bool) {
 		log.Infof("successful to sync eth genesis header: txhash %s", txhash.Hex())
 	}
 
-	// get poly block and assemble book keepers to header
+	// 4. get poly block and assemble book keepers to header
 	{
 		logsplit()
-		_, eccmAddr, _, err := config.ReadContracts()
-		if err != nil {
-			log.Errorf("failed to read eccm contract address, err: %s", err)
-			return
-		}
 
 		// `epoch` related with the poly validators changing,
 		// we can set it as 0 if poly validators never changed on develop environment.
-		var epoch uint32 = 0
+		epoch, err := polyCli.GetCurrentBlockHeight()
+		if err != nil {
+			log.Errorf("failed to get poly height, err: %s", err)
+			return
+		}
 		gB, err := polyCli.GetBlockByHeight(epoch)
 		if err != nil {
 			log.Errorf("failed to get block, err: %s", err)
@@ -650,6 +656,11 @@ func SyncGenesis() (succeed bool) {
 		bookeepersEnc := poly.AssembleNoCompressBookeeper(bookeepers)
 		headerEnc := gB.Header.ToArray()
 
+		_, eccmAddr, _, err := config.ReadContracts()
+		if err != nil {
+			log.Errorf("failed to read eccm contract address, err: %s", err)
+			return
+		}
 		txhash, err := cli.InitGenesisBlock(eccmAddr, headerEnc, bookeepersEnc)
 		if err != nil {
 			log.Errorf("failed to initGenesisBlock, err: %s", err)
@@ -657,6 +668,7 @@ func SyncGenesis() (succeed bool) {
 		} else {
 			log.Infof("sync genesis header success, txhash %s", txhash.Hex())
 		}
+		_ = cli.DumpEventLog(txhash)
 	}
 
 	return true
