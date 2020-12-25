@@ -971,3 +971,25 @@ func GlobalParams() (succeed bool) {
 	log.Infof("global params [%d]:value %d", params.ProposalType, plt.PrintUPLT(value))
 	return true
 }
+
+func StakeAmount() (succeed bool) {
+	nodes := config.Conf.ValidatorNodes()
+	for _, node := range nodes {
+		validator := node.NodeAddr()
+		stakeAddr := node.StakeAddr()
+		valStake := admcli.GetStakeAmount(validator, stakeAddr, "latest")
+		totalStake := admcli.GetValidatorTotalStakeAmount(validator, "latest")
+
+		dValStk := utils.DecimalFromBigInt(valStake)
+		dTotStk := utils.DecimalFromBigInt(totalStake)
+
+		valAmt := plt.PrintFPLT(dValStk)
+		totalAmt := plt.PrintFPLT(dTotStk)
+		delegateAmt := totalAmt - valAmt
+
+		log.Infof("validator %s, total stake %f, self stake %f, delegate amount %f",
+			node.NodeAddr().Hex(), totalAmt, valAmt, delegateAmt)
+	}
+
+	return true
+}

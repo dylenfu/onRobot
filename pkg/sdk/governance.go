@@ -46,6 +46,26 @@ func (c *Client) GetStakeAmount(validator, stakeAccount common.Address, blockNum
 	return output.Amount
 }
 
+func (c *Client) GetValidatorTotalStakeAmount(validator common.Address, blockNum string) *big.Int {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetValidatorTotalStakeAmount, validator)
+	if err != nil {
+		return nil
+	}
+
+	enc, err := c.CallGovernance(payload, blockNum)
+	if err != nil {
+		return nil
+	}
+
+	output := new(governance.MethodGetValidatorTotalStakeAmountOutput)
+	err = utils.UnpackOutputs(GovernanceABI, governance.MethodGetValidatorTotalStakeAmount, output, enc)
+	if err != nil {
+		return nil
+	}
+
+	return output.Amount
+}
+
 func (c *Client) CheckValidator(validator common.Address, blockNum string) bool {
 	payload, err := utils.PackMethod(GovernanceABI, governance.MethodCheckValidator, validator)
 	if err != nil {

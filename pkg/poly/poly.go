@@ -19,6 +19,7 @@ import (
 	pcm "github.com/polynetwork/poly/common"
 	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
 	ptyp "github.com/polynetwork/poly/core/types"
+	putils "github.com/polynetwork/poly/native/service/utils"
 )
 
 type PolyClient struct {
@@ -43,17 +44,141 @@ func NewPolyClient(rpcAddr string, accArr []*polysdk.Account) (*PolyClient, erro
 func (c *PolyClient) SyncGenesisBlock(
 	chainID uint64,
 	genesisHeader []byte,
-) (common.Hash, error) {
-	txhash, err := c.sdk.Native.Hs.SyncGenesisHeader(chainID, genesisHeader, c.accArr)
-	if err != nil {
+) error {
+
+	if txhash, err := c.sdk.Native.Hs.SyncGenesisHeader(
+		chainID,
+		genesisHeader,
+		c.accArr,
+	); err != nil {
 		if strings.Contains(err.Error(), "had been initialized") {
 			log.Info("eth already synced")
-		} else {
-			return common.Hash{}, err
+			return nil
 		}
+		return err
+	} else {
+		return c.WaitPolyTx(txhash)
+	}
+}
+
+var sideChainRouter = putils.PALETTE_ROUTER
+
+const (
+	sideChainName        = "palette"
+	sideChainBlockToWait = 1
+)
+
+func (c *PolyClient) RegisterSideChain(chainID uint64, eccdAddr common.Address) error {
+	acc := c.GetSideChainOwner()
+	eccd, err := hex.DecodeString(strings.Replace(eccdAddr.Hex(), "0x", "", 1))
+	if err != nil {
+		return fmt.Errorf("failed to decode eccd address, err: %s", err)
 	}
 
-	return HashConvertUp(txhash), nil
+	if txhash, err := c.sdk.Native.Scm.RegisterSideChain(
+		acc.Address,
+		chainID,
+		sideChainRouter,
+		sideChainName,
+		sideChainBlockToWait,
+		eccd,
+		acc,
+	); err != nil {
+		if strings.Contains(err.Error(), "already registered") {
+			log.Infof("palette chain %d already registered", chainID)
+			return nil
+		}
+		if strings.Contains(err.Error(), "already requested") {
+			log.Infof("palette chain %d already requested", chainID)
+			return nil
+		}
+		return err
+	} else {
+		return c.WaitPolyTx(txhash)
+	}
+}
+
+func (c *PolyClient) QuitSideChain(chainID uint64) error {
+	acc := c.GetSideChainOwner()
+	txhash, err := c.sdk.Native.Scm.QuitSideChain(chainID, acc)
+	if err != nil {
+		return err
+	}
+	return c.WaitPolyTx(txhash)
+}
+
+func (c *PolyClient) UpdateSideChain(chainID uint64, eccdAddr common.Address) error {
+	acc := c.GetSideChainOwner()
+	eccd, err := hex.DecodeString(strings.Replace(eccdAddr.Hex(), "0x", "", 1))
+	if err != nil {
+		return fmt.Errorf("failed to decode eccd address")
+	}
+
+	if txhash, err := c.sdk.Native.Scm.UpdateSideChain(
+		acc.Address,
+		chainID,
+		sideChainRouter,
+		sideChainName,
+		sideChainBlockToWait,
+		eccd,
+		acc,
+	); err != nil {
+		return err
+	} else {
+		return c.WaitPolyTx(txhash)
+	}
+}
+
+func (c *PolyClient) ApproveRegisterSideChain(chainID uint64) error {
+	var (
+		txhash pcm.Uint256
+		err    error
+	)
+	for i, acc := range c.accArr {
+		txhash, err = c.sdk.Native.Scm.ApproveRegisterSideChain(chainID, acc)
+		if err != nil {
+			return fmt.Errorf("no%d - failed to approve %d: %v", i, chainID, err)
+		}
+		log.Infof("No%d: successful to approve register side chain %d: ( acc: %s, txhash: %s )",
+			i, chainID, acc.Address.ToHexString(), txhash.ToHexString())
+	}
+	return c.WaitPolyTx(txhash)
+}
+
+func (c *PolyClient) ApproveQuitSideChain(chainID uint64) error {
+	var (
+		txhash pcm.Uint256
+		err    error
+	)
+	for i, acc := range c.accArr {
+		txhash, err = c.sdk.Native.Scm.ApproveQuitSideChain(chainID, acc)
+		if err != nil {
+			return fmt.Errorf("no%d - failed to approve %d: %v", i, chainID, err)
+		}
+		log.Infof("No%d: successful to approve quit side chain %d: ( acc: %s, txhash: %s )",
+			i, chainID, acc.Address.ToHexString(), txhash.ToHexString())
+	}
+	return c.WaitPolyTx(txhash)
+}
+
+func (c *PolyClient) ApproveUpdateSideChain(chainID uint64) error {
+	var (
+		txhash pcm.Uint256
+		err    error
+	)
+	for i, acc := range c.accArr {
+		txhash, err = c.sdk.Native.Scm.ApproveUpdateSideChain(chainID, acc)
+		if err != nil {
+			return fmt.Errorf("no%d - failed to approve %d: %v", i, chainID, err)
+		}
+		log.Infof("No%d: successful to approve update side chain %d: ( acc: %s, txhash: %s )",
+			i, chainID, acc.Address.ToHexString(), txhash.ToHexString())
+	}
+	return c.WaitPolyTx(txhash)
+}
+
+func (c *PolyClient) GetSideChainOwner() *polysdk.Account {
+	return c.accArr[0]
 }
 
 func (c *PolyClient) GetBlockByHeight(height uint32) (*ptyp.Block, error) {
@@ -89,12 +214,7 @@ func AssembleNoCompressBookeeper(bookeepers []keypair.PublicKey) []byte {
 	return publickeys
 }
 
-func (c *PolyClient) WaitPolyTx(txhash common.Hash) error {
-	hash, err := HashConvertDown(txhash)
-	if err != nil {
-		return err
-	}
-
+func (c *PolyClient) WaitPolyTx(hash pcm.Uint256) error {
 	tick := time.NewTicker(100 * time.Millisecond)
 	var h uint32
 	startTime := time.Now()
@@ -107,7 +227,7 @@ func (c *PolyClient) WaitPolyTx(txhash common.Hash) error {
 
 		if startTime.Add(100 * time.Millisecond); startTime.Second() > 300 {
 			return fmt.Errorf("tx( %s ) is not confirm for a long time ( over %d sec )",
-				txhash, 300)
+				hash.ToHexString(), 300)
 		}
 	}
 
@@ -120,6 +240,15 @@ func HashConvertUp(src pcm.Uint256) common.Hash {
 
 func HashConvertDown(src common.Hash) (pcm.Uint256, error) {
 	return pcm.Uint256ParseFromBytes(src[:])
+}
+
+// todo
+func AddrConvertUp(src pcm.Address) common.Address {
+	return common.BytesToAddress(src[:])
+}
+
+func AddrConvertDown(src common.Address) (pcm.Address, error) {
+	return pcm.AddressFromHexString(src.Hex())
 }
 
 func GetOntNoCompressKey(key keypair.PublicKey) []byte {

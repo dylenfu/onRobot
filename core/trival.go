@@ -4,7 +4,6 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/palettechain/onRobot/config"
@@ -147,106 +146,106 @@ func Deposit() (succeed bool) {
 //
 //	return true
 //}
-
-type DeployContractParams struct {
-	Abi    string `json:"Abi"`
-	Object string `json:"Object"`
-}
-
-func DeployCrossChainContract() (succeed bool) {
-	eccdFileName := "ECCD-raw.json"
-	eccmFileName := "ECCM-raw.json"
-	ecmpFileName := "ECCMP-raw.json"
-	eccdParams := new(DeployContractParams)
-	eccmParams := new(DeployContractParams)
-	ecmpParams := new(DeployContractParams)
-
-	if err := config.LoadContract(eccdFileName, eccdParams); err != nil {
-		log.Errorf("failed to load contract %s, err: %v", eccdFileName, err)
-		return
-	}
-	ccdAddr, ccd, err := deployContract(eccdParams.Abi, eccdParams.Object)
-	if err != nil {
-		log.Errorf("failed to deploy eccd contract, err: %v", err)
-		return
-	}
-	wait(2)
-
-	if err := config.LoadContract(eccmFileName, eccmParams); err != nil {
-		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
-		return
-	}
-	otherChainID := uint64(config.Conf.Environment.NetworkID)
-	ccmAddr, ccm, err := deployContract(eccmParams.Abi, eccmParams.Object, ccdAddr, otherChainID)
-	if err != nil {
-		log.Errorf("failed to deploy eccm contract, err: %v", err)
-		return
-	}
-	wait(2)
-
-	if err := config.LoadContract(ecmpFileName, ecmpParams); err != nil {
-		log.Errorf("failed to load contract %s, err: %v", ecmpFileName, err)
-		return
-	}
-	ccmpAddr, _, err := deployContract(ecmpParams.Abi, ecmpParams.Object, ccmAddr)
-	if err != nil {
-		log.Errorf("failed to deploy ecmp contract, err: %v", err)
-		return
-	}
-	wait(2)
-
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-	auth := bind.NewKeyedTransactor(node.PrivateKey())
-	auth.GasLimit = 1e9
-
-	// eccd contract transfer ownership
-	{
-		logsplit()
-		auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
-		log.Info("ccd transferOwnership")
-		tx, err := ccd.Transact(auth, "transferOwnership", ccmAddr)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		wait(2)
-		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
-			log.Error(err)
-			return
-		}
-	}
-
-	// eccm contract transfer ownership
-	{
-		logsplit()
-		log.Info("ccm transferOwnership")
-		auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
-		tx, err := ccm.Transact(auth, "transferOwnership", ccmpAddr)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		wait(2)
-		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
-			log.Error(err)
-			return
-		}
-	}
-
-	// record contracts address
-	{
-		logsplit()
-		if err := config.RecordContractAddress(ccdAddr, ccmAddr, ccmpAddr); err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof(" {\n\tccd: %s\n\tccm: %s\n\tccmp: %s\n}", ccdAddr.Hex(), ccmAddr.Hex(), ccmpAddr.Hex())
-	}
-
-	return true
-}
-
+//
+//type DeployContractParams struct {
+//	Abi    string `json:"Abi"`
+//	Object string `json:"Object"`
+//}
+//
+//func DeployCrossChainContract() (succeed bool) {
+//	eccdFileName := "ECCD-raw.json"
+//	eccmFileName := "ECCM-raw.json"
+//	ecmpFileName := "ECCMP-raw.json"
+//	eccdParams := new(DeployContractParams)
+//	eccmParams := new(DeployContractParams)
+//	ecmpParams := new(DeployContractParams)
+//
+//	if err := config.LoadContract(eccdFileName, eccdParams); err != nil {
+//		log.Errorf("failed to load contract %s, err: %v", eccdFileName, err)
+//		return
+//	}
+//	ccdAddr, ccd, err := deployContract(eccdParams.Abi, eccdParams.Object)
+//	if err != nil {
+//		log.Errorf("failed to deploy eccd contract, err: %v", err)
+//		return
+//	}
+//	wait(2)
+//
+//	if err := config.LoadContract(eccmFileName, eccmParams); err != nil {
+//		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
+//		return
+//	}
+//	otherChainID := uint64(config.Conf.Environment.NetworkID)
+//	ccmAddr, ccm, err := deployContract(eccmParams.Abi, eccmParams.Object, ccdAddr, otherChainID)
+//	if err != nil {
+//		log.Errorf("failed to deploy eccm contract, err: %v", err)
+//		return
+//	}
+//	wait(2)
+//
+//	if err := config.LoadContract(ecmpFileName, ecmpParams); err != nil {
+//		log.Errorf("failed to load contract %s, err: %v", ecmpFileName, err)
+//		return
+//	}
+//	ccmpAddr, _, err := deployContract(ecmpParams.Abi, ecmpParams.Object, ccmAddr)
+//	if err != nil {
+//		log.Errorf("failed to deploy ecmp contract, err: %v", err)
+//		return
+//	}
+//	wait(2)
+//
+//	node := config.Conf.ValidatorNodes()[0]
+//	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+//	auth := bind.NewKeyedTransactor(node.PrivateKey())
+//	auth.GasLimit = 1e9
+//
+//	// eccd contract transfer ownership
+//	{
+//		logsplit()
+//		auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
+//		log.Info("ccd transferOwnership")
+//		tx, err := ccd.Transact(auth, "transferOwnership", ccmAddr)
+//		if err != nil {
+//			log.Error(err)
+//			return
+//		}
+//		wait(2)
+//		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
+//			log.Error(err)
+//			return
+//		}
+//	}
+//
+//	// eccm contract transfer ownership
+//	{
+//		logsplit()
+//		log.Info("ccm transferOwnership")
+//		auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
+//		tx, err := ccm.Transact(auth, "transferOwnership", ccmpAddr)
+//		if err != nil {
+//			log.Error(err)
+//			return
+//		}
+//		wait(2)
+//		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
+//			log.Error(err)
+//			return
+//		}
+//	}
+//
+//	// record contracts address
+//	{
+//		logsplit()
+//		if err := config.RecordContractAddress(ccdAddr, ccmAddr, ccmpAddr); err != nil {
+//			log.Error(err)
+//			return
+//		}
+//		log.Infof(" {\n\tccd: %s\n\tccm: %s\n\tccmp: %s\n}", ccdAddr.Hex(), ccmAddr.Hex(), ccmpAddr.Hex())
+//	}
+//
+//	return true
+//}
+//
 //
 ////nativeTransfer(address _to, uint _value)
 //func EVM() (succeed bool) {
@@ -327,6 +326,21 @@ func DeployCrossChainContract() (succeed bool) {
 //
 //	return true
 //}
+
+func DumpBlock() (succeed bool) {
+	var params struct {
+		Blocks []uint64
+	}
+	if err := config.LoadParams("DumpBlock.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	for _, block := range params.Blocks {
+		admcli.DumpBlock(block)
+	}
+	return true
+}
 
 func RemoteBuild() (succeed bool) {
 	execRemoteBuild()

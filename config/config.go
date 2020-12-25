@@ -342,16 +342,16 @@ func LoadContract(fileName string, data interface{}) error {
 type CrossChainContracts struct {
 	ECCD common.Address `json:"eccd"`
 	ECCM common.Address `json:"eccm"`
-	ECMP common.Address `json:"ecmp"`
+	CCMP common.Address `json:"ccmp"`
 }
 
 const crossChainContractsFile = "cross-chain-contracts.json"
 
-func RecordContractAddress(eccd, eccm, ecmp common.Address) error {
+func RecordContractAddress(eccd, eccm, ccmp common.Address) error {
 	data := &CrossChainContracts{
 		ECCD: eccd,
 		ECCM: eccm,
-		ECMP: ecmp,
+		CCMP: ccmp,
 	}
 
 	content, err := json.Marshal(data)
@@ -363,7 +363,7 @@ func RecordContractAddress(eccd, eccm, ecmp common.Address) error {
 	return ioutil.WriteFile(filePath, content, 0644)
 }
 
-func ReadContracts() (eccd, eccm, ecmp common.Address, err error) {
+func ReadContracts() (eccd, eccm, ccmp common.Address, err error) {
 	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, crossChainContractsFile)
 
 	var (
@@ -380,7 +380,7 @@ func ReadContracts() (eccd, eccm, ecmp common.Address, err error) {
 
 	eccd = data.ECCD
 	eccm = data.ECCM
-	ecmp = data.ECMP
+	ccmp = data.CCMP
 	return
 }
 

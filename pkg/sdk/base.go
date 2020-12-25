@@ -59,6 +59,20 @@ func (c *Client) GetBlockNumber() uint64 {
 	return bigNonce.Uint64()
 }
 
+func (c *Client) DumpBlock(height uint64) error {
+	cli := ethclient.NewClient(c.Client)
+	block, err := cli.BlockByNumber(context.Background(), new(big.Int).SetUint64(height))
+	if err != nil {
+		return err
+	}
+
+	for _, tx := range block.Transactions() {
+		c.DumpEventLog(tx.Hash())
+	}
+
+	return nil
+}
+
 func (c *Client) GetBlockByNumber(height uint64) (*types.Block, error) {
 	cli := ethclient.NewClient(c.Client)
 	data := new(big.Int).SetUint64(height)
@@ -204,7 +218,7 @@ func (c *Client) DeployContract(abiStr, binStr string, params ...interface{}) (c
 
 func (c *Client) getBindAuth() *bind.TransactOpts{
 	auth := bind.NewKeyedTransactor(c.Key)
-	auth.GasLimit = 1e9
+	auth.GasLimit = 1e7
 	auth.Nonce = new(big.Int).SetUint64(c.GetNonce(c.Address().Hex()))
 	return auth
 }
