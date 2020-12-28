@@ -418,7 +418,7 @@ func Lock() (succeed bool) {
 
 	// waiting for unlock
 	{
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 50; i++ {
 			balance, err := cli.BalanceOf(userAddr, "latest")
 			if err != nil {
 				log.Error(err)
@@ -523,12 +523,8 @@ func SyncGenesis() (succeed bool) {
 
 		// `epoch` related with the poly validators changing,
 		// we can set it as 0 if poly validators never changed on develop environment.
-		epoch, err := polyCli.GetCurrentBlockHeight()
-		if err != nil {
-			log.Errorf("failed to get poly height, err: %s", err)
-			return
-		}
-		gB, err := polyCli.GetBlockByHeight(epoch)
+		var hasValidatorsBlockNumber uint32 = 0
+		gB, err := polyCli.GetBlockByHeight(hasValidatorsBlockNumber)
 		if err != nil {
 			log.Errorf("failed to get block, err: %s", err)
 			return

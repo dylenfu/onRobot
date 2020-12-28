@@ -190,13 +190,21 @@ func (c *PolyClient) GetCurrentBlockHeight() (uint32, error) {
 }
 
 func GetBookeeper(block *ptyp.Block) ([]keypair.PublicKey, error) {
-	info := &vconfig.VbftBlockInfo{}
+	info := new(vconfig.VbftBlockInfo)//&vconfig.VbftBlockInfo{}
+	info.NewChainConfig = new(vconfig.ChainConfig)
 	if err := json.Unmarshal(block.Header.ConsensusPayload, info); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal consensus payload, err: %s", err)
 	}
 
-	var bookkeepers []keypair.PublicKey
+	if info == nil {
+		log.Info("info is nil")
+	}
+	if info.NewChainConfig == nil {
+		log.Info("new chain config is nil")
+	}
+	bookkeepers := make([]keypair.PublicKey, 0 )
 	for _, peer := range info.NewChainConfig.Peers {
+		log.Infof("poly peer index %d id %s", peer.Index, peer.ID)
 		keystr, _ := hex.DecodeString(peer.ID)
 		key, _ := keypair.DeserializePublicKey(keystr)
 		bookkeepers = append(bookkeepers, key)
