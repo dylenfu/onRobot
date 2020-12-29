@@ -17,16 +17,19 @@ compile:
 compile-local:
 	cp config/local.json build/target/config.json
 	cp build/target/setup/local-nodes.json build/target/setup/static-nodes.json
+	cp build/target/setup/local-genesis.json build/target/setup/genesis.json
 	make compile
 
 compile-remote:
 	cp config/remote.json build/target/config.json
 	cp build/target/setup/remote-nodes.json build/target/setup/static-nodes.json
+	cp build/target/setup/remote-genesis.json build/target/setup/genesis.json
 	make compile
 
 compile-dev:
 	cp config/dev.json build/target/config.json
 	cp build/target/setup/dev-nodes.json build/target/setup/static-nodes.json
+	cp build/target/setup/dev-genesis.json build/target/setup/dev-genesis.json
 	make compile
 
 compile-linux:

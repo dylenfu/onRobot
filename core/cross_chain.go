@@ -244,9 +244,11 @@ func SetCCMP() (succeed bool) {
 // asset的地址也是palette plt地址
 func BindProxy() (succeed bool) {
 	var params struct {
-		ChainID uint64
 		Proxy   common.Address
 	}
+	// todo: this is from palette to palette
+	chainID := uint64(config.Conf.Environment.NetworkID)
+
 	if err := config.LoadParams("BindProxy.json", &params); err != nil {
 		log.Error(err)
 		return
@@ -255,7 +257,7 @@ func BindProxy() (succeed bool) {
 	// bind proxy
 	{
 		log.Infof("bind proxy...")
-		tx, err := admcli.BindProxy(params.ChainID, params.Proxy)
+		tx, err := admcli.BindProxy(chainID, params.Proxy)
 		if err != nil {
 			log.Error(err)
 			return
@@ -272,7 +274,7 @@ func BindProxy() (succeed bool) {
 	// get and compare proxy
 	{
 		log.Infof("get bind proxy...")
-		proxy, err := admcli.GetBindProxy(params.ChainID, "latest")
+		proxy, err := admcli.GetBindProxy(chainID, "latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -292,9 +294,10 @@ func BindProxy() (succeed bool) {
 // 在palette native合约上记录以太坊erc20资产地址
 func BindAsset() (succeed bool) {
 	var params struct {
-		ChainID uint64
 		Asset   common.Address
 	}
+	// todo: this is from palette to palette
+	chainID := uint64(config.Conf.Environment.NetworkID)
 
 	if err := config.LoadParams("BindAsset.json", &params); err != nil {
 		log.Error(err)
@@ -304,7 +307,7 @@ func BindAsset() (succeed bool) {
 	// bind asset
 	{
 		log.Infof("bind asset...")
-		tx, err := admcli.BindAsset(params.ChainID, params.Asset)
+		tx, err := admcli.BindAsset(chainID, params.Asset)
 		if err != nil {
 			log.Error(err)
 			return
@@ -319,7 +322,7 @@ func BindAsset() (succeed bool) {
 	// get and compare asset
 	{
 		log.Infof("get bind asset...")
-		asset, err := admcli.GetBindAsset(params.ChainID, "latest")
+		asset, err := admcli.GetBindAsset(chainID, "latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -337,13 +340,14 @@ func BindAsset() (succeed bool) {
 
 func Lock() (succeed bool) {
 	var params struct {
-		ChainID      uint64
 		AccountIndex int
 		Proxy        common.Address
 		Asset        common.Address
 		BindTo       common.Address
 		Amount       int
 	}
+	// todo: this is from palette to palette
+	chainID := uint64(config.Conf.Environment.NetworkID)
 
 	if err := config.LoadParams("Lock.json", &params); err != nil {
 		log.Error(err)
@@ -388,7 +392,7 @@ func Lock() (succeed bool) {
 			return
 		}
 
-		hash, err := cli.Lock(params.ChainID, params.BindTo, amount)
+		hash, err := cli.Lock(chainID, params.BindTo, amount)
 		if err != nil {
 			log.Errorf("failed to call `lock` err: %v", err)
 			return

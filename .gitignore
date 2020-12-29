@@ -4,3 +4,5 @@ peers.recent
 *.log
 build/poly_keystore
 config/*.json
+cross.sh
+build/backup
