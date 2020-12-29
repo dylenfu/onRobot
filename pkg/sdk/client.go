@@ -3,6 +3,7 @@ package sdk
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -11,16 +12,19 @@ import (
 
 type Client struct {
 	*rpc.Client
+	backend      *ethclient.Client
 	url          string
 	Key          *ecdsa.PrivateKey
 	currentNonce uint64
 }
 
 func NewSender(url string, key *ecdsa.PrivateKey) *Client {
+	cli := dialNode(url)
 	return &Client{
-		url:    url,
-		Client: dialNode(url),
-		Key:    key,
+		url:     url,
+		Client:  cli,
+		Key:     key,
+		backend: ethclient.NewClient(cli),
 	}
 }
 

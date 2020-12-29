@@ -21,29 +21,79 @@ type DeployContractParams struct {
 	Object string `json:"Object"`
 }
 
-func DeployTest() (succeed bool) {
+func UpgradeECCM() (succeed bool) {
 	params := new(DeployContractParams)
 
-	eccd, _, _ ,err := config.ReadContracts()
+	eccdAddr, _, ccmpAddr ,err := config.ReadContracts()
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	chainID := uint64(config.Conf.Environment.NetworkID)
-	if err := config.LoadParams("DeployTest.json", params); err != nil {
+	if err := config.LoadParams("UpdateEccm.json", params); err != nil {
 		log.Error(err)
 		return
 	}
 
-	addr, _, err := deployContract(params.Abi, params.Object, eccd, chainID)
+	eccmAddr, _, err := deployContract(params.Abi, params.Object, eccdAddr, chainID)
 	if err != nil {
 		log.Errorf("failed to deploy test contract, err: %v", err)
 		return
 	}
 
-	wait(2)
-	log.Infof("new contract %s", addr.Hex())
+	wait(3)
+	log.Infof("new eccm contract %s", eccmAddr.Hex())
+
+	// eccm contract transfer ownership
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+
+	// pause eccmp
+	{
+		logsplit()
+		tx, err := cli.Pause(ccmpAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		cli.WaitTransaction(tx)
+		log.Infof("pause success!")
+	}
+
+	// upgrade eccm
+	{
+		logsplit()
+		tx, err := cli.UpdateEthCrossChainManager(eccmAddr, ccmpAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		cli.WaitTransaction(tx)
+		log.Infof("upgrade success!")
+	}
+
+	// unpause eccmp
+	{
+		logsplit()
+		tx, err := cli.UnPause(ccmpAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		cli.WaitTransaction(tx)
+		log.Infof("unpause success!")
+	}
+
+	// record contracts address
+	{
+		logsplit()
+		if err := config.RecordContractAddress(eccdAddr, eccmAddr, ccmpAddr); err != nil {
+			log.Error(err)
+			return
+		}
+		log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
+	}
 
 	return true
 }

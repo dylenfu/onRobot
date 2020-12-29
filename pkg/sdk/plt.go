@@ -8,9 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/polynetwork/eth-contracts/go_abi/eccm_abi"
+	"github.com/polynetwork/eth-contracts/go_abi/eccmp_abi"
 )
 
 func (c *Client) BalanceOf(owner common.Address, blockNum string) (*big.Int, error) {
@@ -237,8 +237,7 @@ func (c *Client) Lock(chainID uint64, dstAddr common.Address, amount *big.Int) (
 }
 
 func (c *Client) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickeys []byte) (common.Hash, error) {
-	backend := ethclient.NewClient(c.Client)
-	eccm, err := eccm_abi.NewEthCrossChainManager(eccmAddr, backend)
+	eccm, err := eccm_abi.NewEthCrossChainManager(eccmAddr, c.backend)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManager err: %s", err)
 	}
@@ -253,15 +252,61 @@ func (c *Client) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickeys []
 	return tx.Hash(), nil
 }
 
+func (c *Client) Pause(ccmpAddr common.Address) (common.Hash, error) {
+	ccmp, err := eccmp_abi.NewEthCrossChainManagerProxy(ccmpAddr, c.backend)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManagerProxy err: %s", err)
+	}
+
+	auth := c.getBindAuth()
+	tx, err := ccmp.PauseEthCrossChainManager(auth)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("call ccmp pause err: %s", err)
+	}
+
+	return tx.Hash(), nil
+}
+
+func (c *Client) UnPause(ccmpAddr common.Address) (common.Hash, error) {
+	ccmp, err := eccmp_abi.NewEthCrossChainManagerProxy(ccmpAddr, c.backend)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManagerProxy err: %s", err)
+	}
+
+	auth := c.getBindAuth()
+	tx, err := ccmp.UnpauseEthCrossChainManager(auth)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("call ccmp unpause err: %s", err)
+	}
+
+	return tx.Hash(), nil
+}
+
+func (c *Client) UpdateEthCrossChainManager(newEccmAddr, ccmpAddr common.Address) (common.Hash, error) {
+	ccmp, err := eccmp_abi.NewEthCrossChainManagerProxy(ccmpAddr, c.backend)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManagerProxy err: %s", err)
+	}
+
+	auth := c.getBindAuth()
+	tx, err := ccmp.UpgradeEthCrossChainManager(auth, newEccmAddr)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("call upgradeEthCrossChainManager err: %s", err)
+	}
+
+	return tx.Hash(), nil
+}
+
 func (c *Client) WaitTransaction(txhash common.Hash) {
 	for {
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Second * 2)
 		receipt, err := c.GetReceipt(txhash)
 		if err != nil {
 			log.Errorf("failed to call TransactionByHash: %v", err)
 			continue
 		}
-		if receipt != nil {
+		if receipt != nil && receipt.Status > 0 {
+			c.DumpEventLog(txhash)
 			log.Infof("tx %s status %d", txhash.Hex(), receipt.Status)
 			break
 		}

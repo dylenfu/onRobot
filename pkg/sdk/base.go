@@ -212,6 +212,8 @@ func (c *Client) DeployContract(abiStr, binStr string, params ...interface{}) (c
 		return utils.EmptyAddress, nil, err
 	}
 
+	c.WaitTransaction(tx.Hash())
+
 	log.Infof("deploy contract tx %v\r\n, contract %v\r\n, address %s\r\n", tx, contract, address.Hex())
 	return address, contract, nil
 }

@@ -66,7 +66,7 @@ func Endpoint() {
 
 	// lock proxy and cross chain manager
 	frame.Tool.RegMethod("deploy", DeployCrossChainContract)
-	frame.Tool.RegMethod("deployTest", DeployTest)
+	frame.Tool.RegMethod("eccmUpgrade", UpgradeECCM)
 	frame.Tool.RegMethod("registerSideChain", RegisterSideChain)
 	frame.Tool.RegMethod("updateSideChain", UpdateSideChain)
 	frame.Tool.RegMethod("quitSideChain", QuitSideChain)
