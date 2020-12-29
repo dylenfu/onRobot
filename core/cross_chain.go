@@ -65,7 +65,7 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to deploy eccd contract, err: %v", err)
 		return
 	}
-	wait(2)
+	wait(3)
 
 	if err := config.LoadContract(eccmFileName, eccmParams); err != nil {
 		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
@@ -77,7 +77,7 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to deploy eccm contract, err: %v", err)
 		return
 	}
-	wait(2)
+	wait(3)
 
 	if err := config.LoadContract(ecmpFileName, ecmpParams); err != nil {
 		log.Errorf("failed to load contract %s, err: %v", ecmpFileName, err)
