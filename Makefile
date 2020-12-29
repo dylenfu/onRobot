@@ -29,7 +29,7 @@ compile-remote:
 compile-dev:
 	cp config/dev.json build/target/config.json
 	cp build/target/setup/dev-nodes.json build/target/setup/static-nodes.json
-	cp build/target/setup/dev-genesis.json build/target/setup/dev-genesis.json
+	cp build/target/setup/dev-genesis.json build/target/setup/genesis.json
 	make compile
 
 compile-linux:

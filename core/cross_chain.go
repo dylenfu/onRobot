@@ -21,6 +21,33 @@ type DeployContractParams struct {
 	Object string `json:"Object"`
 }
 
+func DeployTest() (succeed bool) {
+	params := new(DeployContractParams)
+
+	eccd, _, _ ,err := config.ReadContracts()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	chainID := uint64(config.Conf.Environment.NetworkID)
+	if err := config.LoadParams("DeployTest.json", params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	addr, _, err := deployContract(params.Abi, params.Object, eccd, chainID)
+	if err != nil {
+		log.Errorf("failed to deploy test contract, err: %v", err)
+		return
+	}
+
+	wait(2)
+	log.Infof("new contract %s", addr.Hex())
+
+	return true
+}
+
 func DeployCrossChainContract() (succeed bool) {
 	eccdFileName := "ECCD-raw.json"
 	eccmFileName := "ECCM-raw.json"
@@ -61,7 +88,7 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to deploy ecmp contract, err: %v", err)
 		return
 	}
-	wait(2)
+	wait(3)
 
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
@@ -78,7 +105,7 @@ func DeployCrossChainContract() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		wait(2)
+		wait(3)
 		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
 			log.Error(err)
 			return
@@ -95,7 +122,7 @@ func DeployCrossChainContract() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		wait(2)
+		wait(3)
 		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
 			log.Error(err)
 			return
