@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
@@ -252,11 +253,25 @@ func (c *Client) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickeys []
 	return tx.Hash(), nil
 }
 
-func (c *Client) Pause(ccmpAddr common.Address) (common.Hash, error) {
+func (c *Client) PauseCCMP(ccmpAddr common.Address) (common.Hash, error) {
 	ccmp, err := eccmp_abi.NewEthCrossChainManagerProxy(ccmpAddr, c.backend)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManagerProxy err: %s", err)
 	}
+	//eccm, err := eccm_abi.NewEthCrossChainManager(oldeccmAddr, c.backend)
+	//if err != nil {
+	//	return utils.EmptyHash, fmt.Errorf("call eccd paused err: %s", err)
+	//}
+
+	//callOpts := c.getCallOpts()
+	//ccmpPaused, err := ccmp.Paused(callOpts)
+	//if err != nil {
+	//	return utils.EmptyHash, fmt.Errorf("call ccmp paused err: %s", err)
+	//}
+	//eccmPaused, err := eccm.Paused(callOpts)
+	//if err != nil {
+	//	return utils.EmptyHash, fmt.Errorf("call eccm paused err: %s", err)
+	//}
 
 	auth := c.getBindAuth()
 	tx, err := ccmp.PauseEthCrossChainManager(auth)
@@ -267,7 +282,7 @@ func (c *Client) Pause(ccmpAddr common.Address) (common.Hash, error) {
 	return tx.Hash(), nil
 }
 
-func (c *Client) UnPause(ccmpAddr common.Address) (common.Hash, error) {
+func (c *Client) UnPauseCCMP(ccmpAddr common.Address) (common.Hash, error) {
 	ccmp, err := eccmp_abi.NewEthCrossChainManagerProxy(ccmpAddr, c.backend)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManagerProxy err: %s", err)
@@ -282,7 +297,7 @@ func (c *Client) UnPause(ccmpAddr common.Address) (common.Hash, error) {
 	return tx.Hash(), nil
 }
 
-func (c *Client) UpdateEthCrossChainManager(newEccmAddr, ccmpAddr common.Address) (common.Hash, error) {
+func (c *Client) UpgradeECCM(newEccmAddr, ccmpAddr common.Address) (common.Hash, error) {
 	ccmp, err := eccmp_abi.NewEthCrossChainManagerProxy(ccmpAddr, c.backend)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManagerProxy err: %s", err)
@@ -297,17 +312,38 @@ func (c *Client) UpdateEthCrossChainManager(newEccmAddr, ccmpAddr common.Address
 	return tx.Hash(), nil
 }
 
-func (c *Client) WaitTransaction(txhash common.Hash) {
+//func (c *Client) WaitTransaction(txhash common.Hash) error {
+//	for {
+//		time.Sleep(time.Second * 2)
+//		receipt, err := c.GetReceipt(txhash)
+//		if err != nil {
+//			log.Errorf("failed to call TransactionByHash: %v", err)
+//			continue
+//		}
+//		if receipt == nil {
+//			continue
+//		}
+//		if receipt.Status > 0 {
+//			c.DumpEventLog(txhash)
+//			break
+//		} else {
+//			return fmt.Errorf("tx %s failed", txhash.Hex())
+//		}
+//	}
+//	return nil
+//}
+
+func (self *Client) WaitTransaction(hash common.Hash) {
 	for {
-		time.Sleep(time.Second * 2)
-		receipt, err := c.GetReceipt(txhash)
+		time.Sleep(time.Second * 1)
+		_, ispending, err := self.backend.TransactionByHash(context.Background(), hash)
 		if err != nil {
 			log.Errorf("failed to call TransactionByHash: %v", err)
 			continue
 		}
-		if receipt != nil && receipt.Status > 0 {
-			c.DumpEventLog(txhash)
-			log.Infof("tx %s status %d", txhash.Hex(), receipt.Status)
+		if ispending == true {
+			continue
+		} else {
 			break
 		}
 	}

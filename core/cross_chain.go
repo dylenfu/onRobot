@@ -16,6 +16,7 @@ import (
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
+// 注意: bindProxy&bindAsset&Lock三个测试都是基于palette-poly-palette的回路测试
 type DeployContractParams struct {
 	Abi    string `json:"Abi"`
 	Object string `json:"Object"`
@@ -24,7 +25,7 @@ type DeployContractParams struct {
 func UpgradeECCM() (succeed bool) {
 	params := new(DeployContractParams)
 
-	eccdAddr, _, ccmpAddr ,err := config.ReadContracts()
+	eccdAddr, _, ccmpAddr, err := config.ReadContracts()
 	if err != nil {
 		log.Error(err)
 		return
@@ -41,8 +42,6 @@ func UpgradeECCM() (succeed bool) {
 		log.Errorf("failed to deploy test contract, err: %v", err)
 		return
 	}
-
-	wait(3)
 	log.Infof("new eccm contract %s", eccmAddr.Hex())
 
 	// eccm contract transfer ownership
@@ -52,36 +51,39 @@ func UpgradeECCM() (succeed bool) {
 	// pause eccmp
 	{
 		logsplit()
-		tx, err := cli.Pause(ccmpAddr)
+		tx, err := cli.PauseCCMP(ccmpAddr)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		cli.WaitTransaction(tx)
+		log.Infof("pause tx %s", tx.Hex())
+		wait(3)
 		log.Infof("pause success!")
 	}
 
 	// upgrade eccm
 	{
 		logsplit()
-		tx, err := cli.UpdateEthCrossChainManager(eccmAddr, ccmpAddr)
+		tx, err := cli.UpgradeECCM(eccmAddr, ccmpAddr)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		cli.WaitTransaction(tx)
+		log.Infof("upgrade tx %s", tx.Hex())
+		wait(3)
 		log.Infof("upgrade success!")
 	}
 
 	// unpause eccmp
 	{
 		logsplit()
-		tx, err := cli.UnPause(ccmpAddr)
+		tx, err := cli.UnPauseCCMP(ccmpAddr)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		cli.WaitTransaction(tx)
+		log.Infof("unpause tx %s", tx.Hex())
+		wait(3)
 		log.Infof("unpause success!")
 	}
 
@@ -321,9 +323,8 @@ func SetCCMP() (succeed bool) {
 // asset的地址也是palette plt地址
 func BindProxy() (succeed bool) {
 	var params struct {
-		Proxy   common.Address
+		Proxy common.Address
 	}
-	// todo: this is from palette to palette
 	chainID := uint64(config.Conf.Environment.NetworkID)
 
 	if err := config.LoadParams("BindProxy.json", &params); err != nil {
@@ -371,9 +372,8 @@ func BindProxy() (succeed bool) {
 // 在palette native合约上记录以太坊erc20资产地址
 func BindAsset() (succeed bool) {
 	var params struct {
-		Asset   common.Address
+		Asset common.Address
 	}
-	// todo: this is from palette to palette
 	chainID := uint64(config.Conf.Environment.NetworkID)
 
 	if err := config.LoadParams("BindAsset.json", &params); err != nil {
@@ -420,10 +420,8 @@ func Lock() (succeed bool) {
 		AccountIndex int
 		Proxy        common.Address
 		Asset        common.Address
-		BindTo       common.Address
 		Amount       int
 	}
-	// todo: this is from palette to palette
 	chainID := uint64(config.Conf.Environment.NetworkID)
 
 	if err := config.LoadParams("Lock.json", &params); err != nil {
@@ -440,6 +438,7 @@ func Lock() (succeed bool) {
 	privKey := config.LoadAccount(user)
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
 	userAddr := common.HexToAddress(user)
+	bindTo := common.HexToAddress(user) // lock to self
 	cli := sdk.NewSender(baseUrl, privKey)
 	amount := plt.MultiPLT(params.Amount)
 
@@ -469,7 +468,7 @@ func Lock() (succeed bool) {
 			return
 		}
 
-		hash, err := cli.Lock(chainID, params.BindTo, amount)
+		hash, err := cli.Lock(chainID, bindTo, amount)
 		if err != nil {
 			log.Errorf("failed to call `lock` err: %v", err)
 			return
@@ -492,62 +491,40 @@ func Lock() (succeed bool) {
 				plt.PrintUPLT(balanceBeforeLock), plt.PrintUPLT(balanceAfterLock), plt.PrintUPLT(amount))
 			return
 		} else {
-			log.Infof("balance before lock %d, after lock %d, the sub amount should be %d",
-				plt.PrintUPLT(balanceBeforeLock), plt.PrintUPLT(balanceAfterLock), plt.PrintUPLT(amount))
+			log.Infof("balance before lock %d, after lock %d, the sub amount is %d",
+				plt.PrintUPLT(balanceBeforeLock), plt.PrintUPLT(balanceAfterLock), plt.PrintUPLT(subAmount))
 		}
 	}
 
 	// waiting for unlock
 	{
-		for i := 0; i < 50; i++ {
-			balance, err := cli.BalanceOf(userAddr, "latest")
+		logsplit()
+		log.Infof("unlock PLT...")
+
+		var (
+			balanceBeforeUnlock,
+			balanceAfterUnlock *big.Int
+		)
+		for i := 0; i < 100; i++ {
+			balance, err := cli.BalanceOf(bindTo, "latest")
 			if err != nil {
 				log.Error(err)
 				return
 			}
-			log.Infof("waiting for unlock, balance %d", plt.PrintUPLT(balance))
-			time.Sleep(5 * time.Second)
+			if i == 0 {
+				balanceBeforeUnlock = balance
+				log.Infof("waiting for unlock")
+			} else if balance.Cmp(balanceBeforeUnlock) > 0 {
+				balanceAfterUnlock = balance
+				subAmount := utils.SafeSub(balanceAfterUnlock, balanceBeforeUnlock)
+				log.Infof("balance before unlock %d, after unlock %d, the sub amount is %d",
+					plt.PrintUPLT(balanceBeforeUnlock), plt.PrintUPLT(balanceAfterUnlock), plt.PrintUPLT(subAmount))
+				break
+			}
+			time.Sleep(3 * time.Second)
 		}
 	}
-	// unlock
-	//{
-	//	logsplit()
-	//	log.Infof("unlock PLT...")
-	//	balanceBeforeUnLock, err := cli.BalanceOf(userAddr, "latest")
-	//	if err != nil {
-	//		log.Error(err)
-	//		return
-	//	}
-	//
-	//	args := &plt.TxArgs{
-	//		ToAssetHash: []byte{},
-	//		ToAddress:   params.BindTo.Bytes(),
-	//		Amount:      amount,
-	//	}
-	//	hash, err := cli.UnLock(args, params.BindTo, params.ChainID)
-	//	if err != nil {
-	//		log.Error(err)
-	//		return
-	//	}
-	//	wait(2)
-	//	if err := cli.DumpEventLog(hash); err != nil {
-	//		log.Error(err)
-	//		return
-	//	}
-	//
-	//	balanceAfterUnLock, err := cli.BalanceOf(userAddr, "latest")
-	//	if err != nil {
-	//		log.Error(err)
-	//		return
-	//	}
-	//
-	//	subAmount := utils.SafeSub(balanceAfterUnLock, balanceBeforeUnLock)
-	//	if subAmount.Cmp(amount) != 0 {
-	//		log.Errorf("balance before unlock %d, after unlock %d, the sub amount should be %d",
-	//			plt.PrintUPLT(balanceBeforeUnLock), plt.PrintUPLT(balanceAfterUnLock), plt.PrintUPLT(amount))
-	//		return
-	//	}
-	//}
+
 	return true
 }
 

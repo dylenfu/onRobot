@@ -225,6 +225,13 @@ func (c *Client) getBindAuth() *bind.TransactOpts{
 	return auth
 }
 
+func (c *Client) getCallOpts() *bind.CallOpts {
+	auth := new(bind.CallOpts)
+	auth.From = c.Address()
+	auth.Context = context.Background()
+	return auth
+}
+
 func (c *Client) DumpEventLog(hash common.Hash) error {
 	raw, err := c.GetReceipt(hash)
 	if err != nil {
