@@ -65,8 +65,9 @@ func Endpoint() {
 	frame.Tool.RegMethod("approve", Approve)
 
 	// lock proxy and cross chain manager
+	frame.Tool.RegMethod("polyHeight", PolyHeight)
 	frame.Tool.RegMethod("deploy", DeployCrossChainContract)
-	frame.Tool.RegMethod("eccmUpgrade", UpgradeECCM)
+	frame.Tool.RegMethod("upgradeECCM", UpgradeECCM)
 	frame.Tool.RegMethod("registerSideChain", RegisterSideChain)
 	frame.Tool.RegMethod("updateSideChain", UpdateSideChain)
 	frame.Tool.RegMethod("quitSideChain", QuitSideChain)
@@ -81,6 +82,8 @@ func Endpoint() {
 	frame.Tool.RegMethod("lock", Lock)
 	frame.Tool.RegMethod("getProof", GetProof)
 	frame.Tool.RegMethod("syncGenesis", SyncGenesis)
+	frame.Tool.RegMethod("changePaletteBookKeeper", ChangePaletteBookKeepers)
+	frame.Tool.RegMethod("changePolyBookKeeper", ChangePolyBookKeepers)
 
 	// governance
 	frame.Tool.RegMethod("addValidators", AddValidators)

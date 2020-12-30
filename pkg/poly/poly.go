@@ -16,10 +16,10 @@ import (
 	"github.com/ontio/ontology-crypto/sm2"
 	"github.com/palettechain/onRobot/pkg/log"
 	polysdk "github.com/polynetwork/poly-go-sdk"
-	pcm "github.com/polynetwork/poly/common"
+	polycm "github.com/polynetwork/poly/common"
 	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
-	ptyp "github.com/polynetwork/poly/core/types"
-	putils "github.com/polynetwork/poly/native/service/utils"
+	polytype "github.com/polynetwork/poly/core/types"
+	polyutils "github.com/polynetwork/poly/native/service/utils"
 )
 
 type PolyClient struct {
@@ -39,6 +39,51 @@ func NewPolyClient(rpcAddr string, accArr []*polysdk.Account) (*PolyClient, erro
 		sdk:    sdk,
 		accArr: accArr,
 	}, nil
+}
+
+// client的账户列表就是poly共识节点账户列表，可以通过注册和取消账户的方式实现bookKeeper的变更
+func (c *PolyClient) RegNode(accIndex int) error {
+	validators := make([]*polysdk.Account, 0)
+	for i, v := range c.accArr {
+		if i != accIndex {
+			validators = append(validators, v)
+		}
+	}
+	acc := c.accArr[accIndex]
+	peer := vconfig.PubkeyID(acc.GetPublicKey())
+
+	if err := c.RegisterCandidate(peer, validators[0]); err != nil {
+		return err
+	} else {
+		log.Infof("register %s success!", peer)
+	}
+	if err := c.ApproveCandidate(peer, validators); err != nil {
+		return err
+	} else {
+		log.Infof("approve %s success", peer)
+	}
+	return c.CommitPolyDpos(validators)
+}
+
+func (c *PolyClient) QuitNode(accIndex int) error {
+	validators := make([]*polysdk.Account, 0)
+	for i, v := range c.accArr {
+		if i != accIndex {
+			validators = append(validators, v)
+		}
+	}
+
+	acc := c.accArr[accIndex]
+	peer := vconfig.PubkeyID(acc.PublicKey)
+
+	txhash, err := c.sdk.Native.Nm.QuitNode(peer, acc)
+	if err != nil {
+		return fmt.Errorf("failed to quit %s: %v", acc.Address.ToBase58(), err)
+	}
+	if err := c.WaitPolyTx(txhash); err != nil {
+		return err
+	}
+	return c.CommitPolyDpos(validators)
 }
 
 func (c *PolyClient) SyncGenesisBlock(
@@ -61,7 +106,7 @@ func (c *PolyClient) SyncGenesisBlock(
 	}
 }
 
-var sideChainRouter = putils.PALETTE_ROUTER
+var sideChainRouter = polyutils.PALETTE_ROUTER
 
 const (
 	sideChainName        = "palette"
@@ -131,7 +176,7 @@ func (c *PolyClient) UpdateSideChain(chainID uint64, eccdAddr common.Address) er
 
 func (c *PolyClient) ApproveRegisterSideChain(chainID uint64) error {
 	var (
-		txhash pcm.Uint256
+		txhash polycm.Uint256
 		err    error
 	)
 	for i, acc := range c.accArr {
@@ -147,7 +192,7 @@ func (c *PolyClient) ApproveRegisterSideChain(chainID uint64) error {
 
 func (c *PolyClient) ApproveQuitSideChain(chainID uint64) error {
 	var (
-		txhash pcm.Uint256
+		txhash polycm.Uint256
 		err    error
 	)
 	for i, acc := range c.accArr {
@@ -163,7 +208,7 @@ func (c *PolyClient) ApproveQuitSideChain(chainID uint64) error {
 
 func (c *PolyClient) ApproveUpdateSideChain(chainID uint64) error {
 	var (
-		txhash pcm.Uint256
+		txhash polycm.Uint256
 		err    error
 	)
 	for i, acc := range c.accArr {
@@ -177,11 +222,48 @@ func (c *PolyClient) ApproveUpdateSideChain(chainID uint64) error {
 	return c.WaitPolyTx(txhash)
 }
 
+func (c *PolyClient) RegisterCandidate(peer string, validator *polysdk.Account) error {
+	txHash, err := c.sdk.Native.Nm.RegisterCandidate(peer, validator)
+	if err != nil {
+		if strings.Contains(err.Error(), "already") {
+			log.Warnf("candidate %s already registered: %v", peer, err)
+			return nil
+		}
+		return fmt.Errorf("sendTransaction error: %v", err)
+	}
+	return c.WaitPolyTx(txHash)
+}
+
+func (c *PolyClient) ApproveCandidate(peer string, validators []*polysdk.Account) error {
+	var (
+		txhash polycm.Uint256
+		err    error
+	)
+
+	for index, validator := range validators {
+		txhash, err = c.sdk.Native.Nm.ApproveCandidate(peer, validator)
+		if err != nil {
+			return fmt.Errorf("node-%d sendTransaction error: %v", index, err)
+		}
+		log.Infof("node-%d approve %s", index, peer)
+	}
+
+	return c.WaitPolyTx(txhash)
+}
+
+func (c *PolyClient) CommitPolyDpos(accArr []*polysdk.Account) error{
+	txhash, err := c.sdk.Native.Nm.CommitDpos(accArr)
+	if err != nil {
+		return err
+	}
+	return c.WaitPolyTx(txhash)
+}
+
 func (c *PolyClient) GetSideChainOwner() *polysdk.Account {
 	return c.accArr[0]
 }
 
-func (c *PolyClient) GetBlockByHeight(height uint32) (*ptyp.Block, error) {
+func (c *PolyClient) GetBlockByHeight(height uint32) (*polytype.Block, error) {
 	return c.sdk.GetBlockByHeight(height)
 }
 
@@ -189,7 +271,7 @@ func (c *PolyClient) GetCurrentBlockHeight() (uint32, error) {
 	return c.sdk.GetCurrentBlockHeight()
 }
 
-func GetBookeeper(block *ptyp.Block) ([]keypair.PublicKey, error) {
+func GetBookeeper(block *polytype.Block) ([]keypair.PublicKey, error) {
 	info := new(vconfig.VbftBlockInfo)//&vconfig.VbftBlockInfo{}
 	info.NewChainConfig = new(vconfig.ChainConfig)
 	if err := json.Unmarshal(block.Header.ConsensusPayload, info); err != nil {
@@ -197,11 +279,12 @@ func GetBookeeper(block *ptyp.Block) ([]keypair.PublicKey, error) {
 	}
 
 	if info == nil {
-		log.Info("info is nil")
+		return nil, fmt.Errorf("info is nil")
 	}
 	if info.NewChainConfig == nil {
-		log.Info("new chain config is nil")
+		return nil, fmt.Errorf("new chain config is nil")
 	}
+
 	bookkeepers := make([]keypair.PublicKey, 0 )
 	for _, peer := range info.NewChainConfig.Peers {
 		log.Infof("poly peer index %d id %s", peer.Index, peer.ID)
@@ -222,7 +305,7 @@ func AssembleNoCompressBookeeper(bookeepers []keypair.PublicKey) []byte {
 	return publickeys
 }
 
-func (c *PolyClient) WaitPolyTx(hash pcm.Uint256) error {
+func (c *PolyClient) WaitPolyTx(hash polycm.Uint256) error {
 	tick := time.NewTicker(100 * time.Millisecond)
 	var h uint32
 	startTime := time.Now()
@@ -242,21 +325,31 @@ func (c *PolyClient) WaitPolyTx(hash pcm.Uint256) error {
 	return nil
 }
 
-func HashConvertUp(src pcm.Uint256) common.Hash {
+func (c *PolyClient) removeAccount(accIndex int) {
+	list := make([]*polysdk.Account, 0)
+	for i, v := range c.accArr {
+		if i != accIndex {
+			list = append(list, v)
+		}
+	}
+	c.accArr = list
+}
+
+func HashConvertUp(src polycm.Uint256) common.Hash {
 	return common.BytesToHash(src[:])
 }
 
-func HashConvertDown(src common.Hash) (pcm.Uint256, error) {
-	return pcm.Uint256ParseFromBytes(src[:])
+func HashConvertDown(src common.Hash) (polycm.Uint256, error) {
+	return polycm.Uint256ParseFromBytes(src[:])
 }
 
 // todo
-func AddrConvertUp(src pcm.Address) common.Address {
+func AddrConvertUp(src polycm.Address) common.Address {
 	return common.BytesToAddress(src[:])
 }
 
-func AddrConvertDown(src common.Address) (pcm.Address, error) {
-	return pcm.AddressFromHexString(src.Hex())
+func AddrConvertDown(src common.Address) (polycm.Address, error) {
+	return polycm.AddressFromHexString(src.Hex())
 }
 
 func GetOntNoCompressKey(key keypair.PublicKey) []byte {

@@ -6,3 +6,4 @@ build/poly_keystore
 config/*.json
 cross.sh
 build/backup
+pkg/poly/poly_test.go

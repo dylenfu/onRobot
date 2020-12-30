@@ -15,6 +15,35 @@ import (
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
+func PolyHeight() (succeed bool) {
+	var params struct{
+		RPC string
+	}
+
+	if err := config.LoadParams("PolyHeight.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyCli, err := poly.NewPolyClient(params.RPC, polyValidators)
+	if err != nil {
+		log.Errorf("failed to generate poly client, err: %s", err)
+		return
+	} else {
+		log.Infof("generate poly client success!")
+	}
+
+	height, err := polyCli.GetCurrentBlockHeight()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Infof("%s current height %d", params.RPC, height)
+	return true
+}
+
 // 注意: bindProxy&bindAsset&Lock三个测试都是基于palette-poly-palette的回路测试
 type DeployContractParams struct {
 	Abi    string `json:"Abi"`
@@ -564,6 +593,22 @@ func Lock() (succeed bool) {
 		}
 	}
 
+	// return plt
+	{
+		hash, err := cli.PLTTransfer(common.HexToAddress(config.Conf.AdminAccount), amount)
+		if err != nil {
+			log.Infof("transfer back PLT to admin err: %s", err)
+			return true
+		}
+		_ = cli.DumpEventLog(hash)
+		balance, err := cli.BalanceOf(userAddr, "latest")
+		if err != nil {
+			log.Infof("check balance after unlock err: %s", err)
+		} else {
+			log.Infof("balance after unlock %d", plt.PrintUPLT(balance))
+		}
+	}
+
 	return true
 }
 
@@ -782,5 +827,231 @@ func ApproveQuitSideChain() (succeed bool) {
 	}
 
 	log.Infof("approve quit side chain %d success", chainID)
+	return true
+}
+
+func ChangePaletteBookKeepers() (succeed bool) {
+	var params struct {
+		InitAmount int
+		NodeNumber int
+	}
+
+	if err := config.LoadParams("DelValidator.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	// spare node
+	if params.NodeNumber > len(config.Conf.SpareNodes()) {
+		log.Errorf("node number out of range")
+		return
+	}
+	nodes := config.Conf.SpareNodes()[0:params.NodeNumber]
+
+	// init nodes
+	{
+		for _, node := range nodes {
+			execInitNode(node)
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	// start node and sync blocks
+	{
+		for _, node := range nodes {
+			execStartNode(node)
+		}
+		wait(5)
+	}
+
+	// check balance before stake
+	checkBalance := func(node *config.Node, mark string) int {
+		data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
+		if err != nil {
+			log.Error("failed to check %s balance", node.NodeAddr().Hex())
+			return 0
+		}
+		balance := plt.PrintUPLT(data)
+		log.Infof("%s balance %s %d", node.NodeAddr().Hex(), mark, balance)
+		return int(balance)
+	}
+
+	stakeAndDumpEvent := func(revoke bool) {
+		stakeHashList := make([]common.Hash, 0)
+		for _, node := range nodes {
+			cli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
+			stkAmt := plt.MultiPLT(params.InitAmount)
+			if revoke {
+				stkAmt = cli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
+			}
+
+			hash, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), stkAmt, revoke)
+			if err != nil {
+				log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), stkAmt)
+				return
+			}
+			log.Infof("stake for validator, hash %s", hash.Hex())
+			stakeHashList = append(stakeHashList, hash)
+		}
+		wait(2)
+		if err := DumpHashList(stakeHashList, "stake"); err != nil {
+			return
+		}
+	}
+
+	checkStakeAmt := func(mark string) {
+		for _, node := range nodes {
+			data := admcli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
+			value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
+			log.Infof("check stake amount %f %s", value, mark)
+		}
+	}
+
+	adminAddValidator := func(revoke bool) {
+		hs := make([]common.Hash, 0)
+		for _, node := range nodes {
+			hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), revoke)
+			if err != nil {
+				log.Errorf("failed to add validator %s, err: %s", node.NodeAddr().Hex(), err)
+				return
+			}
+			log.Infof("admin add validator %s success, tx hash %s", node.NodeAddr().Hex(), hash.Hex())
+			hs = append(hs, hash)
+		}
+		wait(2)
+		if err := DumpHashList(hs, "admin add validators"); err != nil {
+			return
+		}
+	}
+
+	// 1.deposit and dump event log
+	{
+		log.Infof("admin deposit to validator")
+		hs := make([]common.Hash, 0)
+		for _, node := range nodes {
+			balance := checkBalance(node,"before deposit")
+			if balance >= params.InitAmount {
+				continue
+			}
+			addAmount := params.InitAmount - balance
+			hash, err := admcli.PLTTransfer(node.StakeAddr(), plt.MultiPLT(addAmount))
+			if err != nil {
+				log.Errorf("failed to deposit to node %s, err: %s", node.NodeAddr().Hex(), err)
+				return
+			} else {
+				log.Infof("admin deposit to %s %d PLT, hash %s", node.NodeAddr().Hex(), addAmount, hash.Hex())
+			}
+			hs = append(hs, hash)
+		}
+		wait(2)
+		if err := DumpHashList(hs, "deposit for validator"); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// 2.stake and dump event log
+	{
+		logsplit()
+		log.Infof("validators stake at block %d", admcli.GetBlockNumber())
+		stakeAndDumpEvent(false)
+		wait(2 * config.Conf.RewardEffectivePeriod)
+		checkStakeAmt("after stake")
+	}
+
+	// 3.admin add validator
+	{
+		log.Infof("admin add validator at block %d", admcli.GetBlockNumber())
+		adminAddValidator(false)
+		wait(config.Conf.RewardEffectivePeriod + 2)
+	}
+
+	// 4. lock
+	Lock()
+
+	// 5.admin del validator
+	{
+		logsplit()
+		log.Infof("admin del validator at block %d", admcli.GetBlockNumber())
+		adminAddValidator(true)
+		wait(config.Conf.RewardEffectivePeriod + 2)
+	}
+
+	// 6.revoke stake
+	{
+		log.Infof("revoking stake......")
+		stakeAndDumpEvent(true)
+		wait(config.Conf.RewardEffectivePeriod)
+		checkStakeAmt("after revoke stake")
+	}
+
+	// 7.check balance after revoke stake
+	{
+		for _, node := range nodes {
+			checkBalance(node,"after revoke stake")
+		}
+	}
+
+	// 8. stop and clear nodes
+	{
+		for _, node := range nodes {
+			execStopNode(node)
+		}
+		for _, node := range nodes {
+			execClearNode(node)
+		}
+	}
+
+	// 9. lock
+	Lock()
+
+	return true
+}
+
+func ChangePolyBookKeepers() (succeed bool) {
+	var params struct {
+		NodeIndex int
+	}
+
+	if err := config.LoadParams("ChangePolyBookKeepers.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	// 1. get poly client
+	polyRPC := config.Conf.Poly.RPCAddress
+	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	cli, err := poly.NewPolyClient(polyRPC, polyValidators)
+	if err != nil {
+		log.Errorf("failed to generate poly client, err: %s", err)
+		return
+	} else {
+		log.Infof("generate poly client success!")
+	}
+
+	// 2. register node
+	if err := cli.RegNode(params.NodeIndex); err != nil {
+		log.Error(err)
+		return
+	} else {
+		log.Infof("register node-%d success", params.NodeIndex)
+	}
+	wait(5)
+
+	// 3. lock
+	Lock()
+
+	// 4. quit node
+	if err := cli.QuitNode(params.NodeIndex); err != nil {
+		log.Error(err)
+		return
+	} else {
+		log.Infof("quit node-%d success", params.NodeIndex)
+	}
+	wait(5)
+
+	// 5. lock
+	Lock()
+
 	return true
 }
