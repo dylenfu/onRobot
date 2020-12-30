@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
@@ -48,42 +47,86 @@ func UpgradeECCM() (succeed bool) {
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 
-	// pause eccmp
+	// eccd contract transfer ownership
 	{
 		logsplit()
-		tx, err := cli.PauseCCMP(ccmpAddr)
+		log.Info("eccd transferOwnership")
+		hash, err := cli.ECCDTransferOwnerShip(eccdAddr, eccmAddr)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		log.Infof("pause tx %s", tx.Hex())
 		wait(3)
+		if err := admcli.DumpEventLog(hash); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// eccm contract transfer ownership
+	{
+		logsplit()
+		log.Info("eccm transferOwnership")
+		hash, err := cli.ECCMTransferOwnerShip(eccmAddr, ccmpAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		wait(3)
+		if err := admcli.DumpEventLog(hash); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// pause eccmp
+	{
+		logsplit()
+		hash, err := cli.PauseCCMP(ccmpAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Infof("pause tx %s", hash)
+		wait(3)
+		if err := admcli.DumpEventLog(hash); err != nil {
+			log.Error(err)
+			return
+		}
 		log.Infof("pause success!")
 	}
 
 	// upgrade eccm
 	{
 		logsplit()
-		tx, err := cli.UpgradeECCM(eccmAddr, ccmpAddr)
+		hash, err := cli.UpgradeECCM(eccmAddr, ccmpAddr)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		log.Infof("upgrade tx %s", tx.Hex())
+		log.Infof("upgrade tx %s", hash.Hex())
 		wait(3)
+		if err := admcli.DumpEventLog(hash); err != nil {
+			log.Error(err)
+			return
+		}
 		log.Infof("upgrade success!")
 	}
 
 	// unpause eccmp
 	{
 		logsplit()
-		tx, err := cli.UnPauseCCMP(ccmpAddr)
+		hash, err := cli.UnPauseCCMP(ccmpAddr)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		log.Infof("unpause tx %s", tx.Hex())
+		log.Infof("unpause tx %s", hash.Hex())
 		wait(3)
+		if err := admcli.DumpEventLog(hash); err != nil {
+			log.Error(err)
+			return
+		}
 		log.Infof("unpause success!")
 	}
 
@@ -112,7 +155,7 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to load contract %s, err: %v", eccdFileName, err)
 		return
 	}
-	eccdAddr, eccd, err := deployContract(eccdParams.Abi, eccdParams.Object)
+	eccdAddr, _, err := deployContract(eccdParams.Abi, eccdParams.Object)
 	if err != nil {
 		log.Errorf("failed to deploy eccd contract, err: %v", err)
 		return
@@ -124,7 +167,7 @@ func DeployCrossChainContract() (succeed bool) {
 		return
 	}
 	otherChainID := uint64(config.Conf.Environment.NetworkID)
-	eccmAddr, eccm, err := deployContract(eccmParams.Abi, eccmParams.Object, eccdAddr, otherChainID)
+	eccmAddr, _, err := deployContract(eccmParams.Abi, eccmParams.Object, eccdAddr, otherChainID)
 	if err != nil {
 		log.Errorf("failed to deploy eccm contract, err: %v", err)
 		return
@@ -144,21 +187,18 @@ func DeployCrossChainContract() (succeed bool) {
 
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-	auth := bind.NewKeyedTransactor(node.PrivateKey())
-	auth.GasLimit = 21000
 
 	// eccd contract transfer ownership
 	{
 		logsplit()
-		auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
 		log.Info("eccd transferOwnership")
-		tx, err := eccd.Transact(auth, "transferOwnership", eccmAddr)
+		hash, err := cli.ECCDTransferOwnerShip(eccdAddr, eccmAddr)
 		if err != nil {
 			log.Error(err)
 			return
 		}
 		wait(3)
-		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
+		if err := admcli.DumpEventLog(hash); err != nil {
 			log.Error(err)
 			return
 		}
@@ -168,14 +208,13 @@ func DeployCrossChainContract() (succeed bool) {
 	{
 		logsplit()
 		log.Info("eccm transferOwnership")
-		auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
-		tx, err := eccm.Transact(auth, "transferOwnership", ccmpAddr)
+		hash, err := cli.ECCMTransferOwnerShip(eccmAddr, ccmpAddr)
 		if err != nil {
 			log.Error(err)
 			return
 		}
 		wait(3)
-		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
+		if err := admcli.DumpEventLog(hash); err != nil {
 			log.Error(err)
 			return
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/pkg/log"
+	"github.com/polynetwork/eth-contracts/go_abi/eccd_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccm_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccmp_abi"
 )
@@ -243,7 +244,7 @@ func (c *Client) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickeys []
 		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManager err: %s", err)
 	}
 
-	auth := c.getBindAuth()
+	auth := c.getDeployAuth()
 	tx, err := eccm.InitGenesisBlock(auth, rawHdr, publickeys)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("call eccm InitGenesisBlock err: %s", err)
@@ -258,22 +259,8 @@ func (c *Client) PauseCCMP(ccmpAddr common.Address) (common.Hash, error) {
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManagerProxy err: %s", err)
 	}
-	//eccm, err := eccm_abi.NewEthCrossChainManager(oldeccmAddr, c.backend)
-	//if err != nil {
-	//	return utils.EmptyHash, fmt.Errorf("call eccd paused err: %s", err)
-	//}
 
-	//callOpts := c.getCallOpts()
-	//ccmpPaused, err := ccmp.Paused(callOpts)
-	//if err != nil {
-	//	return utils.EmptyHash, fmt.Errorf("call ccmp paused err: %s", err)
-	//}
-	//eccmPaused, err := eccm.Paused(callOpts)
-	//if err != nil {
-	//	return utils.EmptyHash, fmt.Errorf("call eccm paused err: %s", err)
-	//}
-
-	auth := c.getBindAuth()
+	auth := c.getDeployAuth()
 	tx, err := ccmp.PauseEthCrossChainManager(auth)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("call ccmp pause err: %s", err)
@@ -288,7 +275,7 @@ func (c *Client) UnPauseCCMP(ccmpAddr common.Address) (common.Hash, error) {
 		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManagerProxy err: %s", err)
 	}
 
-	auth := c.getBindAuth()
+	auth := c.getDeployAuth()
 	tx, err := ccmp.UnpauseEthCrossChainManager(auth)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("call ccmp unpause err: %s", err)
@@ -303,7 +290,7 @@ func (c *Client) UpgradeECCM(newEccmAddr, ccmpAddr common.Address) (common.Hash,
 		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManagerProxy err: %s", err)
 	}
 
-	auth := c.getBindAuth()
+	auth := c.getDeployAuth()
 	tx, err := ccmp.UpgradeEthCrossChainManager(auth, newEccmAddr)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("call upgradeEthCrossChainManager err: %s", err)
@@ -312,26 +299,35 @@ func (c *Client) UpgradeECCM(newEccmAddr, ccmpAddr common.Address) (common.Hash,
 	return tx.Hash(), nil
 }
 
-//func (c *Client) WaitTransaction(txhash common.Hash) error {
-//	for {
-//		time.Sleep(time.Second * 2)
-//		receipt, err := c.GetReceipt(txhash)
-//		if err != nil {
-//			log.Errorf("failed to call TransactionByHash: %v", err)
-//			continue
-//		}
-//		if receipt == nil {
-//			continue
-//		}
-//		if receipt.Status > 0 {
-//			c.DumpEventLog(txhash)
-//			break
-//		} else {
-//			return fmt.Errorf("tx %s failed", txhash.Hex())
-//		}
-//	}
-//	return nil
-//}
+func (c *Client) ECCDTransferOwnerShip(eccdAddr, newEccmAddr common.Address) (common.Hash, error) {
+	eccd, err := eccd_abi.NewEthCrossChainData(eccdAddr, c.backend)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("new EthCrossChainData err: %s", err)
+	}
+
+	auth := c.getTransactAuth()
+	tx, err := eccd.TransferOwnership(auth, newEccmAddr)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("call transferOwnerShip err: %s", err)
+	}
+
+	return tx.Hash(), nil
+}
+
+func (c *Client) ECCMTransferOwnerShip(eccmAddr, oldCcmpAddr common.Address) (common.Hash, error) {
+	eccm, err := eccm_abi.NewEthCrossChainManager(eccmAddr, c.backend)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManager err: %s", err)
+	}
+
+	auth := c.getTransactAuth()
+	tx, err := eccm.TransferOwnership(auth, oldCcmpAddr)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("call transferOwnerShip err: %s", err)
+	}
+
+	return tx.Hash(), nil
+}
 
 func (self *Client) WaitTransaction(hash common.Hash) {
 	for {
@@ -344,21 +340,11 @@ func (self *Client) WaitTransaction(hash common.Hash) {
 		if ispending == true {
 			continue
 		} else {
+			self.DumpEventLog(hash)
 			break
 		}
 	}
 }
-
-//func (c *Client) UnLock(args *plt.TxArgs, srcContract common.Address, chainID uint64) (common.Hash, error) {
-//	var buf []byte
-//	sink := pcom.NewZeroCopySink(buf)
-//	args.Serialization(sink)
-//	payload, err := c.packPLT(plt.MethodUnlock, buf, srcContract.Bytes(), chainID)
-//	if err != nil {
-//		return utils.EmptyHash, err
-//	}
-//	return c.sendPLTTx(payload)
-//}
 
 func (c *Client) packPLT(method string, args ...interface{}) ([]byte, error) {
 	return utils.PackMethod(PLTABI, method, args...)
