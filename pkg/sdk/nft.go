@@ -2,15 +2,15 @@ package sdk
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/palettechain/onRobot/pkg/log"
-	common2 "github.com/polynetwork/poly/common"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/contracts/native/nft"
 	"github.com/ethereum/go-ethereum/contracts/native/nftmanager"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
+	"github.com/palettechain/onRobot/pkg/log"
+	polycm "github.com/polynetwork/poly/common"
 )
 
 func (c *Client) NFTDeploy(name string, symbol string) (common.Hash, common.Address, error) {
@@ -27,10 +27,10 @@ func (c *Client) NFTDeploy(name string, symbol string) (common.Hash, common.Addr
 	c.WaitTransaction(hash)
 	receipts, err := c.GetReceipt(hash)
 	if err != nil {
-		return utils.EmptyHash, utils.EmptyAddress, fmt.Errorf("nft depoly - get receipt err: %s", err)
+		return utils.EmptyHash, utils.EmptyAddress, fmt.Errorf("nft depoly - get receipt %s err: %s", hash.Hex(), err)
 	}
 	if len(receipts.Logs) == 0 {
-		return utils.EmptyHash, utils.EmptyAddress, fmt.Errorf("invalid tx, no receipts events")
+		return utils.EmptyHash, utils.EmptyAddress, fmt.Errorf("invalid tx %s, no receipts events", hash.Hex())
 	}
 
 	for _, event := range receipts.Logs {
@@ -41,7 +41,6 @@ func (c *Client) NFTDeploy(name string, symbol string) (common.Hash, common.Addr
 
 	return utils.EmptyHash, utils.EmptyAddress, fmt.Errorf("no valid nft address")
 }
-
 
 func (c *Client) NFTName(asset common.Address, blockNum string) (string, error) {
 	payload, err := c.packNFT(nft.MethodName)
@@ -54,14 +53,14 @@ func (c *Client) NFTName(asset common.Address, blockNum string) (string, error) 
 	}
 	result := &nft.NameResult{}
 	err = c.unpackNFT(nft.MethodName, result, data)
-	if err != nil{
+	if err != nil {
 		return "", err
 	}
 
 	return result.Name, nil
 }
 
-func (c *Client) NFTSymbol(asset common.Address, blockNum  string) (string, error) {
+func (c *Client) NFTSymbol(asset common.Address, blockNum string) (string, error) {
 	payload, err := c.packNFT(nft.MethodSymbol)
 	if err != nil {
 		return "", err
@@ -72,7 +71,7 @@ func (c *Client) NFTSymbol(asset common.Address, blockNum  string) (string, erro
 	}
 	result := &nft.SymbolResult{}
 	err = c.unpackNFT(nft.MethodSymbol, result, data)
-	if err != nil{
+	if err != nil {
 		return "", err
 	}
 
@@ -90,7 +89,7 @@ func (c *Client) NFTOwner(asset common.Address, blockNum string) (common.Address
 	}
 	result := &nft.OwnerResult{}
 	err = c.unpackNFT(nft.MethodOwner, result, data)
-	if err != nil{
+	if err != nil {
 		return utils.EmptyAddress, err
 	}
 
@@ -108,7 +107,7 @@ func (c *Client) NFTTotalSupply(asset common.Address, blockNum string) (*big.Int
 	}
 	result := &nft.TotalSupplyResult{}
 	err = c.unpackNFT(nft.MethodTotalSupply, result, data)
-	if err != nil{
+	if err != nil {
 		return utils.EmptyBig, err
 	}
 
@@ -155,7 +154,7 @@ func (c *Client) NFTBalance(asset, user common.Address, blockNum string) (*big.I
 
 	result := &nft.BalanceOfResult{}
 	err = c.unpackNFT(nft.MethodBalanceOf, result, data)
-	if err != nil{
+	if err != nil {
 		return big.NewInt(0), err
 	}
 
@@ -167,7 +166,7 @@ func (c *Client) NFTTransferFrom(
 	from common.Address,
 	to common.Address,
 	tokenID *big.Int,
-	) (common.Hash, error) {
+) (common.Hash, error) {
 	payload, err := c.packNFT(nft.MethodTransferFrom, from, to, tokenID)
 	if err != nil {
 		return utils.EmptyHash, err
@@ -184,7 +183,7 @@ func (c *Client) NFTSafeTransferFrom(
 	tokenID *big.Int,
 	to common.Address,
 	toChainID uint64,
-	) (common.Hash, error) {
+) (common.Hash, error) {
 
 	data := assembleSafeTransferCallData(to, toChainID)
 	log.Infof("asset %s, from %s, proxy %s, tokenID %d, data %s",
@@ -202,7 +201,7 @@ func (c *Client) NFTApprove(
 	asset common.Address,
 	to common.Address,
 	tokenID *big.Int,
-	) (common.Hash, error) {
+) (common.Hash, error) {
 	payload, err := c.packNFT(nft.MethodApprove, to, tokenID)
 	if err != nil {
 		return utils.EmptyHash, err
@@ -224,7 +223,7 @@ func (c *Client) NFTGetApproved(asset common.Address, amount *big.Int, blockNum 
 
 	result := &nft.GetApprovedResult{}
 	err = c.unpackNFT(nft.MethodGetApproved, result, data)
-	if err != nil{
+	if err != nil {
 		return utils.EmptyAddress, err
 	}
 
@@ -232,7 +231,7 @@ func (c *Client) NFTGetApproved(asset common.Address, amount *big.Int, blockNum 
 }
 
 func assembleSafeTransferCallData(toAddress common.Address, chainID uint64) []byte {
-	sink := common2.NewZeroCopySink(nil)
+	sink := polycm.NewZeroCopySink(nil)
 	sink.WriteVarBytes(toAddress.Bytes())
 	sink.WriteUint64(chainID)
 	return sink.Bytes()

@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/contracts/native/nftmanager"
 	"math/big"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/contracts/native/nftmanager"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -44,7 +44,6 @@ func Init(_gasLimit, _deployGasLimit uint64, _blockPeriod time.Duration) {
 	GovernanceABI = governance.GetABI()
 	NFTABI = nft.GetABI()
 	NFTManagerABI = nftmanager.GetABI()
-
 	gasLimit = _gasLimit
 	deployGasLimit = _deployGasLimit
 	blockPeriod = _blockPeriod
