@@ -16,7 +16,7 @@ import (
 )
 
 func PolyHeight() (succeed bool) {
-	var params struct{
+	var params struct {
 		RPC string
 	}
 
@@ -929,7 +929,7 @@ func ChangePaletteBookKeepers() (succeed bool) {
 		log.Infof("admin deposit to validator")
 		hs := make([]common.Hash, 0)
 		for _, node := range nodes {
-			balance := checkBalance(node,"before deposit")
+			balance := checkBalance(node, "before deposit")
 			if balance >= params.InitAmount {
 				continue
 			}
@@ -988,7 +988,7 @@ func ChangePaletteBookKeepers() (succeed bool) {
 	// 7.check balance after revoke stake
 	{
 		for _, node := range nodes {
-			checkBalance(node,"after revoke stake")
+			checkBalance(node, "after revoke stake")
 		}
 	}
 
@@ -1009,12 +1009,9 @@ func ChangePaletteBookKeepers() (succeed bool) {
 }
 
 func ChangePolyBookKeepers() (succeed bool) {
-	var params struct {
-		NodeIndex int
-	}
-
-	if err := config.LoadParams("ChangePolyBookKeepers.json", &params); err != nil {
-		log.Error(err)
+	node, err := config.Conf.Poly.LoadPolyTestCaseAccount("newpolynode.dat")
+	if err != nil {
+		log.Errorf("load new node account err: %s", err)
 		return
 	}
 
@@ -1030,11 +1027,11 @@ func ChangePolyBookKeepers() (succeed bool) {
 	}
 
 	// 2. register node
-	if err := cli.RegNode(params.NodeIndex); err != nil {
+	if err := cli.RegNode(node); err != nil {
 		log.Error(err)
 		return
 	} else {
-		log.Infof("register node-%d success", params.NodeIndex)
+		log.Infof("register node %s success", node.Address.ToBase58())
 	}
 	wait(5)
 
@@ -1042,16 +1039,45 @@ func ChangePolyBookKeepers() (succeed bool) {
 	Lock()
 
 	// 4. quit node
-	if err := cli.QuitNode(params.NodeIndex); err != nil {
+	if err := cli.QuitNode(node); err != nil {
 		log.Error(err)
 		return
 	} else {
-		log.Infof("quit node-%d success", params.NodeIndex)
+		log.Infof("quit node %s success", node.Address.ToBase58())
 	}
 	wait(5)
 
 	// 5. lock
 	Lock()
+
+	return true
+}
+
+func QuitNode() (succeed bool) {
+	node, err := config.Conf.Poly.LoadPolyTestCaseAccount("newpolynode.dat")
+	if err != nil {
+		log.Errorf("load new node account err: %s", err)
+		return
+	}
+
+	// 1. get poly client
+	polyRPC := config.Conf.Poly.RPCAddress
+	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	cli, err := poly.NewPolyClient(polyRPC, polyValidators)
+	if err != nil {
+		log.Errorf("failed to generate poly client, err: %s", err)
+		return
+	} else {
+		log.Infof("generate poly client success!")
+	}
+
+	// 4. quit node
+	if err := cli.QuitNode(node); err != nil {
+		log.Error(err)
+		return
+	} else {
+		log.Infof("quit node %s success", node.Address.ToBase58())
+	}
 
 	return true
 }

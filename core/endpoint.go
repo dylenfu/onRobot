@@ -103,4 +103,11 @@ func Endpoint() {
 	// evm
 	//frame.Tool.RegMethod("deploy", Deploy)
 	//frame.Tool.RegMethod("evm", EVM)
+
+	// nft
+	frame.Tool.RegMethod("nft-deploy", NFTDeploy)
+	frame.Tool.RegMethod("nft-mint", NFTMint)
+	frame.Tool.RegMethod("nft-burn", NFTBurn)
+	frame.Tool.RegMethod("nft-transfer", NFTTransfer)
+	frame.Tool.RegMethod("nft-lock", NFTLock)
 }

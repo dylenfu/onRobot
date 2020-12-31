@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/contracts/native/nftmanager"
 	"math/big"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/governance"
+	"github.com/ethereum/go-ethereum/contracts/native/nft"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -24,10 +26,11 @@ import (
 )
 
 var (
-	PLTABI, GovernanceABI abi.ABI
-	PLTAddress            = common.HexToAddress(native.PLTContractAddress)
-	GovernanceAddress     = common.HexToAddress(native.GovernanceContractAddress)
-
+	PLTABI, GovernanceABI,
+	NFTABI, NFTManagerABI abi.ABI
+	PLTAddress               = common.HexToAddress(native.PLTContractAddress)
+	GovernanceAddress        = common.HexToAddress(native.GovernanceContractAddress)
+	NFTMangerAddress         = common.HexToAddress(native.NFTContractCreateAddress)
 	gasLimit, deployGasLimit uint64
 	blockPeriod              time.Duration
 )
@@ -39,6 +42,8 @@ const (
 func Init(_gasLimit, _deployGasLimit uint64, _blockPeriod time.Duration) {
 	PLTABI = plt.GetABI()
 	GovernanceABI = governance.GetABI()
+	NFTABI = nft.GetABI()
+	NFTManagerABI = nftmanager.GetABI()
 
 	gasLimit = _gasLimit
 	deployGasLimit = _deployGasLimit
@@ -218,7 +223,7 @@ func (c *Client) DeployContract(abiStr, binStr string, params ...interface{}) (c
 	return address, contract, nil
 }
 
-func (c *Client) getDeployAuth() *bind.TransactOpts{
+func (c *Client) getDeployAuth() *bind.TransactOpts {
 	auth := bind.NewKeyedTransactor(c.Key)
 	auth.GasLimit = 1e7
 	auth.Nonce = new(big.Int).SetUint64(c.GetNonce(c.Address().Hex()))

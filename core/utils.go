@@ -17,12 +17,18 @@ import (
 	"github.com/palettechain/onRobot/pkg/shell"
 )
 
-var admcli *sdk.Client
+var (
+	admcli *sdk.Client
+	valcli *sdk.Client
+)
 
 func initialize() {
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
 	key := config.AdminKey
 	admcli = sdk.NewSender(baseUrl, key)
+
+	node := config.Conf.ValidatorNodes()[0]
+	valcli = sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 }
 
 func gc() {

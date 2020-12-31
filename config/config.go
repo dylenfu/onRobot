@@ -299,21 +299,37 @@ type PolyConfig struct {
 func (c *PolyConfig) LoadPolyAccountList() []*polysdk.Account {
 
 	list := make([]*polysdk.Account, 0)
-	pwd := []byte(c.PolyAccountDefaultPassphrase)
+
 	dir := path.Join(Conf.Environment.LocalWorkspace, polyKeystoreDir)
-	polySDK := polysdk.NewPolySdk()
+
 
 	fs, _ := ioutil.ReadDir(dir)
 	for _, f := range fs {
 		fullPath := path.Join(dir, f.Name())
-		acc, err := getPolyAccountByPassword(polySDK, fullPath, pwd)
+		acc, err := c.LoadPolyAccount(fullPath)
 		if err != nil {
-			panic(fmt.Sprintf("failed to get poly account, err: %s", err))
+			panic(err)
 		}
 		list = append(list, acc)
 	}
 
 	return list
+}
+
+func (c *PolyConfig) LoadPolyTestCaseAccount(filename string) (*polysdk.Account, error) {
+	filePath := files.FullPath(Conf.Environment.LocalWorkspace, testCaseDir, filename)
+	return c.LoadPolyAccount(filePath)
+}
+
+func (c *PolyConfig) LoadPolyAccount(path string) (*polysdk.Account, error) {
+	polySDK := polysdk.NewPolySdk()
+	pwd := []byte(c.PolyAccountDefaultPassphrase)
+
+	acc, err := getPolyAccountByPassword(polySDK, path, pwd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get poly account, err: %s", err)
+	}
+	return acc, nil
 }
 
 func getPolyAccountByPassword(sdk *polysdk.PolySdk, path string, pwd []byte) (

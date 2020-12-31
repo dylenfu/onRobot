@@ -42,15 +42,9 @@ func NewPolyClient(rpcAddr string, accArr []*polysdk.Account) (*PolyClient, erro
 }
 
 // client的账户列表就是poly共识节点账户列表，可以通过注册和取消账户的方式实现bookKeeper的变更
-func (c *PolyClient) RegNode(accIndex int) error {
-	validators := make([]*polysdk.Account, 0)
-	for i, v := range c.accArr {
-		if i != accIndex {
-			validators = append(validators, v)
-		}
-	}
-	acc := c.accArr[accIndex]
-	peer := vconfig.PubkeyID(acc.GetPublicKey())
+func (c *PolyClient) RegNode(node *polysdk.Account) error {
+	validators := c.accArr
+	peer := vconfig.PubkeyID(node.PublicKey)
 
 	if err := c.RegisterCandidate(peer, validators[0]); err != nil {
 		return err
@@ -65,15 +59,7 @@ func (c *PolyClient) RegNode(accIndex int) error {
 	return c.CommitPolyDpos(validators)
 }
 
-func (c *PolyClient) QuitNode(accIndex int) error {
-	validators := make([]*polysdk.Account, 0)
-	for i, v := range c.accArr {
-		if i != accIndex {
-			validators = append(validators, v)
-		}
-	}
-
-	acc := c.accArr[accIndex]
+func (c *PolyClient) QuitNode(acc *polysdk.Account) error {
 	peer := vconfig.PubkeyID(acc.PublicKey)
 
 	txhash, err := c.sdk.Native.Nm.QuitNode(peer, acc)
@@ -83,13 +69,17 @@ func (c *PolyClient) QuitNode(accIndex int) error {
 	if err := c.WaitPolyTx(txhash); err != nil {
 		return err
 	}
-	return c.CommitPolyDpos(validators)
+	return c.CommitPolyDpos(c.accArr)
 }
 
 func (c *PolyClient) SyncGenesisBlock(
 	chainID uint64,
 	genesisHeader []byte,
 ) error {
+
+	for idx, acc := range c.accArr {
+		log.Infof("--------- acc-%d %s", idx, acc.Address.ToBase58())
+	}
 
 	if txhash, err := c.sdk.Native.Hs.SyncGenesisHeader(
 		chainID,
