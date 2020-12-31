@@ -78,7 +78,7 @@ func (c *PolyClient) SyncGenesisBlock(
 ) error {
 
 	for idx, acc := range c.accArr {
-		log.Infof("--------- acc-%d %s", idx, acc.Address.ToBase58())
+		log.Infof("acc-%d %s", idx, acc.Address.ToBase58())
 	}
 
 	if txhash, err := c.sdk.Native.Hs.SyncGenesisHeader(

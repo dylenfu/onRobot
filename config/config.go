@@ -293,7 +293,6 @@ func LoadAccount(address string) *ecdsa.PrivateKey {
 type PolyConfig struct {
 	PolyAccountDefaultPassphrase string
 	RPCAddress                   string
-	NetworkID                    uint64
 }
 
 func (c *PolyConfig) LoadPolyAccountList() []*polysdk.Account {
