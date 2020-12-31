@@ -109,5 +109,6 @@ func Endpoint() {
 	frame.Tool.RegMethod("nft-mint", NFTMint)
 	frame.Tool.RegMethod("nft-burn", NFTBurn)
 	frame.Tool.RegMethod("nft-transfer", NFTTransfer)
+	frame.Tool.RegMethod("nft-balance", NFTBalance)
 	frame.Tool.RegMethod("nft-lock", NFTLock)
 }

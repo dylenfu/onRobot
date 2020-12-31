@@ -143,6 +143,26 @@ func NFTTransfer() (succeed bool) {
 	return nftTransferBack(asset, token, to)
 }
 
+func NFTBalance() (succeed bool) {
+	var params struct {
+		Asset common.Address
+		User common.Address
+	}
+
+	if err := config.LoadParams("NFT-Balance.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	num, err := valcli.NFTBalance(params.Asset, params.User, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Infof("%s balance %d", params.User.Hex(), num.Uint64())
+	return true
+}
+
 func NFTLock() (succeed bool) {
 	var params struct {
 		Asset      common.Address
@@ -161,7 +181,7 @@ func NFTLock() (succeed bool) {
 	asset := params.Asset
 	crossChainID := uint64(config.Conf.Environment.NetworkID)
 	from := valcli.Address()
-	to := params.Proxy
+	to := from
 	proxy := params.Proxy
 	token := new(big.Int).SetUint64(params.TokenID)
 
