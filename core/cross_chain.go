@@ -16,17 +16,9 @@ import (
 )
 
 func PolyHeight() (succeed bool) {
-	var params struct {
-		RPC string
-	}
-
-	if err := config.LoadParams("PolyHeight.json", &params); err != nil {
-		log.Error(err)
-		return
-	}
-
-	polyValidators := config.Conf.Poly.LoadPolyAccountList()
-	polyCli, err := poly.NewPolyClient(params.RPC, polyValidators)
+	rpc := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
+	polyCli, err := poly.NewPolyClient(rpc, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
 		return
@@ -40,7 +32,7 @@ func PolyHeight() (succeed bool) {
 		return
 	}
 
-	log.Infof("%s current height %d", params.RPC, height)
+	log.Infof("%s current height %d", rpc, height)
 	return true
 }
 
@@ -53,7 +45,7 @@ type DeployContractParams struct {
 func UpgradeECCM() (succeed bool) {
 	params := new(DeployContractParams)
 
-	eccdAddr, _, ccmpAddr := config.Conf.CrossContractAddressList()
+	eccdAddr, _, ccmpAddr := config.Conf.CrossChain.CrossContractAddressList()
 
 	chainID := uint64(config.Conf.Environment.NetworkID)
 	if err := config.LoadParams("UpdateEccm.json", params); err != nil {
@@ -187,7 +179,7 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
 		return
 	}
-	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
 	eccmAddr, _, err := deployContract(eccmParams.Abi, eccmParams.Object, eccdAddr, crossChainID)
 	if err != nil {
 		log.Errorf("failed to deploy eccm contract, err: %v", err)
@@ -344,7 +336,7 @@ func Burn() (succeed bool) {
 // 2. palette native PLT unlock 取出ccmp地址，并进入该合约查询eccm地址，比较从relayer过来的eccm地址与该地址是否匹配
 // 3. 进入unlock资金逻辑
 func SetCCMP() (succeed bool) {
-	_, _, ccmp := config.Conf.CrossContractAddressList()
+	_, _, ccmp := config.Conf.CrossChain.CrossContractAddressList()
 	log.Infof("ccmp contract addr %s", ccmp.Hex())
 
 	tx, err := admcli.PLTSetCCMP(ccmp)
@@ -370,20 +362,13 @@ func SetCCMP() (succeed bool) {
 // 这里我们将实现palette->poly->palette的循环，不走ethereum，那么proxy就直接是plt地址，
 // asset的地址也是palette plt地址
 func BindProxy() (succeed bool) {
-	var params struct {
-		Proxy common.Address
-	}
-	sideChainID := uint64(config.Conf.Environment.SideChainID)
-
-	if err := config.LoadParams("BindProxy.json", &params); err != nil {
-		log.Error(err)
-		return
-	}
+	proxy := config.Conf.CrossChain.PLTCrossChainProxy()
+	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
 
 	// bind proxy
 	{
 		log.Infof("bind proxy...")
-		tx, err := admcli.BindProxy(sideChainID, params.Proxy)
+		tx, err := admcli.BindProxy(sideChainID, proxy)
 		if err != nil {
 			log.Error(err)
 			return
@@ -400,14 +385,14 @@ func BindProxy() (succeed bool) {
 	// get and compare proxy
 	{
 		log.Infof("get bind proxy...")
-		proxy, err := admcli.GetBindProxy(sideChainID, "latest")
+		actual, err := admcli.GetBindProxy(sideChainID, "latest")
 		if err != nil {
 			log.Error(err)
 			return
 		}
 
-		if !bytes.Equal(proxy.Bytes(), params.Proxy.Bytes()) {
-			log.Errorf("wrong proxy: expect  %s but get %s", params.Proxy.Hex(), proxy.Hex())
+		if !bytes.Equal(actual.Bytes(), proxy.Bytes()) {
+			log.Errorf("wrong proxy: expect  %s but get %s", proxy.Hex(), actual.Hex())
 			return
 		} else {
 			log.Infof("bind proxy success %s", proxy.Hex())
@@ -419,20 +404,13 @@ func BindProxy() (succeed bool) {
 
 // 在palette native合约上记录以太坊erc20资产地址
 func BindAsset() (succeed bool) {
-	var params struct {
-		Asset common.Address
-	}
-	sideChainID := uint64(config.Conf.Environment.SideChainID)
-
-	if err := config.LoadParams("BindAsset.json", &params); err != nil {
-		log.Error(err)
-		return
-	}
+	asset := config.Conf.CrossChain.PLTCrossChainAsset()
+	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
 
 	// bind asset
 	{
 		log.Infof("bind asset...")
-		tx, err := admcli.BindAsset(sideChainID, params.Asset)
+		tx, err := admcli.BindAsset(sideChainID, asset)
 		if err != nil {
 			log.Error(err)
 			return
@@ -447,16 +425,16 @@ func BindAsset() (succeed bool) {
 	// get and compare asset
 	{
 		log.Infof("get bind asset...")
-		asset, err := admcli.GetBindAsset(sideChainID, "latest")
+		actual, err := admcli.GetBindAsset(sideChainID, "latest")
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		if asset != params.Asset {
-			log.Errorf("asset err, expect %s, actual %s", params.Asset.Hex(), asset.Hex())
+		if asset != actual {
+			log.Errorf("asset err, expect %s, actual %s", asset.Hex(), actual.Hex())
 			return
 		} else {
-			log.Infof("get asset %s success", asset.Hex())
+			log.Infof("get asset %s success", actual.Hex())
 		}
 	}
 
@@ -466,11 +444,9 @@ func BindAsset() (succeed bool) {
 func Lock() (succeed bool) {
 	var params struct {
 		AccountIndex int
-		Proxy        common.Address
-		Asset        common.Address
 		Amount       int
 	}
-	sideChainID := uint64(config.Conf.Environment.SideChainID)
+	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
 
 	if err := config.LoadParams("Lock.json", &params); err != nil {
 		log.Error(err)
@@ -602,8 +578,8 @@ func Lock() (succeed bool) {
 func SyncGenesis() (succeed bool) {
 
 	// 1. prepare
-	polyRPC := config.Conf.Poly.RPCAddress
-	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
@@ -630,7 +606,7 @@ func SyncGenesis() (succeed bool) {
 	// 3. sync palette header to poly
 	{
 		logsplit()
-		crossChainID := uint64(config.Conf.Environment.CrossChainID)
+		crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
 		if err := polyCli.SyncGenesisBlock(crossChainID, pltHeaderEnc); err != nil {
 			log.Errorf("SyncEthGenesisHeader failed: %v", err)
 			return
@@ -659,7 +635,7 @@ func SyncGenesis() (succeed bool) {
 		bookeepersEnc := poly.AssembleNoCompressBookeeper(bookeepers)
 		headerEnc := gB.Header.ToArray()
 
-		_, eccmAddr, _ := config.Conf.CrossContractAddressList()
+		_, eccmAddr, _ := config.Conf.CrossChain.CrossContractAddressList()
 		txhash, err := cli.InitGenesisBlock(eccmAddr, headerEnc, bookeepersEnc)
 		if err != nil {
 			log.Errorf("failed to initGenesisBlock, err: %s", err)
@@ -679,8 +655,8 @@ func GetProof() (succeed bool) {
 }
 
 func RegisterSideChain() (succeed bool) {
-	polyRPC := config.Conf.Poly.RPCAddress
-	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
@@ -689,8 +665,8 @@ func RegisterSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	eccd, _, _ := config.Conf.CrossContractAddressList()
-	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	eccd, _, _ := config.Conf.CrossChain.CrossContractAddressList()
+	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
 	if err := polyCli.RegisterSideChain(crossChainID, eccd); err != nil {
 		log.Errorf("failed to register side chain, err: %s", err)
 		return
@@ -701,8 +677,8 @@ func RegisterSideChain() (succeed bool) {
 }
 
 func UpdateSideChain() (succeed bool) {
-	polyRPC := config.Conf.Poly.RPCAddress
-	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
@@ -711,8 +687,8 @@ func UpdateSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	eccd, _, _ := config.Conf.CrossContractAddressList()
-	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	eccd, _, _ := config.Conf.CrossChain.CrossContractAddressList()
+	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
 	if err := polyCli.UpdateSideChain(crossChainID, eccd); err != nil {
 		log.Errorf("failed to update side chain, err: %s", err)
 		return
@@ -723,8 +699,8 @@ func UpdateSideChain() (succeed bool) {
 }
 
 func QuitSideChain() (succeed bool) {
-	polyRPC := config.Conf.Poly.RPCAddress
-	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
@@ -733,7 +709,7 @@ func QuitSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
 	if err := polyCli.QuitSideChain(crossChainID); err != nil {
 		log.Errorf("failed to quit side chain, err: %s", err)
 		return
@@ -744,8 +720,8 @@ func QuitSideChain() (succeed bool) {
 }
 
 func ApproveRegisterSideChain() (succeed bool) {
-	polyRPC := config.Conf.Poly.RPCAddress
-	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
@@ -754,7 +730,7 @@ func ApproveRegisterSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
 	if err := polyCli.ApproveRegisterSideChain(crossChainID); err != nil {
 		log.Errorf("failed to approve register side chain, err: %s", err)
 		return
@@ -765,8 +741,8 @@ func ApproveRegisterSideChain() (succeed bool) {
 }
 
 func ApproveUpdateSideChain() (succeed bool) {
-	polyRPC := config.Conf.Poly.RPCAddress
-	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
@@ -775,7 +751,7 @@ func ApproveUpdateSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
 	if err := polyCli.ApproveUpdateSideChain(crossChainID); err != nil {
 		log.Errorf("failed to approve update side chain, err: %s", err)
 		return
@@ -786,8 +762,8 @@ func ApproveUpdateSideChain() (succeed bool) {
 }
 
 func ApproveQuitSideChain() (succeed bool) {
-	polyRPC := config.Conf.Poly.RPCAddress
-	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
@@ -796,7 +772,7 @@ func ApproveQuitSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
 	if err := polyCli.ApproveQuitSideChain(crossChainID); err != nil {
 		log.Errorf("failed to approve quit side chain, err: %s", err)
 		return
@@ -985,15 +961,15 @@ func ChangePaletteBookKeepers() (succeed bool) {
 }
 
 func ChangePolyBookKeepers() (succeed bool) {
-	node, err := config.Conf.Poly.LoadPolyTestCaseAccount("newpolynode.dat")
+	node, err := config.Conf.CrossChain.LoadPolyTestCaseAccount("newpolynode.dat")
 	if err != nil {
 		log.Errorf("load new node account err: %s", err)
 		return
 	}
 
 	// 1. get poly client
-	polyRPC := config.Conf.Poly.RPCAddress
-	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	cli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
@@ -1030,15 +1006,15 @@ func ChangePolyBookKeepers() (succeed bool) {
 }
 
 func QuitNode() (succeed bool) {
-	node, err := config.Conf.Poly.LoadPolyTestCaseAccount("newpolynode.dat")
+	node, err := config.Conf.CrossChain.LoadPolyTestCaseAccount("newpolynode.dat")
 	if err != nil {
 		log.Errorf("load new node account err: %s", err)
 		return
 	}
 
 	// 1. get poly client
-	polyRPC := config.Conf.Poly.RPCAddress
-	polyValidators := config.Conf.Poly.LoadPolyAccountList()
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	cli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)

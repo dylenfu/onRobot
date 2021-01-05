@@ -45,7 +45,7 @@ type Config struct {
 	BlockPeriod           encode.Duration
 	RewardEffectivePeriod int // 区块奖励周期/参数生效周期
 	Nodes                 []*Node
-	Poly                  *PolyConfig
+	CrossChain            *CrossChainConfig
 }
 
 func (c *Config) DeepCopy() *Config {
@@ -80,13 +80,6 @@ func (c *Config) IpList() []string {
 	}
 
 	return list
-}
-
-func (c *Config) CrossContractAddressList() (eccd, eccm, ccmp common.Address) {
-	eccd = common.HexToAddress(c.Environment.ECCD)
-	eccm = common.HexToAddress(c.Environment.ECCM)
-	ccmp = common.HexToAddress(c.Environment.CCMP)
-	return
 }
 
 func (c *Config) GenesisNodes() Nodes {
@@ -237,11 +230,6 @@ type Env struct {
 	IpList          []string
 	SSHPort         string
 	RemoteGoPath    string
-	CrossChainID    int
-	SideChainID     int
-	ECCD            string
-	ECCM            string
-	CCMP            string
 }
 
 type Network struct {
@@ -304,12 +292,34 @@ func LoadAccount(address string) *ecdsa.PrivateKey {
 	return key.PrivateKey
 }
 
-type PolyConfig struct {
+type CrossChainConfig struct {
 	PolyAccountDefaultPassphrase string
-	RPCAddress                   string
+	PolyRPCAddress               string
+	CrossChainID                 int
+	SideChainID                  int
+	ECCD                         string
+	ECCM                         string
+	CCMP                         string
+	PLTAsset                     string
+	PLTProxy                     string
 }
 
-func (c *PolyConfig) LoadPolyAccountList() []*polysdk.Account {
+func (c *CrossChainConfig) CrossContractAddressList() (eccd, eccm, ccmp common.Address) {
+	eccd = common.HexToAddress(c.ECCD)
+	eccm = common.HexToAddress(c.ECCM)
+	ccmp = common.HexToAddress(c.CCMP)
+	return
+}
+
+func (c *CrossChainConfig) PLTCrossChainAsset() common.Address {
+	return common.HexToAddress(c.PLTAsset)
+}
+
+func (c *CrossChainConfig) PLTCrossChainProxy() common.Address {
+	return common.HexToAddress(c.PLTProxy)
+}
+
+func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {
 
 	list := make([]*polysdk.Account, 0)
 
@@ -328,12 +338,12 @@ func (c *PolyConfig) LoadPolyAccountList() []*polysdk.Account {
 	return list
 }
 
-func (c *PolyConfig) LoadPolyTestCaseAccount(filename string) (*polysdk.Account, error) {
+func (c *CrossChainConfig) LoadPolyTestCaseAccount(filename string) (*polysdk.Account, error) {
 	filePath := files.FullPath(Conf.Environment.LocalWorkspace, testCaseDir, filename)
 	return c.LoadPolyAccount(filePath)
 }
 
-func (c *PolyConfig) LoadPolyAccount(path string) (*polysdk.Account, error) {
+func (c *CrossChainConfig) LoadPolyAccount(path string) (*polysdk.Account, error) {
 	polySDK := polysdk.NewPolySdk()
 	pwd := []byte(c.PolyAccountDefaultPassphrase)
 
