@@ -53,11 +53,7 @@ type DeployContractParams struct {
 func UpgradeECCM() (succeed bool) {
 	params := new(DeployContractParams)
 
-	eccdAddr, _, ccmpAddr, err := config.ReadContracts()
-	if err != nil {
-		log.Error(err)
-		return
-	}
+	eccdAddr, _, ccmpAddr := config.Conf.CrossContractAddressList()
 
 	chainID := uint64(config.Conf.Environment.NetworkID)
 	if err := config.LoadParams("UpdateEccm.json", params); err != nil {
@@ -161,12 +157,8 @@ func UpgradeECCM() (succeed bool) {
 
 	// record contracts address
 	{
-		logsplit()
-		if err := config.RecordContractAddress(eccdAddr, eccmAddr, ccmpAddr); err != nil {
-			log.Error(err)
-			return
-		}
 		log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
+		log.Info("record these address in config.json NOW!")
 	}
 
 	return true
@@ -195,8 +187,8 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
 		return
 	}
-	otherChainID := uint64(config.Conf.Environment.NetworkID)
-	eccmAddr, _, err := deployContract(eccmParams.Abi, eccmParams.Object, eccdAddr, otherChainID)
+	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	eccmAddr, _, err := deployContract(eccmParams.Abi, eccmParams.Object, eccdAddr, crossChainID)
 	if err != nil {
 		log.Errorf("failed to deploy eccm contract, err: %v", err)
 		return
@@ -249,15 +241,8 @@ func DeployCrossChainContract() (succeed bool) {
 		}
 	}
 
-	// record contracts address
-	{
-		logsplit()
-		if err := config.RecordContractAddress(eccdAddr, eccmAddr, ccmpAddr); err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
-	}
+	log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
+	log.Info("record these contract address in config.json NOW!")
 
 	return true
 }
@@ -359,13 +344,8 @@ func Burn() (succeed bool) {
 // 2. palette native PLT unlock 取出ccmp地址，并进入该合约查询eccm地址，比较从relayer过来的eccm地址与该地址是否匹配
 // 3. 进入unlock资金逻辑
 func SetCCMP() (succeed bool) {
-	_, _, ccmp, err := config.ReadContracts()
-	if err != nil {
-		log.Error("read ccmp contract err")
-		return
-	} else {
-		log.Infof("ccmp contract addr %s", ccmp.Hex())
-	}
+	_, _, ccmp := config.Conf.CrossContractAddressList()
+	log.Infof("ccmp contract addr %s", ccmp.Hex())
 
 	tx, err := admcli.PLTSetCCMP(ccmp)
 	if err != nil {
@@ -393,7 +373,7 @@ func BindProxy() (succeed bool) {
 	var params struct {
 		Proxy common.Address
 	}
-	chainID := uint64(config.Conf.Environment.NetworkID)
+	sideChainID := uint64(config.Conf.Environment.SideChainID)
 
 	if err := config.LoadParams("BindProxy.json", &params); err != nil {
 		log.Error(err)
@@ -403,7 +383,7 @@ func BindProxy() (succeed bool) {
 	// bind proxy
 	{
 		log.Infof("bind proxy...")
-		tx, err := admcli.BindProxy(chainID, params.Proxy)
+		tx, err := admcli.BindProxy(sideChainID, params.Proxy)
 		if err != nil {
 			log.Error(err)
 			return
@@ -420,7 +400,7 @@ func BindProxy() (succeed bool) {
 	// get and compare proxy
 	{
 		log.Infof("get bind proxy...")
-		proxy, err := admcli.GetBindProxy(chainID, "latest")
+		proxy, err := admcli.GetBindProxy(sideChainID, "latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -442,7 +422,7 @@ func BindAsset() (succeed bool) {
 	var params struct {
 		Asset common.Address
 	}
-	chainID := uint64(config.Conf.Environment.NetworkID)
+	sideChainID := uint64(config.Conf.Environment.SideChainID)
 
 	if err := config.LoadParams("BindAsset.json", &params); err != nil {
 		log.Error(err)
@@ -452,7 +432,7 @@ func BindAsset() (succeed bool) {
 	// bind asset
 	{
 		log.Infof("bind asset...")
-		tx, err := admcli.BindAsset(chainID, params.Asset)
+		tx, err := admcli.BindAsset(sideChainID, params.Asset)
 		if err != nil {
 			log.Error(err)
 			return
@@ -467,7 +447,7 @@ func BindAsset() (succeed bool) {
 	// get and compare asset
 	{
 		log.Infof("get bind asset...")
-		asset, err := admcli.GetBindAsset(chainID, "latest")
+		asset, err := admcli.GetBindAsset(sideChainID, "latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -490,7 +470,7 @@ func Lock() (succeed bool) {
 		Asset        common.Address
 		Amount       int
 	}
-	chainID := uint64(config.Conf.Environment.NetworkID)
+	sideChainID := uint64(config.Conf.Environment.SideChainID)
 
 	if err := config.LoadParams("Lock.json", &params); err != nil {
 		log.Error(err)
@@ -536,7 +516,7 @@ func Lock() (succeed bool) {
 			return
 		}
 
-		hash, err := cli.Lock(chainID, bindTo, amount)
+		hash, err := cli.Lock(sideChainID, bindTo, amount)
 		if err != nil {
 			log.Errorf("failed to call `lock` err: %v", err)
 			return
@@ -650,8 +630,8 @@ func SyncGenesis() (succeed bool) {
 	// 3. sync palette header to poly
 	{
 		logsplit()
-		chainID := uint64(config.Conf.Environment.NetworkID)
-		if err := polyCli.SyncGenesisBlock(chainID, pltHeaderEnc); err != nil {
+		crossChainID := uint64(config.Conf.Environment.CrossChainID)
+		if err := polyCli.SyncGenesisBlock(crossChainID, pltHeaderEnc); err != nil {
 			log.Errorf("SyncEthGenesisHeader failed: %v", err)
 			return
 		}
@@ -679,11 +659,7 @@ func SyncGenesis() (succeed bool) {
 		bookeepersEnc := poly.AssembleNoCompressBookeeper(bookeepers)
 		headerEnc := gB.Header.ToArray()
 
-		_, eccmAddr, _, err := config.ReadContracts()
-		if err != nil {
-			log.Errorf("failed to read eccm contract address, err: %s", err)
-			return
-		}
+		_, eccmAddr, _ := config.Conf.CrossContractAddressList()
 		txhash, err := cli.InitGenesisBlock(eccmAddr, headerEnc, bookeepersEnc)
 		if err != nil {
 			log.Errorf("failed to initGenesisBlock, err: %s", err)
@@ -713,14 +689,14 @@ func RegisterSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	eccd, _, _, _ := config.ReadContracts()
-	chainID := uint64(config.Conf.Environment.NetworkID)
-	if err := polyCli.RegisterSideChain(chainID, eccd); err != nil {
+	eccd, _, _ := config.Conf.CrossContractAddressList()
+	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	if err := polyCli.RegisterSideChain(crossChainID, eccd); err != nil {
 		log.Errorf("failed to register side chain, err: %s", err)
 		return
 	}
 
-	log.Infof("register side chain %d eccd %s success", chainID, eccd.Hex())
+	log.Infof("register side chain %d eccd %s success", crossChainID, eccd.Hex())
 	return true
 }
 
@@ -735,14 +711,14 @@ func UpdateSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	eccd, _, _, _ := config.ReadContracts()
-	chainID := uint64(config.Conf.Environment.NetworkID)
-	if err := polyCli.UpdateSideChain(chainID, eccd); err != nil {
+	eccd, _, _ := config.Conf.CrossContractAddressList()
+	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	if err := polyCli.UpdateSideChain(crossChainID, eccd); err != nil {
 		log.Errorf("failed to update side chain, err: %s", err)
 		return
 	}
 
-	log.Infof("update side chain %d eccd %s success", chainID, eccd.Hex())
+	log.Infof("update side chain %d eccd %s success", crossChainID, eccd.Hex())
 	return true
 }
 
@@ -757,13 +733,13 @@ func QuitSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	chainID := uint64(config.Conf.Environment.NetworkID)
-	if err := polyCli.QuitSideChain(chainID); err != nil {
+	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	if err := polyCli.QuitSideChain(crossChainID); err != nil {
 		log.Errorf("failed to quit side chain, err: %s", err)
 		return
 	}
 
-	log.Infof("quit side chain %d success", chainID)
+	log.Infof("quit side chain %d success", crossChainID)
 	return true
 }
 
@@ -778,13 +754,13 @@ func ApproveRegisterSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	chainID := uint64(config.Conf.Environment.NetworkID)
-	if err := polyCli.ApproveRegisterSideChain(chainID); err != nil {
+	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	if err := polyCli.ApproveRegisterSideChain(crossChainID); err != nil {
 		log.Errorf("failed to approve register side chain, err: %s", err)
 		return
 	}
 
-	log.Infof("approve register side chain %d success", chainID)
+	log.Infof("approve register side chain %d success", crossChainID)
 	return true
 }
 
@@ -799,13 +775,13 @@ func ApproveUpdateSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	chainID := uint64(config.Conf.Environment.NetworkID)
-	if err := polyCli.ApproveUpdateSideChain(chainID); err != nil {
+	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	if err := polyCli.ApproveUpdateSideChain(crossChainID); err != nil {
 		log.Errorf("failed to approve update side chain, err: %s", err)
 		return
 	}
 
-	log.Infof("approve update side chain %d success", chainID)
+	log.Infof("approve update side chain %d success", crossChainID)
 	return true
 }
 
@@ -820,13 +796,13 @@ func ApproveQuitSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	chainID := uint64(config.Conf.Environment.NetworkID)
-	if err := polyCli.ApproveQuitSideChain(chainID); err != nil {
+	crossChainID := uint64(config.Conf.Environment.CrossChainID)
+	if err := polyCli.ApproveQuitSideChain(crossChainID); err != nil {
 		log.Errorf("failed to approve quit side chain, err: %s", err)
 		return
 	}
 
-	log.Infof("approve quit side chain %d success", chainID)
+	log.Infof("approve quit side chain %d success", crossChainID)
 	return true
 }
 

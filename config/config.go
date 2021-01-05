@@ -82,6 +82,13 @@ func (c *Config) IpList() []string {
 	return list
 }
 
+func (c *Config) CrossContractAddressList() (eccd, eccm, ccmp common.Address) {
+	eccd = common.HexToAddress(c.Environment.ECCD)
+	eccm = common.HexToAddress(c.Environment.ECCM)
+	ccmp = common.HexToAddress(c.Environment.CCMP)
+	return
+}
+
 func (c *Config) GenesisNodes() Nodes {
 	start := c.Network.NodeIndexStart
 	end := start + c.Network.GenesisNodeNumber - 1
@@ -230,6 +237,11 @@ type Env struct {
 	IpList          []string
 	SSHPort         string
 	RemoteGoPath    string
+	CrossChainID    int
+	SideChainID     int
+	ECCD            string
+	ECCM            string
+	CCMP            string
 }
 
 type Network struct {
@@ -363,42 +375,43 @@ type CrossChainContracts struct {
 
 const crossChainContractsFile = "cross-chain-contracts.json"
 
-func RecordContractAddress(eccd, eccm, ccmp common.Address) error {
-	data := &CrossChainContracts{
-		ECCD: eccd,
-		ECCM: eccm,
-		CCMP: ccmp,
-	}
+//func RecordContractAddress(eccd, eccm, ccmp common.Address) error {
+//	data := &CrossChainContracts{
+//		ECCD: eccd,
+//		ECCM: eccm,
+//		CCMP: ccmp,
+//	}
+//
+//	content, err := json.Marshal(data)
+//	if err != nil {
+//		return err
+//	}
+//
+//	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, crossChainContractsFile)
+//	return ioutil.WriteFile(filePath, content, 0644)
+//}
+//
 
-	content, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, crossChainContractsFile)
-	return ioutil.WriteFile(filePath, content, 0644)
-}
-
-func ReadContracts() (eccd, eccm, ccmp common.Address, err error) {
-	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, crossChainContractsFile)
-
-	var (
-		keyJson []byte
-		data    = new(CrossChainContracts)
-	)
-	if keyJson, err = ioutil.ReadFile(filePath); err != nil {
-		return
-	}
-
-	if err = json.Unmarshal(keyJson, data); err != nil {
-		return
-	}
-
-	eccd = data.ECCD
-	eccm = data.ECCM
-	ccmp = data.CCMP
-	return
-}
+//func ReadContracts() (eccd, eccm, ccmp common.Address, err error) {
+//	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, crossChainContractsFile)
+//
+//	var (
+//		keyJson []byte
+//		data    = new(CrossChainContracts)
+//	)
+//	if keyJson, err = ioutil.ReadFile(filePath); err != nil {
+//		return
+//	}
+//
+//	if err = json.Unmarshal(keyJson, data); err != nil {
+//		return
+//	}
+//
+//	eccd = data.ECCD
+//	eccm = data.ECCM
+//	ccmp = data.CCMP
+//	return
+//}
 
 func ShellPath(fileName string) string {
 	return files.FullPath(Conf.Environment.LocalWorkspace, "", fileName)

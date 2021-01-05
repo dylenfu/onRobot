@@ -73,7 +73,7 @@ func (c *PolyClient) QuitNode(acc *polysdk.Account) error {
 }
 
 func (c *PolyClient) SyncGenesisBlock(
-	chainID uint64,
+	selfChainID uint64,
 	genesisHeader []byte,
 ) error {
 
@@ -82,7 +82,7 @@ func (c *PolyClient) SyncGenesisBlock(
 	}
 
 	if txhash, err := c.sdk.Native.Hs.SyncGenesisHeader(
-		chainID,
+		selfChainID,
 		genesisHeader,
 		c.accArr,
 	); err != nil {
