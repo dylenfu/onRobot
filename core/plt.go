@@ -107,7 +107,8 @@ func BalanceOf() (succeed bool) {
 		return
 	}
 
-	log.Infof("balance %d", utils.UnsafeDiv(balance, plt.OnePLT))
+	//data := plt.PrintFPLT(utils.DecimalFromBigInt(balance))
+	log.Infof("balance %d", balance.String())
 
 	return true
 }

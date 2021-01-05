@@ -18,18 +18,18 @@ rpcflag="--rpcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3,quorum,i
 runnode="PRIVATE_CONFIG=ignore nohup geth $discflag $gethflag --rpcport $rpcPort $rpcflag --port $p2pPort > node.log 2>&1 &";
 cmdstr="\
 cd $nodeDir;\
+pwd; \
 rm -rf node.log;\
 rm -rf nohup.out;\
 rm -rf data/geth.ipc;\
+source /etc/profile;\
 $runnode";
 
 if [[ $isRemote == "false" ]]
 then
     eval $cmdstr;
 else
-    ssh -p $sshPort ubuntu@${currentIp} "\
-source /etc/profile;\
-$cmdstr";
+    ssh -p $sshPort ubuntu@${currentIp} "$cmdstr";
 fi
 
 echo "start $currentIp $node";

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-killall -9 geth
+#killall -9 geth
 make robot t=clear
 make prepare
-make compile-local
+make compile-dev
 make robot t=init,startGenesis,startValidator,addValidators
 make robot t=deploy
 make robot t=bindProxy,bindAsset,ccmp

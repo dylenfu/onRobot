@@ -12,7 +12,7 @@ cmdstr="\
 cd $workspace;\
 mkdir $node;\
 mkdir -p $node/data/geth;\
-\
+source /etc/profile;\
 cp setup/genesis.json $node/;\
 cp setup/static-nodes.json $node/data/;\
 cp setup/$node/nodekey $node/data/geth;\
@@ -24,7 +24,5 @@ if [[ $isRemote == "false" ]]
 then
     eval $cmdstr;
 else
-    ssh -p $sshport ubuntu@${currentIp} "\
-source /etc/profile;\
-$cmdstr";
+    ssh -p $sshport ubuntu@${currentIp} "$cmdstr";
 fi

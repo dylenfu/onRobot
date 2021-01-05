@@ -6,7 +6,6 @@ remoteGoPath=$3;
 
 cmdstr="\
 killall -9 geth;\
-source /etc/profile;\
 cd $remoteGoPath/src/palette/;\
 pwd;\
 git checkout dev;\

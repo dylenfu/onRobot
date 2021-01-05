@@ -1,12 +1,13 @@
 package core
 
 import (
+	"math/big"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
-	"math/big"
-	"time"
 )
 
 func NFTLock() (succeed bool) {
@@ -26,10 +27,10 @@ func NFTLock() (succeed bool) {
 	// 假设validator A depoly了一个nft合约，同时将token mint给了自己
 	// safe transfer的时候
 	asset := params.Asset
-	crossChainID := uint64(config.Conf.Environment.NetworkID)
+	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
 	from := valcli.Address()
 	to := from
-	proxy := config.Conf.CrossChain.NFTProxy
+	proxy := config.Conf.CrossChain.NFTCrossChainProxy()
 	token := new(big.Int).SetUint64(params.TokenID)
 
 	// mint
@@ -76,8 +77,8 @@ func NFTLock() (succeed bool) {
 			return
 		}
 
-		log.Infof("%s asset %s balance %d after mint, uri %s",
-			owner.Hex(), asset.Hex(), actualBalance.Uint64(), actualUri)
+		log.Infof("%s asset %s balance %d after mint, uri %s, nft proxy %s",
+			owner.Hex(), asset.Hex(), actualBalance.Uint64(), actualUri, proxy.Hex())
 	}
 
 	// lock
@@ -90,7 +91,7 @@ func NFTLock() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		hash, err := valcli.NFTSafeTransferFrom(asset, from, proxy, token, to, crossChainID)
+		hash, err := valcli.NFTSafeTransferFrom(asset, from, proxy, token, to, sideChainID)
 		if err != nil {
 			log.Error(err)
 			return
@@ -119,7 +120,7 @@ func NFTLock() (succeed bool) {
 			balanceBeforeUnlock,
 			balanceAfterUnlock *big.Int
 		)
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 10000; i++ {
 			balance, err := nftBalance(asset, from)
 			if err != nil {
 				log.Error(err)
@@ -133,7 +134,7 @@ func NFTLock() (succeed bool) {
 				subAmount := utils.SafeSub(balanceAfterUnlock, balanceBeforeUnlock)
 				log.Infof("balance before unlock %d, after unlock %d, the sub amount is %d",
 					balanceBeforeUnlock.Uint64(), balanceAfterUnlock.Uint64(), subAmount.Uint64())
-				//break
+				break
 			}
 			time.Sleep(3 * time.Second)
 		}
