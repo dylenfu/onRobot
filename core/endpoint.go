@@ -64,7 +64,22 @@ func Endpoint() {
 	frame.Tool.RegMethod("transfer", Transfer)
 	frame.Tool.RegMethod("approve", Approve)
 
-	// lock proxy and cross chain manager
+	// governance
+	frame.Tool.RegMethod("addValidators", AddValidators)
+	frame.Tool.RegMethod("getValidators", GetValidators)
+	frame.Tool.RegMethod("reward", Reward)
+	frame.Tool.RegMethod("fakeReward", FakeReward)
+	frame.Tool.RegMethod("delegate", Delegate)
+	frame.Tool.RegMethod("showDelegate", ShowDelegateAmount)
+	frame.Tool.RegMethod("proposal", Proposal)
+	frame.Tool.RegMethod("globalParams", GlobalParams)
+	frame.Tool.RegMethod("spare", SpareNode)
+	frame.Tool.RegMethod("delValidators", DelValidators)
+	frame.Tool.RegMethod("period", RewardPeriod)
+	frame.Tool.RegMethod("stakeAmount", StakeAmount)
+	frame.Tool.RegMethod("dumpBlock", DumpBlock)
+
+	// cross chain environment and deploy
 	frame.Tool.RegMethod("polyHeight", PolyHeight)
 	frame.Tool.RegMethod("deploy", DeployCrossChainContract)
 	frame.Tool.RegMethod("upgradeECCM", UpgradeECCM)
@@ -81,21 +96,6 @@ func Endpoint() {
 	frame.Tool.RegMethod("syncGenesis", SyncGenesis)
 	frame.Tool.RegMethod("changePaletteBookKeeper", ChangePaletteBookKeepers)
 	frame.Tool.RegMethod("changePolyBookKeeper", ChangePolyBookKeepers)
-
-	// governance
-	frame.Tool.RegMethod("addValidators", AddValidators)
-	frame.Tool.RegMethod("getValidators", GetValidators)
-	frame.Tool.RegMethod("reward", Reward)
-	frame.Tool.RegMethod("fakeReward", FakeReward)
-	frame.Tool.RegMethod("delegate", Delegate)
-	frame.Tool.RegMethod("showDelegate", ShowDelegateAmount)
-	frame.Tool.RegMethod("proposal", Proposal)
-	frame.Tool.RegMethod("globalParams", GlobalParams)
-	frame.Tool.RegMethod("spare", SpareNode)
-	frame.Tool.RegMethod("delValidators", DelValidators)
-	frame.Tool.RegMethod("period", RewardPeriod)
-	frame.Tool.RegMethod("stakeAmount", StakeAmount)
-	frame.Tool.RegMethod("dumpBlock", DumpBlock)
 
 	// evm
 	//frame.Tool.RegMethod("deploy", Deploy)
