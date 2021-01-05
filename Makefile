@@ -20,10 +20,10 @@ compile-local:
 	cp build/target/setup/local-genesis.json build/target/setup/genesis.json
 	make compile
 
-compile-remote:
+compile-test:
 	cp config/remote.json build/target/config.json
-	cp build/target/setup/remote-nodes.json build/target/setup/static-nodes.json
-	cp build/target/setup/remote-genesis.json build/target/setup/genesis.json
+	cp build/target/setup/test-nodes.json build/target/setup/static-nodes.json
+	cp build/target/setup/test-genesis.json build/target/setup/genesis.json
 	make compile
 
 compile-dev:

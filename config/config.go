@@ -228,6 +228,8 @@ type Env struct {
 	NetworkID       int
 	LogLevel        int
 	IpList          []string
+	SSHPort         string
+	RemoteGoPath    string
 }
 
 type Network struct {
@@ -300,7 +302,6 @@ func (c *PolyConfig) LoadPolyAccountList() []*polysdk.Account {
 	list := make([]*polysdk.Account, 0)
 
 	dir := path.Join(Conf.Environment.LocalWorkspace, polyKeystoreDir)
-
 
 	fs, _ := ioutil.ReadDir(dir)
 	for _, f := range fs {

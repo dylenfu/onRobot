@@ -78,7 +78,7 @@ func (c *Client) NFTSymbol(asset common.Address, blockNum string) (string, error
 	return result.Symbol, nil
 }
 
-func (c *Client) NFTOwner(asset common.Address, blockNum string) (common.Address, error) {
+func (c *Client) NFTAssetOwner(asset common.Address, blockNum string) (common.Address, error) {
 	payload, err := c.packNFT(nft.MethodOwner)
 	if err != nil {
 		return utils.EmptyAddress, err
@@ -88,12 +88,47 @@ func (c *Client) NFTOwner(asset common.Address, blockNum string) (common.Address
 		return utils.EmptyAddress, err
 	}
 	result := &nft.OwnerResult{}
-	err = c.unpackNFT(nft.MethodOwner, result, data)
-	if err != nil {
+	if err = c.unpackNFT(nft.MethodOwner, result, data); err != nil {
 		return utils.EmptyAddress, err
 	}
 
 	return result.Owner, nil
+}
+
+func (c *Client) NFTTokenOwner(asset common.Address, tokenID *big.Int, blockNum string) (common.Address, error) {
+	payload, err := c.packNFT(nft.MethodOwnerOf, tokenID)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	data, err := c.callNFT(asset, payload, blockNum)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	result := new(nft.OwnerOfResult)
+	if err := c.unpackNFT(nft.MethodOwnerOf, result, data); err != nil {
+		return utils.EmptyAddress, err
+	}
+	return result.Owner, nil
+}
+
+func (c *Client) NFTTokenURI(asset common.Address, tokenID *big.Int, blockNum string) (string, error) {
+	payload, err := c.packNFT(nft.MethodTokenUri, tokenID)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := c.callNFT(asset, payload, blockNum)
+	if err != nil {
+		return "", err
+	}
+
+	result := new(nft.TokenUriResult)
+	if err := c.unpackNFT(nft.MethodTokenUri, result, data); err != nil {
+		return "", err
+	}
+
+	return result.Uri, nil
 }
 
 func (c *Client) NFTTotalSupply(asset common.Address, blockNum string) (*big.Int, error) {

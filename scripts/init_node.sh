@@ -4,6 +4,7 @@ nodeIdx=$1;
 isRemote=$2;
 workspace=$3;
 currentIp=$4;
+sshport=$5;
 
 node="node$nodeIdx";
 
@@ -23,7 +24,7 @@ if [[ $isRemote == "false" ]]
 then
     eval $cmdstr;
 else
-    ssh -p 32000 ubuntu@${currentIp} "\
+    ssh -p $sshport ubuntu@${currentIp} "\
 source /etc/profile;\
 $cmdstr";
 fi

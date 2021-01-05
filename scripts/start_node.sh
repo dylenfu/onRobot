@@ -8,6 +8,7 @@ nodeIndex=$5;
 nodeDir=$6;
 rpcPort=$7;
 p2pPort=$8;
+sshPort=$9;
 
 node="node$nodeIndex";
 
@@ -26,7 +27,7 @@ if [[ $isRemote == "false" ]]
 then
     eval $cmdstr;
 else
-    ssh -p 32000 ubuntu@${currentIp} "\
+    ssh -p $sshPort ubuntu@${currentIp} "\
 source /etc/profile;\
 $cmdstr";
 fi

@@ -152,9 +152,10 @@ const (
 // isRemote=$0
 // currentIp=$1
 func execGrep() {
-	args := make([]string, 2)
+	args := make([]string, 3)
 	args[0] = "false"
 	args[1] = "127.0.0.1"
+	args[2] = config.Conf.Environment.SSHPort
 
 	if !config.Conf.Environment.Remote {
 		shell.Exec(shGrep, args...)
@@ -178,10 +179,11 @@ func execRemoteSetup() {
 		return
 	}
 
-	args := make([]string, 3)
+	args := make([]string, 4)
 	args[0] = config.Conf.Environment.LocalWorkspace
 	args[1] = config.Conf.Environment.RemoteWorkspace
 	iplist := config.Conf.IpList()
+	args[3] = config.Conf.Environment.SSHPort
 	for _, ip := range iplist {
 		args[2] = ip
 		shell.Exec(shRemoteSetup, args...)
@@ -196,8 +198,10 @@ func execRemoteBuild() {
 	}
 
 	iplist := config.Conf.IpList()
+	port := config.Conf.Environment.SSHPort
+	gopath := config.Conf.Environment.RemoteGoPath
 	for _, ip := range iplist {
-		shell.Exec(shRemoteBuild, ip)
+		shell.Exec(shRemoteBuild, ip, port, gopath)
 	}
 }
 
@@ -207,11 +211,12 @@ func execRemoteBuild() {
 // workspace=$2;
 // currentIp=$3;
 func execInitNode(node *config.Node) {
-	args := make([]string, 4)
+	args := make([]string, 5)
 	args[0] = fmt.Sprintf("%d", node.Index)
 	args[1] = "false"
 	args[2] = config.Conf.Environment.LocalWorkspace
 	args[3] = "127.0.0.1"
+	args[4] = config.Conf.Environment.SSHPort
 
 	if config.Conf.Environment.Remote {
 		args[1] = "true"
@@ -232,7 +237,7 @@ func execInitNode(node *config.Node) {
 // rpcPort=$7;
 // p2pPort=$8;
 func execStartNode(node *config.Node) {
-	args := make([]string, 8)
+	args := make([]string, 9)
 	args[0] = "false"
 	args[1] = fmt.Sprintf("%d", config.Conf.Environment.LogLevel)
 	args[2] = fmt.Sprintf("%d", config.Conf.Environment.NetworkID)
@@ -241,6 +246,7 @@ func execStartNode(node *config.Node) {
 	args[5] = node.NodeDirPath()
 	args[6] = node.RPCPort
 	args[7] = node.P2PPort
+	args[8] = config.Conf.Environment.SSHPort
 
 	if config.Conf.Environment.Remote {
 		args[0] = "true"
@@ -256,10 +262,11 @@ func execStartNode(node *config.Node) {
 // p2pPort=$2;
 // currentIp=$3;
 func execStopNode(node *config.Node) {
-	args := make([]string, 3)
+	args := make([]string, 4)
 	args[0] = "false"
 	args[1] = fmt.Sprintf("%d", node.Index)
 	args[2] = "127.0.0.1"
+	args[3] = config.Conf.Environment.SSHPort
 
 	if config.Conf.Environment.Remote {
 		args[0] = "true"
@@ -275,11 +282,12 @@ func execStopNode(node *config.Node) {
 // workspace=$3;
 // currentIp=$4;
 func execClearNode(node *config.Node) {
-	args := make([]string, 4)
+	args := make([]string, 5)
 	args[0] = "false"
 	args[1] = fmt.Sprintf("%d", node.Index)
 	args[2] = config.Conf.Environment.LocalWorkspace
 	args[3] = "127.0.0.1"
+	args[4] = config.Conf.Environment.SSHPort
 
 	if config.Conf.Environment.Remote {
 		args[0] = "true"

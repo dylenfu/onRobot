@@ -1,5 +1,8 @@
 {
   "Asset": "0x0000000000000000000000000000000000001001",
-  "TokenID": 2,
-  "Proxy": "0xaDcfAe35ec32a71E13A3f52255422059210C663e"
+  "TokenID": 16,
+  "Proxy": "0xCeE9177c2AF58051749907e84Bf69e6f184F9744",
+  "Mapping": "0x1301078093353696ca227b9b3A74034f177C39C3",
+  "Uri": "cat16.jpeg",
+  "NeedMint": true
 }

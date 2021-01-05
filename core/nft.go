@@ -146,7 +146,7 @@ func NFTTransfer() (succeed bool) {
 func NFTBalance() (succeed bool) {
 	var params struct {
 		Asset common.Address
-		User common.Address
+		User  common.Address
 	}
 
 	if err := config.LoadParams("NFT-Balance.json", &params); err != nil {
@@ -165,9 +165,11 @@ func NFTBalance() (succeed bool) {
 
 func NFTLock() (succeed bool) {
 	var params struct {
-		Asset      common.Address
-		TokenID    uint64
-		Proxy common.Address
+		Asset   common.Address
+		TokenID uint64
+		Proxy   common.Address
+		Uri     string
+		NeedMint bool
 	}
 
 	if err := config.LoadParams("NFT-Lock.json", &params); err != nil {
@@ -185,8 +187,59 @@ func NFTLock() (succeed bool) {
 	proxy := params.Proxy
 	token := new(big.Int).SetUint64(params.TokenID)
 
+	// mint
+	if params.NeedMint {
+		log.Info("mint token")
+		owner := valcli.Address()
+		hash, err := valcli.NFTMint(params.Asset, owner, token, params.Uri)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		wait(3)
+		if err := valcli.DumpEventLog(hash); err != nil {
+			log.Error(err)
+			return
+		}
+
+		// check owner
+		actualOwner, err := valcli.NFTTokenOwner(asset, token, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if actualOwner != owner {
+			log.Error("expect owner %s actual %s", owner.Hex(), actualOwner.Hex())
+		}
+
+		// check uri
+		actualUri, err := valcli.NFTTokenURI(asset, token, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if actualUri != params.Uri {
+			log.Errorf("expect uri %s, actual %s", params.Uri, actualUri)
+			return
+		}
+
+		// check balance
+		actualBalance, err := valcli.NFTBalance(asset, owner, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		log.Infof("%s asset %s balance %d after mint, uri %s",
+			owner.Hex(), asset.Hex(), actualBalance.Uint64(), actualUri)
+	}
+
 	// lock
 	{
+		logsplit()
+		log.Info("lock token")
+
 		balanceBeforeLock, err := nftBalance(asset, from)
 		if err != nil {
 			log.Error(err)
@@ -235,12 +288,35 @@ func NFTLock() (succeed bool) {
 				subAmount := utils.SafeSub(balanceAfterUnlock, balanceBeforeUnlock)
 				log.Infof("balance before unlock %d, after unlock %d, the sub amount is %d",
 					balanceBeforeUnlock.Uint64(), balanceAfterUnlock.Uint64(), subAmount.Uint64())
-				break
+				//break
 			}
 			time.Sleep(3 * time.Second)
 		}
 	}
 
+	return true
+}
+
+func NFTTokenOwner() (succeed bool) {
+	var params struct {
+		Asset   common.Address
+		TokenID uint64
+		Proxy   common.Address
+	}
+
+	if err := config.LoadParams("NFT-Lock.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	tokenID := new(big.Int).SetUint64(params.TokenID)
+	owner, err := valcli.NFTTokenOwner(params.Asset, tokenID, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Infof("asset %s, token %d, owner %s", params.Asset.Hex(), tokenID.Uint64(), owner.Hex())
 	return true
 }
 
