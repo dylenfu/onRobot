@@ -297,26 +297,36 @@ type CrossChainConfig struct {
 	PolyRPCAddress               string
 	CrossChainID                 int
 	SideChainID                  int
-	ECCD                         string
-	ECCM                         string
-	CCMP                         string
-	PLTAsset                     string
-	PLTProxy                     string
+	ECCD                         common.Address
+	ECCM                         common.Address
+	CCMP                         common.Address
+	PLTAsset                     common.Address
+	PLTProxy                     common.Address
+	NFTProxy                     common.Address
+	NFTMapping                   common.Address
 }
 
 func (c *CrossChainConfig) CrossContractAddressList() (eccd, eccm, ccmp common.Address) {
-	eccd = common.HexToAddress(c.ECCD)
-	eccm = common.HexToAddress(c.ECCM)
-	ccmp = common.HexToAddress(c.CCMP)
+	eccd = c.ECCD
+	eccm = c.ECCM
+	ccmp = c.CCMP
 	return
 }
 
 func (c *CrossChainConfig) PLTCrossChainAsset() common.Address {
-	return common.HexToAddress(c.PLTAsset)
+	return c.PLTAsset
 }
 
 func (c *CrossChainConfig) PLTCrossChainProxy() common.Address {
-	return common.HexToAddress(c.PLTProxy)
+	return c.PLTProxy
+}
+
+func (c *CrossChainConfig) NFTCrossChainProxy() common.Address {
+	return c.NFTProxy
+}
+
+func (c *CrossChainConfig) NFTMappingAddress() common.Address {
+	return c.NFTMapping
 }
 
 func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {

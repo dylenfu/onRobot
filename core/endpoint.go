@@ -74,12 +74,9 @@ func Endpoint() {
 	frame.Tool.RegMethod("approveRegisterSideChain", ApproveRegisterSideChain)
 	frame.Tool.RegMethod("approveUpdateSideChain", ApproveUpdateSideChain)
 	frame.Tool.RegMethod("approveQuitSideChain", ApproveQuitSideChain)
-	frame.Tool.RegMethod("mint", Mint)
-	frame.Tool.RegMethod("burn", Burn)
 	frame.Tool.RegMethod("ccmp", SetCCMP)
 	frame.Tool.RegMethod("bindProxy", BindProxy)
 	frame.Tool.RegMethod("bindAsset", BindAsset)
-	frame.Tool.RegMethod("lock", Lock)
 	frame.Tool.RegMethod("getProof", GetProof)
 	frame.Tool.RegMethod("syncGenesis", SyncGenesis)
 	frame.Tool.RegMethod("changePaletteBookKeeper", ChangePaletteBookKeepers)
@@ -104,12 +101,19 @@ func Endpoint() {
 	//frame.Tool.RegMethod("deploy", Deploy)
 	//frame.Tool.RegMethod("evm", EVM)
 
+	// plt cross chain
+	frame.Tool.RegMethod("plt-mint", PLTMint)
+	frame.Tool.RegMethod("plt-burn", PLTBurn)
+	frame.Tool.RegMethod("plt-lock", PLTLock)
+
 	// nft
 	frame.Tool.RegMethod("nft-deploy", NFTDeploy)
-	frame.Tool.RegMethod("nft-mint", NFTMint)
-	frame.Tool.RegMethod("nft-burn", NFTBurn)
 	frame.Tool.RegMethod("nft-transfer", NFTTransfer)
 	frame.Tool.RegMethod("nft-balance", NFTBalance)
 	frame.Tool.RegMethod("nft-token-owner", NFTTokenOwner)
+
+	// nft cross chain
+	frame.Tool.RegMethod("nft-mint", NFTMint)
+	frame.Tool.RegMethod("nft-burn", NFTBurn)
 	frame.Tool.RegMethod("nft-lock", NFTLock)
 }
