@@ -173,14 +173,21 @@ func DeployCrossChainContract() (succeed bool) {
 		return
 	}
 
+	log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
+	return true
+}
+
+func TransferOwnerShip() (succeed bool) {
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+
+	eccd, eccm, ccmp := config.Conf.CrossChain.CrossContractAddressList()
 
 	// eccd contract transfer ownership
 	{
 		logsplit()
 		log.Info("eccd transferOwnership")
-		hash, err := cli.ECCDTransferOwnerShip(eccdAddr, eccmAddr)
+		hash, err := cli.ECCDTransferOwnerShip(eccd, eccm)
 		if err != nil {
 			log.Error(err)
 			return
@@ -192,7 +199,7 @@ func DeployCrossChainContract() (succeed bool) {
 	{
 		logsplit()
 		log.Info("eccm transferOwnership")
-		hash, err := cli.ECCMTransferOwnerShip(eccmAddr, ccmpAddr)
+		hash, err := cli.ECCMTransferOwnerShip(eccm, ccmp)
 		if err != nil {
 			log.Error(err)
 			return
@@ -200,9 +207,7 @@ func DeployCrossChainContract() (succeed bool) {
 		admcli.WaitTransaction(hash)
 	}
 
-	log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
 	log.Info("record these contract address in config.json NOW!")
-
 	return true
 }
 

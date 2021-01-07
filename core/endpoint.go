@@ -82,6 +82,7 @@ func Endpoint() {
 	// cross chain environment and deploy
 	frame.Tool.RegMethod("polyHeight", PolyHeight)
 	frame.Tool.RegMethod("deploy", DeployCrossChainContract)
+	frame.Tool.RegMethod("ownership", TransferOwnerShip)
 	frame.Tool.RegMethod("upgradeECCM", UpgradeECCM)
 	frame.Tool.RegMethod("registerSideChain", RegisterSideChain)
 	frame.Tool.RegMethod("updateSideChain", UpdateSideChain)

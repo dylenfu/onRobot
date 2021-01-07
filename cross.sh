@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # deploy eccd, eccm, ccmp contracts and record in config.json
-make robot t=deploy
+# and transfer eccd ownership to eccm, transfer eccm ownership to ccmp.
+make robot t=deploy,ownership
 
 # bind ethereum plt asset and proxy address, set palette ccmp address in palette proxy(PLT contract)
 make robot t=bindProxy,bindAsset,ccmp
