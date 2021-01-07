@@ -8,10 +8,10 @@ identity="node$nodeIdx";
 
 if [[ $isRemote == "false" ]]
 then
-    kill -INT `ps -ef|grep $identity|grep -v grep|awk '{print $2}'`;
+    kill -s SIGINT $(`ps aux|grep $identity|awk '{print $2}'|head -1`);
 else
-#    ssh -p 32000 ubuntu@$currentIp "pid=\$(ps aux | grep '$identity' | awk '{print \$2}' | head -1); echo \$pid |xargs kill";
-    ssh -p $sshPort ubuntu@$currentIp "killall -9 geth";
+    ssh -p $sshPort ubuntu@$currentIp "kill -s SIGINT \$(ps aux|grep '$identity' |awk '{print \$2}'|head -1)";
 fi
 
 echo "kill $currentIp $identity";
+sleep 1s;

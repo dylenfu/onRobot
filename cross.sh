@@ -1,7 +1,6 @@
 #!/bin/bash
 
-#killall -9 geth
-make robot t=clear
+make robot t=stop,clear
 make prepare
 make compile-dev
 make robot t=init,startGenesis,startValidator,addValidators

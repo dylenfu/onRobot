@@ -72,11 +72,7 @@ func UpgradeECCM() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		wait(3)
-		if err := admcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
+		cli.WaitTransaction(hash)
 	}
 
 	// eccm contract transfer ownership
@@ -88,11 +84,7 @@ func UpgradeECCM() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		wait(3)
-		if err := admcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
+		cli.WaitTransaction(hash)
 	}
 
 	// pause eccmp
@@ -104,12 +96,7 @@ func UpgradeECCM() (succeed bool) {
 			return
 		}
 		log.Infof("pause tx %s", hash)
-		wait(3)
-		if err := admcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof("pause success!")
+		cli.WaitTransaction(hash)
 	}
 
 	// upgrade eccm
@@ -121,11 +108,7 @@ func UpgradeECCM() (succeed bool) {
 			return
 		}
 		log.Infof("upgrade tx %s", hash.Hex())
-		wait(3)
-		if err := admcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
+		cli.WaitTransaction(hash)
 		log.Infof("upgrade success!")
 	}
 
@@ -138,11 +121,7 @@ func UpgradeECCM() (succeed bool) {
 			return
 		}
 		log.Infof("unpause tx %s", hash.Hex())
-		wait(3)
-		if err := admcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
+		cli.WaitTransaction(hash)
 		log.Infof("unpause success!")
 	}
 
@@ -172,7 +151,6 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to deploy eccd contract, err: %v", err)
 		return
 	}
-	wait(3)
 
 	if err := config.LoadContract(eccmFileName, eccmParams); err != nil {
 		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
@@ -184,7 +162,6 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to deploy eccm contract, err: %v", err)
 		return
 	}
-	wait(3)
 
 	if err := config.LoadContract(ecmpFileName, ecmpParams); err != nil {
 		log.Errorf("failed to load contract %s, err: %v", ecmpFileName, err)
@@ -195,7 +172,6 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to deploy ecmp contract, err: %v", err)
 		return
 	}
-	wait(3)
 
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
@@ -209,11 +185,7 @@ func DeployCrossChainContract() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		wait(3)
-		if err := admcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
+		cli.WaitTransaction(hash)
 	}
 
 	// eccm contract transfer ownership
@@ -225,11 +197,7 @@ func DeployCrossChainContract() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		wait(3)
-		if err := admcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
+		admcli.WaitTransaction(hash)
 	}
 
 	log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
@@ -285,13 +253,7 @@ func BindProxy() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		log.Infof("tx hash: %s", tx.Hex())
-		wait(2)
-
-		if err := admcli.DumpEventLog(tx); err != nil {
-			log.Error(err)
-			return
-		}
+		admcli.WaitTransaction(tx)
 	}
 
 	// get and compare proxy
@@ -327,11 +289,7 @@ func BindAsset() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		wait(2)
-		if err := admcli.DumpEventLog(tx); err != nil {
-			log.Error(err)
-			return
-		}
+		admcli.WaitTransaction(tx)
 	}
 
 	// get and compare asset

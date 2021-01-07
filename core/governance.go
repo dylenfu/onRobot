@@ -67,7 +67,7 @@ func AddValidators() (succeed bool) {
 				}
 			}
 		}
-		wait(2)
+		wait(3)
 		if err := DumpHashList(depositHashList, "deposit for validator"); err != nil {
 			log.Error(err)
 			return
@@ -88,13 +88,13 @@ func AddValidators() (succeed bool) {
 			}
 			stakeHashList = append(stakeHashList, hash)
 		}
-		wait(2)
+		wait(3)
 		if err := DumpHashList(stakeHashList, "stake"); err != nil {
 			return
 		}
 	}
 
-	wait(2 * config.Conf.RewardEffectivePeriod)
+	wait(2 * config.Conf.RewardEffectivePeriod + 1)
 
 	// check balance after stake
 	{
@@ -120,7 +120,7 @@ func AddValidators() (succeed bool) {
 			adminAddValidatorHashList = append(adminAddValidatorHashList, hash)
 		}
 		log.Infof("add validator at block %d", admcli.GetBlockNumber())
-		wait(2)
+		wait(3)
 		if err := DumpHashList(adminAddValidatorHashList, "admin add validators"); err != nil {
 			return
 		}
