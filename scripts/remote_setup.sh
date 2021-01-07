@@ -22,6 +22,6 @@ rm -rf setup.tar.gz;\
 rm -rf keystore.tar.gz;\
 ";
 
-scp -P $sshport setup.tar.gz ubuntu@${currentIp}:/home/ubuntu/palette/setup.tar.gz;
-scp -P $sshport keystore.tar.gz ubuntu@${currentIp}:/home/ubuntu/palette/keystore.tar.gz;
+scp -P $sshport setup.tar.gz ubuntu@${currentIp}:$remoteWorkspace/setup.tar.gz;
+scp -P $sshport keystore.tar.gz ubuntu@${currentIp}:$remoteWorkspace/keystore.tar.gz;
 ssh -p $sshport ubuntu@${currentIp} "$cmdstr";
