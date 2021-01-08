@@ -5,9 +5,6 @@ GOTEST=$(GOCMD) test
 
 prepare:
 	mkdir -p build/target
-	cp -r build/keystore build/target
-	cp -r build/setup build/target
-	cp -r build/poly_keystore build/target
 	cp -r scripts/*.sh build/target/
 
 compile:
@@ -15,22 +12,25 @@ compile:
 	$(GOBUILD) -o build/target/robot cmd/main.go
 
 compile-local:
+	make clean
+	cp -r build/env/local/keystore build/target
+	cp -r build/env/local/poly_keystore build/target
+	cp -r build/env/local/setup build/target
 	cp config/local.json build/target/config.json
-	cp build/target/setup/local-nodes.json build/target/setup/static-nodes.json
-	cp build/target/setup/local-genesis.json build/target/setup/genesis.json
-	make compile
-
-compile-test:
-	cp config/test.json build/target/config.json
-	cp build/target/setup/test-nodes.json build/target/setup/static-nodes.json
-	cp build/target/setup/test-genesis.json build/target/setup/genesis.json
-	make compile
 
 compile-dev:
+	make clean
+	cp -r build/env/dev/keystore build/target
+	cp -r build/env/dev/poly_keystore build/target
+	cp -r build/env/dev/setup build/target
 	cp config/dev.json build/target/config.json
-	cp build/target/setup/dev-nodes.json build/target/setup/static-nodes.json
-	cp build/target/setup/dev-genesis.json build/target/setup/genesis.json
-	make compile
+
+compile-test:
+	make clean
+	cp -r build/env/test/keystore build/target
+	cp -r build/env/test/poly_keystore build/target
+	cp -r build/env/test/setup build/target
+	cp config/test.json build/target/config.json
 
 compile-linux:
 	GOOS=linux GOARCH=amd64 $(GOBUILD) -o build/target/robot-linux cmd/main.go
@@ -40,4 +40,7 @@ robot:
 	./build/target/robot -config=build/target/config.json -t=$(t)
 
 clean:
-	rm -rf build/target/*
+	rm -rf build/target/keystore
+	rm -rf build/target/poly_keystore
+	rm -rf build/target/setup
+	rm -rf build/target/case

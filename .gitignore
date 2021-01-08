@@ -1,9 +1,8 @@
 .idea
-target
 peers.recent
 *.log
-build/poly_keystore
+build/
 config/*.json
 cross.sh
-build/backup
+backup
 pkg/poly/poly_test.go
