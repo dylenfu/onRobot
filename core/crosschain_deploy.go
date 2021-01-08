@@ -174,6 +174,7 @@ func DeployCrossChainContract() (succeed bool) {
 	}
 
 	log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
+	log.Info("record these contract address in config.json NOW!")
 	return true
 }
 
@@ -186,28 +187,29 @@ func TransferOwnerShip() (succeed bool) {
 	// eccd contract transfer ownership
 	{
 		logsplit()
-		log.Info("eccd transferOwnership")
+		log.Info("eccd transferOwnership...")
 		hash, err := cli.ECCDTransferOwnerShip(eccd, eccm)
 		if err != nil {
 			log.Error(err)
 			return
 		}
 		cli.WaitTransaction(hash)
+		log.Infof("transfer eccd %s to eccm %s success!", eccd.Hex(), eccm.Hex())
 	}
 
 	// eccm contract transfer ownership
 	{
 		logsplit()
-		log.Info("eccm transferOwnership")
+		log.Info("eccm transferOwnership...")
 		hash, err := cli.ECCMTransferOwnerShip(eccm, ccmp)
 		if err != nil {
 			log.Error(err)
 			return
 		}
 		admcli.WaitTransaction(hash)
+		log.Infof("transfer eccm %s to ccmp %s success!", eccm.Hex(), ccmp.Hex())
 	}
 
-	log.Info("record these contract address in config.json NOW!")
 	return true
 }
 
@@ -415,12 +417,13 @@ func RegisterSideChain() (succeed bool) {
 
 	eccd, _, _ := config.Conf.CrossChain.CrossContractAddressList()
 	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
-	if err := polyCli.RegisterSideChain(crossChainID, eccd); err != nil {
+	router := config.Conf.CrossChain.SideChainRouter
+	if err := polyCli.RegisterSideChain(crossChainID, eccd, router); err != nil {
 		log.Errorf("failed to register side chain, err: %s", err)
 		return
 	}
 
-	log.Infof("register side chain %d eccd %s success", crossChainID, eccd.Hex())
+	log.Infof("register side chain %d eccd %s router %d success", crossChainID, eccd.Hex(), router)
 	return true
 }
 
@@ -437,12 +440,13 @@ func UpdateSideChain() (succeed bool) {
 
 	eccd, _, _ := config.Conf.CrossChain.CrossContractAddressList()
 	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
-	if err := polyCli.UpdateSideChain(crossChainID, eccd); err != nil {
+	router := config.Conf.CrossChain.SideChainRouter
+	if err := polyCli.UpdateSideChain(crossChainID, eccd, router); err != nil {
 		log.Errorf("failed to update side chain, err: %s", err)
 		return
 	}
 
-	log.Infof("update side chain %d eccd %s success", crossChainID, eccd.Hex())
+	log.Infof("update side chain %d eccd %s router %d success", crossChainID, eccd.Hex(), router)
 	return true
 }
 

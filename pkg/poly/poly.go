@@ -19,7 +19,6 @@ import (
 	polycm "github.com/polynetwork/poly/common"
 	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
 	polytype "github.com/polynetwork/poly/core/types"
-	polyutils "github.com/polynetwork/poly/native/service/utils"
 )
 
 type PolyClient struct {
@@ -96,14 +95,12 @@ func (c *PolyClient) SyncGenesisBlock(
 	}
 }
 
-var sideChainRouter = polyutils.PALETTE_ROUTER
-
 const (
 	sideChainName        = "palette"
 	sideChainBlockToWait = 1
 )
 
-func (c *PolyClient) RegisterSideChain(chainID uint64, eccdAddr common.Address) error {
+func (c *PolyClient) RegisterSideChain(chainID uint64, eccdAddr common.Address, sideChainRouter uint64) error {
 	acc := c.GetSideChainOwner()
 	eccd, err := hex.DecodeString(strings.Replace(eccdAddr.Hex(), "0x", "", 1))
 	if err != nil {
@@ -142,7 +139,7 @@ func (c *PolyClient) QuitSideChain(chainID uint64) error {
 	return c.WaitPolyTx(txhash)
 }
 
-func (c *PolyClient) UpdateSideChain(chainID uint64, eccdAddr common.Address) error {
+func (c *PolyClient) UpdateSideChain(chainID uint64, eccdAddr common.Address, sideChainRouter uint64) error {
 	acc := c.GetSideChainOwner()
 	eccd, err := hex.DecodeString(strings.Replace(eccdAddr.Hex(), "0x", "", 1))
 	if err != nil {
@@ -241,7 +238,7 @@ func (c *PolyClient) ApproveCandidate(peer string, validators []*polysdk.Account
 	return c.WaitPolyTx(txhash)
 }
 
-func (c *PolyClient) CommitPolyDpos(accArr []*polysdk.Account) error{
+func (c *PolyClient) CommitPolyDpos(accArr []*polysdk.Account) error {
 	txhash, err := c.sdk.Native.Nm.CommitDpos(accArr)
 	if err != nil {
 		return err
@@ -262,7 +259,7 @@ func (c *PolyClient) GetCurrentBlockHeight() (uint32, error) {
 }
 
 func GetBookeeper(block *polytype.Block) ([]keypair.PublicKey, error) {
-	info := new(vconfig.VbftBlockInfo)//&vconfig.VbftBlockInfo{}
+	info := new(vconfig.VbftBlockInfo) //&vconfig.VbftBlockInfo{}
 	info.NewChainConfig = new(vconfig.ChainConfig)
 	if err := json.Unmarshal(block.Header.ConsensusPayload, info); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal consensus payload, err: %s", err)
@@ -275,7 +272,7 @@ func GetBookeeper(block *polytype.Block) ([]keypair.PublicKey, error) {
 		return nil, fmt.Errorf("new chain config is nil")
 	}
 
-	bookkeepers := make([]keypair.PublicKey, 0 )
+	bookkeepers := make([]keypair.PublicKey, 0)
 	for _, peer := range info.NewChainConfig.Peers {
 		log.Infof("poly peer index %d id %s", peer.Index, peer.ID)
 		keystr, _ := hex.DecodeString(peer.ID)

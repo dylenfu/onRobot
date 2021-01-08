@@ -297,6 +297,7 @@ type CrossChainConfig struct {
 	PolyRPCAddress               string
 	CrossChainID                 int
 	SideChainID                  int
+	SideChainRouter              uint64
 	ECCD                         common.Address
 	ECCM                         common.Address
 	CCMP                         common.Address
