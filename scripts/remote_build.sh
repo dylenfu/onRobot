@@ -8,8 +8,8 @@ cmdstr="\
 killall -9 geth;\
 cd $remoteGoPath/src/palette/;\
 pwd;\
-git checkout dev;\
-git pull origin dev;\
+git checkout master;\
+git pull origin master;\
 make geth;\
 source /etc/profile;\
 geth version;\
