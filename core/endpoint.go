@@ -41,6 +41,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("clear", ClearAllNetwork)
 	frame.Tool.RegMethod("restart", ReStartAllNetwork)
 	frame.Tool.RegMethod("reset", ResetAllNetwork)
+	frame.Tool.RegMethod("grep", Grep)
 
 	// spare nodes
 

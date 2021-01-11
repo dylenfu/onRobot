@@ -13,22 +13,14 @@ import (
 )
 
 func TotalSupply() (succeed bool) {
-	expect := 1e9
-
 	totalSupply, err := admcli.PLTTotalSupply("latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	actual := plt.PrintUPLT(totalSupply)
-	if actual != uint64(expect) {
-		log.Errorf("totalSupply expect %d actually %d", expect, actual)
-		return
-	}
-
-	log.Infof("totalSupply %d", utils.UnsafeDiv(totalSupply, plt.OnePLT))
-
+	actual := plt.PrintFPLT(utils.DecimalFromBigInt(totalSupply))
+	log.Infof("totalSupply %f", actual)
 	return true
 }
 
@@ -107,9 +99,7 @@ func BalanceOf() (succeed bool) {
 		return
 	}
 
-	//data := plt.PrintFPLT(utils.DecimalFromBigInt(balance))
-	log.Infof("balance %d", balance.String())
-
+	log.Infof("balance %s", balance.String())
 	return true
 }
 

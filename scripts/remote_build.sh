@@ -10,7 +10,7 @@ cd $remoteGoPath/src/palette/;\
 pwd;\
 git checkout master;\
 git pull origin master;\
-make geth;\
+make;\
 source /etc/profile;\
 geth version;\
 ";

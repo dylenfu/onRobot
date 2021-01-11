@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+func Grep() (succeed bool) {
+	execGrep()
+	return true
+}
+
 // --------------------------------
 // genesis network
 // --------------------------------

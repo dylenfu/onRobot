@@ -1,9 +1,6 @@
 package core
 
 import (
-	"math/big"
-	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
@@ -116,29 +113,30 @@ func PLTLock() (succeed bool) {
 		return
 	}
 
-	user := config.Conf.Accounts[params.AccountIndex]
-	privKey := config.LoadAccount(user)
+	node := config.Conf.ValidatorNodes()[0]
+	user := node.NodeAddr().Hex()
+	privKey := node.PrivateKey()//config.LoadAccount(user)
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
 	userAddr := common.HexToAddress(user)
-	bindTo := common.HexToAddress(user) // lock to self
+	bindTo := common.HexToAddress("0x344cFc3B8635f72F14200aAf2168d9f75df86FD3")//common.HexToAddress(user) // lock to self
 	cli := sdk.NewSender(baseUrl, privKey)
-	amount := plt.MultiPLT(params.Amount)
+	amount := plt.MultiPLT(900000000) //plt.MultiPLT(params.Amount)
 
 	// prepare balance
-	{
-		logsplit()
-		log.Infof("prepare test account balance...")
-		hash, err := admcli.PLTTransfer(userAddr, amount)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		wait(2)
-		if err := admcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
-	}
+	//{
+	//	logsplit()
+	//	log.Infof("prepare test account balance...")
+	//	hash, err := admcli.PLTTransfer(userAddr, amount)
+	//	if err != nil {
+	//		log.Error(err)
+	//		return
+	//	}
+	//	wait(2)
+	//	if err := admcli.DumpEventLog(hash); err != nil {
+	//		log.Error(err)
+	//		return
+	//	}
+	//}
 
 	// lock plt
 	{
@@ -179,49 +177,49 @@ func PLTLock() (succeed bool) {
 	}
 
 	// waiting for unlock
-	{
-		logsplit()
-		log.Infof("unlock PLT...")
-
-		var (
-			balanceBeforeUnlock,
-			balanceAfterUnlock *big.Int
-		)
-		for i := 0; i < 100; i++ {
-			balance, err := cli.BalanceOf(bindTo, "latest")
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			if i == 0 {
-				balanceBeforeUnlock = balance
-				log.Infof("waiting for unlock")
-			} else if balance.Cmp(balanceBeforeUnlock) > 0 {
-				balanceAfterUnlock = balance
-				subAmount := utils.SafeSub(balanceAfterUnlock, balanceBeforeUnlock)
-				log.Infof("balance before unlock %d, after unlock %d, the sub amount is %d",
-					plt.PrintUPLT(balanceBeforeUnlock), plt.PrintUPLT(balanceAfterUnlock), plt.PrintUPLT(subAmount))
-				break
-			}
-			time.Sleep(3 * time.Second)
-		}
-	}
+	//{
+	//	logsplit()
+	//	log.Infof("unlock PLT...")
+	//
+	//	var (
+	//		balanceBeforeUnlock,
+	//		balanceAfterUnlock *big.Int
+	//	)
+	//	for i := 0; i < 100; i++ {
+	//		balance, err := cli.BalanceOf(bindTo, "latest")
+	//		if err != nil {
+	//			log.Error(err)
+	//			return
+	//		}
+	//		if i == 0 {
+	//			balanceBeforeUnlock = balance
+	//			log.Infof("waiting for unlock")
+	//		} else if balance.Cmp(balanceBeforeUnlock) > 0 {
+	//			balanceAfterUnlock = balance
+	//			subAmount := utils.SafeSub(balanceAfterUnlock, balanceBeforeUnlock)
+	//			log.Infof("balance before unlock %d, after unlock %d, the sub amount is %d",
+	//				plt.PrintUPLT(balanceBeforeUnlock), plt.PrintUPLT(balanceAfterUnlock), plt.PrintUPLT(subAmount))
+	//			break
+	//		}
+	//		time.Sleep(3 * time.Second)
+	//	}
+	//}
 
 	// return plt
-	{
-		hash, err := cli.PLTTransfer(common.HexToAddress(config.Conf.AdminAccount), amount)
-		if err != nil {
-			log.Infof("transfer back PLT to admin err: %s", err)
-			return true
-		}
-		_ = cli.DumpEventLog(hash)
-		balance, err := cli.BalanceOf(userAddr, "latest")
-		if err != nil {
-			log.Infof("check balance after unlock err: %s", err)
-		} else {
-			log.Infof("balance after unlock %d", plt.PrintUPLT(balance))
-		}
-	}
+	//{
+	//	hash, err := cli.PLTTransfer(common.HexToAddress(config.Conf.AdminAccount), amount)
+	//	if err != nil {
+	//		log.Infof("transfer back PLT to admin err: %s", err)
+	//		return true
+	//	}
+	//	_ = cli.DumpEventLog(hash)
+	//	balance, err := cli.BalanceOf(userAddr, "latest")
+	//	if err != nil {
+	//		log.Infof("check balance after unlock err: %s", err)
+	//	} else {
+	//		log.Infof("balance after unlock %d", plt.PrintUPLT(balance))
+	//	}
+	//}
 
 	return true
 }
