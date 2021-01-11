@@ -301,33 +301,11 @@ type CrossChainConfig struct {
 	ECCD                         common.Address
 	ECCM                         common.Address
 	CCMP                         common.Address
-	PLTAsset                     common.Address
-	PLTProxy                     common.Address
-	NFTProxy                     common.Address
-	NFTMapping                   common.Address
-}
-
-func (c *CrossChainConfig) CrossContractAddressList() (eccd, eccm, ccmp common.Address) {
-	eccd = c.ECCD
-	eccm = c.ECCM
-	ccmp = c.CCMP
-	return
-}
-
-func (c *CrossChainConfig) PLTCrossChainAsset() common.Address {
-	return c.PLTAsset
-}
-
-func (c *CrossChainConfig) PLTCrossChainProxy() common.Address {
-	return c.PLTProxy
-}
-
-func (c *CrossChainConfig) NFTCrossChainProxy() common.Address {
-	return c.NFTProxy
-}
-
-func (c *CrossChainConfig) NFTMappingAddress() common.Address {
-	return c.NFTMapping
+	EthereumPLTAsset             common.Address
+	EthereumPLTProxy             common.Address
+	EthereumNFTMapping           common.Address
+	EthereumNFTProxy             common.Address
+	PaletteNFTProxy              common.Address
 }
 
 func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {
@@ -387,52 +365,6 @@ func LoadContract(fileName string, data interface{}) error {
 
 	return json.Unmarshal(keyJson, data)
 }
-
-type CrossChainContracts struct {
-	ECCD common.Address `json:"eccd"`
-	ECCM common.Address `json:"eccm"`
-	CCMP common.Address `json:"ccmp"`
-}
-
-const crossChainContractsFile = "cross-chain-contracts.json"
-
-//func RecordContractAddress(eccd, eccm, ccmp common.Address) error {
-//	data := &CrossChainContracts{
-//		ECCD: eccd,
-//		ECCM: eccm,
-//		CCMP: ccmp,
-//	}
-//
-//	content, err := json.Marshal(data)
-//	if err != nil {
-//		return err
-//	}
-//
-//	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, crossChainContractsFile)
-//	return ioutil.WriteFile(filePath, content, 0644)
-//}
-//
-
-//func ReadContracts() (eccd, eccm, ccmp common.Address, err error) {
-//	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, crossChainContractsFile)
-//
-//	var (
-//		keyJson []byte
-//		data    = new(CrossChainContracts)
-//	)
-//	if keyJson, err = ioutil.ReadFile(filePath); err != nil {
-//		return
-//	}
-//
-//	if err = json.Unmarshal(keyJson, data); err != nil {
-//		return
-//	}
-//
-//	eccd = data.ECCD
-//	eccm = data.ECCM
-//	ccmp = data.CCMP
-//	return
-//}
 
 func ShellPath(fileName string) string {
 	return files.FullPath(Conf.Environment.LocalWorkspace, "", fileName)

@@ -43,8 +43,8 @@ type DeployContractParams struct {
 
 func UpgradeECCM() (succeed bool) {
 	params := new(DeployContractParams)
-
-	eccdAddr, _, ccmpAddr := config.Conf.CrossChain.CrossContractAddressList()
+	eccdAddr := config.Conf.CrossChain.ECCD
+	ccmpAddr := config.Conf.CrossChain.CCMP
 
 	chainID := uint64(config.Conf.Environment.NetworkID)
 	if err := config.LoadParams("UpdateEccm.json", params); err != nil {
@@ -182,7 +182,9 @@ func TransferOwnerShip() (succeed bool) {
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 
-	eccd, eccm, ccmp := config.Conf.CrossChain.CrossContractAddressList()
+	eccd := config.Conf.CrossChain.ECCD
+	eccm := config.Conf.CrossChain.ECCM
+	ccmp := config.Conf.CrossChain.CCMP
 
 	// eccd contract transfer ownership
 	{
@@ -223,7 +225,7 @@ func TransferOwnerShip() (succeed bool) {
 // 2. palette native PLT unlock 取出ccmp地址，并进入该合约查询eccm地址，比较从relayer过来的eccm地址与该地址是否匹配
 // 3. 进入unlock资金逻辑
 func SetCCMP() (succeed bool) {
-	_, _, ccmp := config.Conf.CrossChain.CrossContractAddressList()
+	ccmp := config.Conf.CrossChain.CCMP
 	log.Infof("ccmp contract addr %s", ccmp.Hex())
 
 	tx, err := admcli.PLTSetCCMP(ccmp)
@@ -249,7 +251,7 @@ func SetCCMP() (succeed bool) {
 // 这里我们将实现palette->poly->palette的循环，不走ethereum，那么proxy就直接是plt地址，
 // asset的地址也是palette plt地址
 func BindProxy() (succeed bool) {
-	proxy := config.Conf.CrossChain.PLTCrossChainProxy()
+	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
 
 	// bind proxy
@@ -285,7 +287,7 @@ func BindProxy() (succeed bool) {
 
 // 在palette native合约上记录以太坊erc20资产地址
 func BindAsset() (succeed bool) {
-	asset := config.Conf.CrossChain.PLTCrossChainAsset()
+	asset := config.Conf.CrossChain.EthereumPLTAsset
 	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
 
 	// bind asset
@@ -385,8 +387,8 @@ func SyncGenesis() (succeed bool) {
 		bookeepersEnc := poly.AssembleNoCompressBookeeper(bookeepers)
 		headerEnc := gB.Header.ToArray()
 
-		_, eccmAddr, _ := config.Conf.CrossChain.CrossContractAddressList()
-		txhash, err := cli.InitGenesisBlock(eccmAddr, headerEnc, bookeepersEnc)
+		eccm := config.Conf.CrossChain.ECCM
+		txhash, err := cli.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
 		if err != nil {
 			log.Errorf("failed to initGenesisBlock, err: %s", err)
 			return
@@ -415,7 +417,7 @@ func RegisterSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	eccd, _, _ := config.Conf.CrossChain.CrossContractAddressList()
+	eccd := config.Conf.CrossChain.ECCD
 	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
 	router := config.Conf.CrossChain.SideChainRouter
 	if err := polyCli.RegisterSideChain(crossChainID, eccd, router); err != nil {
@@ -438,7 +440,7 @@ func UpdateSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	eccd, _, _ := config.Conf.CrossChain.CrossContractAddressList()
+	eccd := config.Conf.CrossChain.ECCD
 	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
 	router := config.Conf.CrossChain.SideChainRouter
 	if err := polyCli.UpdateSideChain(crossChainID, eccd, router); err != nil {

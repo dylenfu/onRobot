@@ -30,7 +30,7 @@ func NFTLock() (succeed bool) {
 	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
 	from := valcli.Address()
 	to := from
-	proxy := config.Conf.CrossChain.NFTCrossChainProxy()
+	proxy := config.Conf.CrossChain.PaletteNFTProxy
 	token := new(big.Int).SetUint64(params.TokenID)
 
 	// mint

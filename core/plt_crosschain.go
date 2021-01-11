@@ -115,10 +115,10 @@ func PLTLock() (succeed bool) {
 
 	node := config.Conf.ValidatorNodes()[0]
 	user := node.NodeAddr().Hex()
-	privKey := node.PrivateKey()//config.LoadAccount(user)
+	privKey := node.PrivateKey() //config.LoadAccount(user)
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
 	userAddr := common.HexToAddress(user)
-	bindTo := common.HexToAddress("0x344cFc3B8635f72F14200aAf2168d9f75df86FD3")//common.HexToAddress(user) // lock to self
+	bindTo := common.HexToAddress("0x344cFc3B8635f72F14200aAf2168d9f75df86FD3") //common.HexToAddress(user) // lock to self
 	cli := sdk.NewSender(baseUrl, privKey)
 	amount := plt.MultiPLT(900000000) //plt.MultiPLT(params.Amount)
 
