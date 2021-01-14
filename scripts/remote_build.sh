@@ -8,11 +8,15 @@ cmdstr="\
 cd $remoteGoPath/src/palette/;\
 source /etc/profile;\
 pwd;\
+echo '';\
 git checkout master;\
 git pull origin master;\
-git log -p -1;\
+git log --pretty=format:'%h - %an, %ar : %s' -2;\
+echo '';\
 make;\
+echo '';\
 source /etc/profile;\
+echo '';\
 geth version;\
 ";
 
