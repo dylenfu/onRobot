@@ -113,30 +113,29 @@ func PLTLock() (succeed bool) {
 		return
 	}
 
-	node := config.Conf.ValidatorNodes()[0]
-	user := node.NodeAddr().Hex()
-	privKey := node.PrivateKey() //config.LoadAccount(user)
+	user := config.Conf.Accounts[params.AccountIndex]
+	privKey := config.LoadAccount(user)
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
 	userAddr := common.HexToAddress(user)
-	bindTo := common.HexToAddress("0x344cFc3B8635f72F14200aAf2168d9f75df86FD3") //common.HexToAddress(user) // lock to self
+	bindTo := common.HexToAddress(user) // lock to self
 	cli := sdk.NewSender(baseUrl, privKey)
-	amount := plt.MultiPLT(900000000) //plt.MultiPLT(params.Amount)
+	amount := plt.MultiPLT(params.Amount)
 
 	// prepare balance
-	//{
-	//	logsplit()
-	//	log.Infof("prepare test account balance...")
-	//	hash, err := admcli.PLTTransfer(userAddr, amount)
-	//	if err != nil {
-	//		log.Error(err)
-	//		return
-	//	}
-	//	wait(2)
-	//	if err := admcli.DumpEventLog(hash); err != nil {
-	//		log.Error(err)
-	//		return
-	//	}
-	//}
+	{
+		logsplit()
+		log.Infof("prepare test account balance...")
+		hash, err := admcli.PLTTransfer(userAddr, amount)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		wait(2)
+		if err := admcli.DumpEventLog(hash); err != nil {
+			log.Error(err)
+			return
+		}
+	}
 
 	// lock plt
 	{

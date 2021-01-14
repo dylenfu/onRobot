@@ -5,14 +5,16 @@ sshport=$2;
 remoteGoPath=$3;
 
 cmdstr="\
-killall -9 geth;\
 cd $remoteGoPath/src/palette/;\
+source /etc/profile;\
 pwd;\
 git checkout master;\
 git pull origin master;\
+git log -p -1;\
 make;\
 source /etc/profile;\
 geth version;\
 ";
 
 ssh -p $sshport ubuntu@${currentIp} "$cmdstr";
+echo "=========================================";
