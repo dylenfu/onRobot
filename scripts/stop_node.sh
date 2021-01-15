@@ -8,7 +8,7 @@ identity="node$nodeIdx";
 
 if [[ $isRemote == "false" ]]
 then
-    kill -s SIGINT $(`ps aux|grep geth|grep $identity|grep -v grep|awk '{print $2}'`);
+    kill -s SIGINT $(ps aux|grep geth|grep $identity|grep -v grep|awk '{print $2}');
 else
     ssh -p $sshPort ubuntu@$currentIp "kill -s SIGINT \$(ps aux|grep geth|grep '$identity'|grep -v grep|awk '{print \$2}')";
 fi
