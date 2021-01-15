@@ -99,9 +99,11 @@ func Endpoint() {
 	frame.Tool.RegMethod("changePaletteBookKeeper", ChangePaletteBookKeepers)
 	frame.Tool.RegMethod("changePolyBookKeeper", ChangePolyBookKeepers)
 
-	// evm
-	//frame.Tool.RegMethod("deploy", Deploy)
-	//frame.Tool.RegMethod("evm", EVM)
+	// evm test
+	frame.Tool.RegMethod("test-deploy1", TestDeploy1)
+	frame.Tool.RegMethod("test-deploy2", TestDeploy2)
+	frame.Tool.RegMethod("test-evm1", TestEVM1)
+	frame.Tool.RegMethod("test-evm2", TestEVM2)
 
 	// plt cross chain
 	frame.Tool.RegMethod("plt-mint", PLTMint)

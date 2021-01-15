@@ -1,8 +1,11 @@
 package core
 
 import (
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"math/big"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
@@ -122,210 +125,155 @@ func Deposit() (succeed bool) {
 	return true
 }
 
-//type EVMTestOps struct {
-//	Object    string `json:"object"`
-//	Opcodes   string `json:"opcodes"`
-//	SourceMap string `json:"sourceMap"`
-//	ABI       string `json:"abi"`
-//	Address   string `json:"address"`
-//}
-//
-//// 只有validator拥有部署solidity合约的权限，在调用该方法前，先调用addValidators
-//func Deploy() (succeed bool) {
-//	var params EVMTestOps
-//
-//	if err := config.LoadParams("evm.json", &params); err != nil {
-//		log.Error(err)
-//		return
-//	}
-//
-//	if _, _, err := deployContract(params.ABI, params.Object); err != nil {
-//		log.Errorf("failed to deploy contract, err: %v", err)
-//		return
-//	}
-//
-//	return true
-//}
-//
-//type DeployContractParams struct {
-//	Abi    string `json:"Abi"`
-//	Object string `json:"Object"`
-//}
-//
-//func DeployCrossChainContract() (succeed bool) {
-//	eccdFileName := "ECCD-raw.json"
-//	eccmFileName := "ECCM-raw.json"
-//	ecmpFileName := "ECCMP-raw.json"
-//	eccdParams := new(DeployContractParams)
-//	eccmParams := new(DeployContractParams)
-//	ecmpParams := new(DeployContractParams)
-//
-//	if err := config.LoadContract(eccdFileName, eccdParams); err != nil {
-//		log.Errorf("failed to load contract %s, err: %v", eccdFileName, err)
-//		return
-//	}
-//	ccdAddr, ccd, err := deployContract(eccdParams.Abi, eccdParams.Object)
-//	if err != nil {
-//		log.Errorf("failed to deploy eccd contract, err: %v", err)
-//		return
-//	}
-//	wait(2)
-//
-//	if err := config.LoadContract(eccmFileName, eccmParams); err != nil {
-//		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
-//		return
-//	}
-//	otherChainID := uint64(config.Conf.Environment.NetworkID)
-//	ccmAddr, ccm, err := deployContract(eccmParams.Abi, eccmParams.Object, ccdAddr, otherChainID)
-//	if err != nil {
-//		log.Errorf("failed to deploy eccm contract, err: %v", err)
-//		return
-//	}
-//	wait(2)
-//
-//	if err := config.LoadContract(ecmpFileName, ecmpParams); err != nil {
-//		log.Errorf("failed to load contract %s, err: %v", ecmpFileName, err)
-//		return
-//	}
-//	ccmpAddr, _, err := deployContract(ecmpParams.Abi, ecmpParams.Object, ccmAddr)
-//	if err != nil {
-//		log.Errorf("failed to deploy ecmp contract, err: %v", err)
-//		return
-//	}
-//	wait(2)
-//
-//	node := config.Conf.ValidatorNodes()[0]
-//	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-//	auth := bind.NewKeyedTransactor(node.PrivateKey())
-//	auth.GasLimit = 1e9
-//
-//	// eccd contract transfer ownership
-//	{
-//		logsplit()
-//		auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
-//		log.Info("ccd transferOwnership")
-//		tx, err := ccd.Transact(auth, "transferOwnership", ccmAddr)
-//		if err != nil {
-//			log.Error(err)
-//			return
-//		}
-//		wait(2)
-//		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
-//			log.Error(err)
-//			return
-//		}
-//	}
-//
-//	// eccm contract transfer ownership
-//	{
-//		logsplit()
-//		log.Info("ccm transferOwnership")
-//		auth.Nonce = new(big.Int).SetUint64(cli.GetNonce(cli.Address().Hex()))
-//		tx, err := ccm.Transact(auth, "transferOwnership", ccmpAddr)
-//		if err != nil {
-//			log.Error(err)
-//			return
-//		}
-//		wait(2)
-//		if err := admcli.DumpEventLog(tx.Hash()); err != nil {
-//			log.Error(err)
-//			return
-//		}
-//	}
-//
-//	// record contracts address
-//	{
-//		logsplit()
-//		if err := config.RecordContractAddress(ccdAddr, ccmAddr, ccmpAddr); err != nil {
-//			log.Error(err)
-//			return
-//		}
-//		log.Infof(" {\n\tccd: %s\n\tccm: %s\n\tccmp: %s\n}", ccdAddr.Hex(), ccmAddr.Hex(), ccmpAddr.Hex())
-//	}
-//
-//	return true
-//}
-//
-//
-////nativeTransfer(address _to, uint _value)
-//func EVM() (succeed bool) {
-//	var params EVMTestOps
-//
-//	if err := config.LoadParams("evm.json", &params); err != nil {
-//		log.Error(err)
-//		return
-//	}
-//
-//	type TransferInput struct {
-//		To    common.Address
-//		Value *big.Int
-//	}
-//
-//	abiJs, err := abi.JSON(strings.NewReader(params.ABI))
-//	if err != nil {
-//		log.Errorf("failed to read abj json string, err: %v", err)
-//		return
-//	}
-//
-//	to := common.HexToAddress("0xecce5f1346afee82990cccc52fe521005bd54ff0")
-//	contract := common.HexToAddress(params.Address)
-//	amount := plt.MultiPLT(1)
-//
-//	// transfer plt to contract
-//	{
-//		if _, err := admcli.PLTTransfer(contract, amount); err != nil {
-//			log.Errorf("failed to transfer PLT to contract, err: %v", err)
-//			return
-//		}
-//		wait(1)
-//		balance, err := admcli.BalanceOf(contract, "latest")
-//		if err != nil {
-//			log.Errorf("failed to get balance of contract, err: %v", err)
-//			return
-//		}
-//		log.Infof("contract %s balance %d", contract.Hex(), plt.PrintUPLT(balance))
-//	}
-//
-//	b1, err := admcli.BalanceOf(to, "latest")
-//	if err != nil {
-//		log.Errorf("failed to get balance before transfer, err: %v", err)
-//		return
-//	}
-//
-//	enc, err := utils.PackMethod(abiJs, "nativeTransfer", to, amount)
-//	if err != nil {
-//		log.Errorf("failed to pack `nativeTransfer`, err: %v", err)
-//		return
-//	}
-//
-//	hash, err := admcli.SendTransaction(contract, enc)
-//	if err != nil {
-//		log.Errorf("failed to send transaction to new deployed contract, err: %v", err)
-//		return
-//	} else {
-//		log.Infof("send tx %s success", hash.Hex())
-//	}
-//
-//	wait(2)
-//
-//	if err := admcli.DumpEventLog(hash); err != nil {
-//		log.Errorf("failed to dump tx %s, err: %v", hash.Hex(), err)
-//		return
-//	}
-//
-//	b2, err := admcli.BalanceOf(to, "latest")
-//	if err != nil {
-//		log.Errorf("failed to get balance after transfer, err: %v", err)
-//		return
-//	}
-//
-//	if utils.SafeSub(b2, b1).Cmp(amount) != 0 {
-//		log.Errorf("balance before transfer %d, balance after transfer %d, amount %d is not correct",
-//			plt.PrintUPLT(b1), plt.PrintUPLT(b2), plt.PrintUPLT(amount))
-//	}
-//
-//	return true
-//}
+type EVMTestOps struct {
+	Object    string `json:"object"`
+	ABI       string `json:"abi"`
+	Address   string `json:"address"`
+}
+
+// 只有validator拥有部署solidity合约的权限，在调用该方法前，先调用addValidators
+func TestDeploy1() (succeed bool) {
+	var params EVMTestOps
+
+	if err := config.LoadParams("evm1.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	if _, _, err := deployContract(params.ABI, params.Object); err != nil {
+		log.Errorf("failed to deploy contract, err: %v", err)
+		return
+	}
+
+	return true
+}
+
+func TestEVM1() (succeed bool) {
+	var params EVMTestOps
+
+	if err := config.LoadParams("evm1.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	type TransferInput struct {
+		To    common.Address
+		Value *big.Int
+	}
+
+	abiJs, err := abi.JSON(strings.NewReader(params.ABI))
+	if err != nil {
+		log.Errorf("failed to read abj json string, err: %v", err)
+		return
+	}
+
+	to := common.HexToAddress("0xecce5f1346afee82990cccc52fe521005bd54ff0")
+	contract := common.HexToAddress(params.Address)
+	amount := plt.MultiPLT(1)
+
+	// transfer plt to contract
+	{
+		if _, err := admcli.PLTTransfer(contract, amount); err != nil {
+			log.Errorf("failed to transfer PLT to contract, err: %v", err)
+			return
+		}
+		wait(1)
+		balance, err := admcli.BalanceOf(contract, "latest")
+		if err != nil {
+			log.Errorf("failed to get balance of contract, err: %v", err)
+			return
+		}
+		log.Infof("contract %s balance %d", contract.Hex(), plt.PrintUPLT(balance))
+	}
+
+	b1, err := admcli.BalanceOf(to, "latest")
+	if err != nil {
+		log.Errorf("failed to get balance before transfer, err: %v", err)
+		return
+	}
+
+	enc, err := utils.PackMethod(abiJs, "nativeTransfer", to, amount)
+	if err != nil {
+		log.Errorf("failed to pack `nativeTransfer`, err: %v", err)
+		return
+	}
+
+	hash, err := admcli.SendTransaction(contract, enc)
+	if err != nil {
+		log.Errorf("failed to send transaction to new deployed contract, err: %v", err)
+		return
+	} else {
+		log.Infof("send tx %s success", hash.Hex())
+	}
+
+	wait(2)
+
+	if err := admcli.DumpEventLog(hash); err != nil {
+		log.Errorf("failed to dump tx %s, err: %v", hash.Hex(), err)
+		return
+	}
+
+	b2, err := admcli.BalanceOf(to, "latest")
+	if err != nil {
+		log.Errorf("failed to get balance after transfer, err: %v", err)
+		return
+	}
+
+	if utils.SafeSub(b2, b1).Cmp(amount) != 0 {
+		log.Errorf("balance before transfer %d, balance after transfer %d, amount %d is not correct",
+			plt.PrintUPLT(b1), plt.PrintUPLT(b2), plt.PrintUPLT(amount))
+	}
+
+	return true
+}
+
+func TestDeploy2() (succeed bool) {
+	var params EVMTestOps
+
+	if err := config.LoadParams("evm2.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	if _, _, err := deployContract(params.ABI, params.Object); err != nil {
+		log.Errorf("failed to deploy contract, err: %v", err)
+		return
+	}
+
+	return true
+}
+
+//nativeTransfer(address _to, uint _value)
+func TestEVM2() (succeed bool) {
+	var params EVMTestOps
+
+	if err := config.LoadParams("evm2.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	abiJs, err := abi.JSON(strings.NewReader(params.ABI))
+	if err != nil {
+		log.Errorf("failed to read abj json string, err: %v", err)
+		return
+	}
+	contract := common.HexToAddress(params.Address)
+	enc, err := utils.PackMethod(abiJs, "simpleRequire")
+	if err != nil {
+		log.Errorf("failed to pack `nativeTransfer`, err: %v", err)
+		return
+	}
+
+	hash, err := admcli.SendTransaction(contract, enc)
+	if err != nil {
+		log.Errorf("failed to send transaction to new deployed contract, err: %v", err)
+		return
+	} else {
+		log.Infof("send tx %s success", hash.Hex())
+	}
+
+	return true
+}
 
 func DumpBlock() (succeed bool) {
 	var params struct {
