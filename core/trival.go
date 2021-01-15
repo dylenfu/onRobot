@@ -1,14 +1,14 @@
 package core
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"math/big"
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
@@ -126,9 +126,9 @@ func Deposit() (succeed bool) {
 }
 
 type EVMTestOps struct {
-	Object    string `json:"object"`
-	ABI       string `json:"abi"`
-	Address   string `json:"address"`
+	Object  string `json:"object"`
+	ABI     string `json:"abi"`
+	Address string `json:"address"`
 }
 
 // 只有validator拥有部署solidity合约的权限，在调用该方法前，先调用addValidators
