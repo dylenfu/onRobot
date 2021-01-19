@@ -119,6 +119,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("plt-mint", PLTMint)
 	frame.Tool.RegMethod("plt-burn", PLTBurn)
 	frame.Tool.RegMethod("plt-lock", PLTLock)
+	frame.Tool.RegMethod("plt-unlock", PLTUnlock)
 
 	// nft
 	frame.Tool.RegMethod("nft-deploy", NFTDeploy)
@@ -130,6 +131,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("nft-mint", NFTMint)
 	frame.Tool.RegMethod("nft-burn", NFTBurn)
 	frame.Tool.RegMethod("nft-lock", NFTLock)
+	frame.Tool.RegMethod("nft-unlock", NFTUnlock)
 
 	// evm test
 	frame.Tool.RegMethod("test-deploy1", TestDeploy1)
