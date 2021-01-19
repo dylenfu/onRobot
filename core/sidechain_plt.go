@@ -327,7 +327,7 @@ func PLTBindAsset() (succeed bool) {
 //	  这笔交易发出后等待poly当前块高超过交易块高, 作为落账的判断条件
 // 4. 获取poly当前块高作为写入palette管理合约的genesis块高，获取对应的block，将block header及block book keeper
 //    序列化，提交到palette管理合约
-func SyncGenesis() (succeed bool) {
+func PLTSyncGenesis() (succeed bool) {
 
 	// 1. prepare
 	polyRPC := config.Conf.CrossChain.PolyRPCAddress

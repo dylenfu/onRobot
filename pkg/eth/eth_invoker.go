@@ -331,6 +331,30 @@ func (i *EthInvoker) GetReceipt(hash common.Hash) (*types.Receipt, error) {
 	return tx, nil
 }
 
+func (i *EthInvoker) GetCurrentHeight() (uint64, error) {
+	return i.Tools.GetNodeHeight()
+}
+
+func (i *EthInvoker) GetHeader(height uint64) (*types.Header, error) {
+	return i.Tools.GetBlockHeader(height)
+}
+
+func (i *EthInvoker) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickeys []byte) (common.Hash, error) {
+	eccm, err := eccm_abi.NewEthCrossChainManager(eccmAddr, i.backend())
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManager err: %s", err)
+	}
+
+	auth, _ := i.makeAuth()
+	tx, err := eccm.InitGenesisBlock(auth, rawHdr, publickeys)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("call eccm InitGenesisBlock err: %s", err)
+	}
+
+	i.waitTxConfirm(tx.Hash())
+	return tx.Hash(), nil
+}
+
 func (i *EthInvoker) makeAuth() (*bind.TransactOpts, error) {
 	publicKey := i.PrivateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
