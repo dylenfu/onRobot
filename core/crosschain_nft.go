@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
@@ -27,7 +28,7 @@ func NFTLock() (succeed bool) {
 	// 假设validator A depoly了一个nft合约，同时将token mint给了自己
 	// safe transfer的时候
 	asset := params.Asset
-	sideChainID := uint64(config.Conf.CrossChain.EthereumSideChainID)
+	sideChainID := config.Conf.CrossChain.EthereumSideChainID
 	from := valcli.Address()
 	to := from
 	proxy := config.Conf.CrossChain.PaletteNFTProxy
@@ -138,6 +139,64 @@ func NFTLock() (succeed bool) {
 			}
 			time.Sleep(3 * time.Second)
 		}
+	}
+
+	return true
+}
+
+func NFTUnlock() (succeed bool) {
+	var params = struct {
+		UnlockTo     common.Address
+		Asset        common.Address
+		Proof        string
+		RawHeader    string
+		HeaderProof  string
+		CurRawHeader string
+		HeaderSig    string
+	}{}
+
+	if err := config.LoadParams("NFT-Unlock.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	_b, _ := admcli.NFTBalance(params.Asset, params.UnlockTo, "latest")
+	balanceBeforeUnlock := _b.Uint64()
+
+	proof, _ := hexutil.Decode(params.Proof)
+	rawHeader, _ := hexutil.Decode(params.RawHeader)
+	headerProof, _ := hexutil.Decode(params.HeaderProof)
+	curRawHeader, _ := hexutil.Decode(params.CurRawHeader)
+	headerSig, _ := hexutil.Decode(params.HeaderSig)
+
+	eccm := config.Conf.CrossChain.EthereumECCM
+	hash, err := ethInvoker.VerifyAndExecuteTx(
+		eccm,
+		proof,
+		rawHeader,
+		headerProof,
+		curRawHeader,
+		headerSig,
+	)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	for i := 0; i < 10000; i++ {
+		_b, err = admcli.NFTBalance(params.Asset, params.UnlockTo, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		balanceAfterUnlock := _b.Uint64()
+		if balanceAfterUnlock > balanceBeforeUnlock {
+			subAmount := balanceAfterUnlock - balanceBeforeUnlock
+			log.Infof("balance before unlock %d, after unlock %d, the sub amount is %d, eth hash %s",
+				balanceBeforeUnlock, balanceAfterUnlock, subAmount, hash.Hex())
+			break
+		}
+		time.Sleep(3 * time.Second)
 	}
 
 	return true
