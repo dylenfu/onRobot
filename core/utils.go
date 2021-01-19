@@ -12,14 +12,16 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/palettechain/onRobot/config"
+	"github.com/palettechain/onRobot/pkg/eth"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
 	"github.com/palettechain/onRobot/pkg/shell"
 )
 
 var (
-	admcli *sdk.Client
-	valcli *sdk.Client
+	admcli     *sdk.Client
+	valcli     *sdk.Client
+	ethInvoker *eth.EthInvoker
 )
 
 func initialize() {
@@ -29,6 +31,15 @@ func initialize() {
 
 	node := config.Conf.ValidatorNodes()[0]
 	valcli = sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+
+	ethPrivateKey, err := config.Conf.CrossChain.LoadETHAccount()
+	if err == nil {
+		ethInvoker = eth.NewEInvoker(
+			config.Conf.CrossChain.EthereumSideChainID,
+			config.Conf.CrossChain.EthereumRPCUrl,
+			ethPrivateKey,
+		)
+	}
 }
 
 func gc() {

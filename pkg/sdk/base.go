@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/contracts/native/nftmanager"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/governance"
 	"github.com/ethereum/go-ethereum/contracts/native/nft"
+	"github.com/ethereum/go-ethereum/contracts/native/nftmanager"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/core/types"

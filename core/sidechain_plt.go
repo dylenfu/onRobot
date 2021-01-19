@@ -41,10 +41,10 @@ type DeployContractParams struct {
 	Object string `json:"Object"`
 }
 
-func UpgradeECCM() (succeed bool) {
+func PLTUpgradeECCM() (succeed bool) {
 	params := new(DeployContractParams)
-	eccdAddr := config.Conf.CrossChain.ECCD
-	ccmpAddr := config.Conf.CrossChain.CCMP
+	eccdAddr := config.Conf.CrossChain.PaletteECCD
+	ccmpAddr := config.Conf.CrossChain.PaletteCCMP
 
 	chainID := uint64(config.Conf.Environment.NetworkID)
 	if err := config.LoadParams("UpdateEccm.json", params); err != nil {
@@ -134,9 +134,9 @@ func UpgradeECCM() (succeed bool) {
 	return true
 }
 
-func DeployCrossChainContract() (succeed bool) {
-	eccdFileName := "ECCD-raw.json"
-	eccmFileName := "ECCM-raw.json"
+func PLTDeployCrossChainContract() (succeed bool) {
+	eccdFileName := "PaletteECCD-raw.json"
+	eccmFileName := "PaletteECCM-raw.json"
 	ecmpFileName := "ECCMP-raw.json"
 	eccdParams := new(DeployContractParams)
 	eccmParams := new(DeployContractParams)
@@ -156,7 +156,7 @@ func DeployCrossChainContract() (succeed bool) {
 		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
 		return
 	}
-	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
+	crossChainID := uint64(config.Conf.CrossChain.PaletteSideChainID)
 	eccmAddr, _, err := deployContract(eccmParams.Abi, eccmParams.Object, eccdAddr, crossChainID)
 	if err != nil {
 		log.Errorf("failed to deploy eccm contract, err: %v", err)
@@ -178,13 +178,13 @@ func DeployCrossChainContract() (succeed bool) {
 	return true
 }
 
-func TransferOwnerShip() (succeed bool) {
+func PLTTransferOwnerShip() (succeed bool) {
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 
-	eccd := config.Conf.CrossChain.ECCD
-	eccm := config.Conf.CrossChain.ECCM
-	ccmp := config.Conf.CrossChain.CCMP
+	eccd := config.Conf.CrossChain.PaletteECCD
+	eccm := config.Conf.CrossChain.PaletteECCM
+	ccmp := config.Conf.CrossChain.PaletteCCMP
 
 	// eccd contract transfer ownership
 	{
@@ -224,8 +224,8 @@ func TransferOwnerShip() (succeed bool) {
 // 1. 执行palette eccm合约的verifyProofAndExecuteTx，这个方法会进入到palette native PLT合约的unlock方法
 // 2. palette native PLT unlock 取出ccmp地址，并进入该合约查询eccm地址，比较从relayer过来的eccm地址与该地址是否匹配
 // 3. 进入unlock资金逻辑
-func SetCCMP() (succeed bool) {
-	ccmp := config.Conf.CrossChain.CCMP
+func PLTSetCCMP() (succeed bool) {
+	ccmp := config.Conf.CrossChain.PaletteCCMP
 	log.Infof("ccmp contract addr %s", ccmp.Hex())
 
 	tx, err := admcli.PLTSetCCMP(ccmp)
@@ -250,9 +250,9 @@ func SetCCMP() (succeed bool) {
 // 在palette native合约上记录以太坊localProxy地址,
 // 这里我们将实现palette->poly->palette的循环，不走ethereum，那么proxy就直接是plt地址，
 // asset的地址也是palette plt地址
-func BindProxy() (succeed bool) {
+func PLTBindProxy() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
-	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
+	sideChainID := uint64(config.Conf.CrossChain.EthereumSideChainID)
 
 	// bind proxy
 	{
@@ -286,9 +286,9 @@ func BindProxy() (succeed bool) {
 }
 
 // 在palette native合约上记录以太坊erc20资产地址
-func BindAsset() (succeed bool) {
+func PLTBindAsset() (succeed bool) {
 	asset := config.Conf.CrossChain.EthereumPLTAsset
-	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
+	sideChainID := uint64(config.Conf.CrossChain.EthereumSideChainID)
 
 	// bind asset
 	{
@@ -358,7 +358,7 @@ func SyncGenesis() (succeed bool) {
 	// 3. sync palette header to poly
 	{
 		logsplit()
-		crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
+		crossChainID := config.Conf.CrossChain.PaletteSideChainID
 		if err := polyCli.SyncGenesisBlock(crossChainID, pltHeaderEnc); err != nil {
 			log.Errorf("SyncEthGenesisHeader failed: %v", err)
 			return
@@ -387,7 +387,7 @@ func SyncGenesis() (succeed bool) {
 		bookeepersEnc := poly.AssembleNoCompressBookeeper(bookeepers)
 		headerEnc := gB.Header.ToArray()
 
-		eccm := config.Conf.CrossChain.ECCM
+		eccm := config.Conf.CrossChain.PaletteECCM
 		txhash, err := cli.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
 		if err != nil {
 			log.Errorf("failed to initGenesisBlock, err: %s", err)
@@ -401,12 +401,7 @@ func SyncGenesis() (succeed bool) {
 	return true
 }
 
-// 获取并打印跨链事件
-func GetProof() (succeed bool) {
-	return true
-}
-
-func RegisterSideChain() (succeed bool) {
+func PLTRegisterSideChain() (succeed bool) {
 	polyRPC := config.Conf.CrossChain.PolyRPCAddress
 	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
@@ -417,19 +412,18 @@ func RegisterSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	eccd := config.Conf.CrossChain.ECCD
-	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
-	router := config.Conf.CrossChain.SideChainRouter
-	if err := polyCli.RegisterSideChain(crossChainID, eccd, router); err != nil {
+	eccd := config.Conf.CrossChain.PaletteECCD
+	crossChainID := config.Conf.CrossChain.PaletteSideChainID
+	if err := polyCli.RegisterSideChain(crossChainID, eccd); err != nil {
 		log.Errorf("failed to register side chain, err: %s", err)
 		return
 	}
 
-	log.Infof("register side chain %d eccd %s router %d success", crossChainID, eccd.Hex(), router)
+	log.Infof("register side chain %d eccd %s success", crossChainID, eccd.Hex())
 	return true
 }
 
-func UpdateSideChain() (succeed bool) {
+func PLTUpdateSideChain() (succeed bool) {
 	polyRPC := config.Conf.CrossChain.PolyRPCAddress
 	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
@@ -440,19 +434,18 @@ func UpdateSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	eccd := config.Conf.CrossChain.ECCD
-	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
-	router := config.Conf.CrossChain.SideChainRouter
-	if err := polyCli.UpdateSideChain(crossChainID, eccd, router); err != nil {
+	eccd := config.Conf.CrossChain.PaletteECCD
+	crossChainID := config.Conf.CrossChain.PaletteSideChainID
+	if err := polyCli.UpdateSideChain(crossChainID, eccd); err != nil {
 		log.Errorf("failed to update side chain, err: %s", err)
 		return
 	}
 
-	log.Infof("update side chain %d eccd %s router %d success", crossChainID, eccd.Hex(), router)
+	log.Infof("update side chain %d eccd %s success", crossChainID, eccd.Hex())
 	return true
 }
 
-func QuitSideChain() (succeed bool) {
+func PLTQuitSideChain() (succeed bool) {
 	polyRPC := config.Conf.CrossChain.PolyRPCAddress
 	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
@@ -463,7 +456,7 @@ func QuitSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
+	crossChainID := uint64(config.Conf.CrossChain.PaletteSideChainID)
 	if err := polyCli.QuitSideChain(crossChainID); err != nil {
 		log.Errorf("failed to quit side chain, err: %s", err)
 		return
@@ -473,7 +466,7 @@ func QuitSideChain() (succeed bool) {
 	return true
 }
 
-func ApproveRegisterSideChain() (succeed bool) {
+func PLTApproveRegisterSideChain() (succeed bool) {
 	polyRPC := config.Conf.CrossChain.PolyRPCAddress
 	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
@@ -484,7 +477,7 @@ func ApproveRegisterSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
+	crossChainID := config.Conf.CrossChain.PaletteSideChainID
 	if err := polyCli.ApproveRegisterSideChain(crossChainID); err != nil {
 		log.Errorf("failed to approve register side chain, err: %s", err)
 		return
@@ -494,7 +487,7 @@ func ApproveRegisterSideChain() (succeed bool) {
 	return true
 }
 
-func ApproveUpdateSideChain() (succeed bool) {
+func PLTApproveUpdateSideChain() (succeed bool) {
 	polyRPC := config.Conf.CrossChain.PolyRPCAddress
 	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
@@ -505,7 +498,7 @@ func ApproveUpdateSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
+	crossChainID := config.Conf.CrossChain.PaletteSideChainID
 	if err := polyCli.ApproveUpdateSideChain(crossChainID); err != nil {
 		log.Errorf("failed to approve update side chain, err: %s", err)
 		return
@@ -515,7 +508,7 @@ func ApproveUpdateSideChain() (succeed bool) {
 	return true
 }
 
-func ApproveQuitSideChain() (succeed bool) {
+func PLTApproveQuitSideChain() (succeed bool) {
 	polyRPC := config.Conf.CrossChain.PolyRPCAddress
 	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
@@ -526,7 +519,7 @@ func ApproveQuitSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	crossChainID := uint64(config.Conf.CrossChain.CrossChainID)
+	crossChainID := config.Conf.CrossChain.PaletteSideChainID
 	if err := polyCli.ApproveQuitSideChain(crossChainID); err != nil {
 		log.Errorf("failed to approve quit side chain, err: %s", err)
 		return
@@ -536,7 +529,7 @@ func ApproveQuitSideChain() (succeed bool) {
 	return true
 }
 
-func ChangePaletteBookKeepers() (succeed bool) {
+func PLTChangeBookKeepers() (succeed bool) {
 	var params struct {
 		InitAmount int
 		NodeNumber int
@@ -714,7 +707,7 @@ func ChangePaletteBookKeepers() (succeed bool) {
 	return true
 }
 
-func ChangePolyBookKeepers() (succeed bool) {
+func PolyChangeBookKeepers() (succeed bool) {
 	node, err := config.Conf.CrossChain.LoadPolyTestCaseAccount("newpolynode.dat")
 	if err != nil {
 		log.Errorf("load new node account err: %s", err)
@@ -759,7 +752,7 @@ func ChangePolyBookKeepers() (succeed bool) {
 	return true
 }
 
-func QuitNode() (succeed bool) {
+func PLTQuitNode() (succeed bool) {
 	node, err := config.Conf.CrossChain.LoadPolyTestCaseAccount("newpolynode.dat")
 	if err != nil {
 		log.Errorf("load new node account err: %s", err)

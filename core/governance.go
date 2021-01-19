@@ -94,7 +94,7 @@ func AddValidators() (succeed bool) {
 		}
 	}
 
-	wait(2 * config.Conf.RewardEffectivePeriod + 1)
+	wait(2*config.Conf.RewardEffectivePeriod + 1)
 
 	// check balance after stake
 	{
@@ -607,7 +607,7 @@ func DelValidators() (succeed bool) {
 		log.Infof("admin deposit to validator")
 		hs := make([]common.Hash, 0)
 		for _, node := range nodes {
-			balance := checkBalance(node,"before deposit")
+			balance := checkBalance(node, "before deposit")
 			if balance >= params.InitAmount {
 				continue
 			}
@@ -681,7 +681,7 @@ func DelValidators() (succeed bool) {
 	// 7.check balance after revoke stake
 	{
 		for _, node := range nodes {
-			checkBalance(node,"after revoke stake")
+			checkBalance(node, "after revoke stake")
 		}
 	}
 

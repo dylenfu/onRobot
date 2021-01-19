@@ -27,7 +27,7 @@ func NFTLock() (succeed bool) {
 	// 假设validator A depoly了一个nft合约，同时将token mint给了自己
 	// safe transfer的时候
 	asset := params.Asset
-	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
+	sideChainID := uint64(config.Conf.CrossChain.EthereumSideChainID)
 	from := valcli.Address()
 	to := from
 	proxy := config.Conf.CrossChain.PaletteNFTProxy

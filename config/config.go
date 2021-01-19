@@ -293,19 +293,31 @@ func LoadAccount(address string) *ecdsa.PrivateKey {
 }
 
 type CrossChainConfig struct {
+	// poly account and node rpc url
 	PolyAccountDefaultPassphrase string
 	PolyRPCAddress               string
-	CrossChainID                 int
-	SideChainID                  int
-	SideChainRouter              uint64
-	ECCD                         common.Address
-	ECCM                         common.Address
-	CCMP                         common.Address
-	EthereumPLTAsset             common.Address
-	EthereumPLTProxy             common.Address
-	EthereumNFTMapping           common.Address
-	EthereumNFTProxy             common.Address
-	PaletteNFTProxy              common.Address
+
+	// poly side chain configuration
+	PaletteSideChainID uint64
+	PaletteECCD        common.Address
+	PaletteECCM        common.Address
+	PaletteCCMP        common.Address
+	PaletteNFTProxy    common.Address
+
+	// ethereum side chain configuration
+	EthereumSideChainID uint64
+	EthereumECCD        common.Address
+	EthereumECCM        common.Address
+	EthereumCCMP        common.Address
+	EthereumPLTAsset    common.Address
+	EthereumPLTProxy    common.Address
+	EthereumNFTProxy    common.Address
+	EthereumNFTMapping  common.Address
+
+	// ethereum node rpc and account
+	EthereumRPCUrl          string
+	EthereumAccountFullPath string
+	EthereumAccountPassword string
 }
 
 func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {
@@ -341,6 +353,20 @@ func (c *CrossChainConfig) LoadPolyAccount(path string) (*polysdk.Account, error
 		return nil, fmt.Errorf("failed to get poly account, err: %s", err)
 	}
 	return acc, nil
+}
+
+func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {
+	keyJson, err := ioutil.ReadFile(c.EthereumAccountFullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := keystore.DecryptKey(keyJson, c.EthereumAccountPassword)
+	if err != nil {
+		return nil, err
+	}
+
+	return key.PrivateKey, nil
 }
 
 func getPolyAccountByPassword(sdk *polysdk.PolySdk, path string, pwd []byte) (

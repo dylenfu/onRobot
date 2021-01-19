@@ -1,7 +1,10 @@
 package core
 
 import (
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
@@ -101,7 +104,7 @@ func PLTLock() (succeed bool) {
 		AccountIndex int
 		Amount       int
 	}
-	sideChainID := uint64(config.Conf.CrossChain.SideChainID)
+	sideChainID := config.Conf.CrossChain.EthereumSideChainID
 
 	if err := config.LoadParams("Lock.json", &params); err != nil {
 		log.Error(err)
@@ -137,7 +140,7 @@ func PLTLock() (succeed bool) {
 		}
 	}
 
-	// lock plt
+	// lock plt on palette
 	{
 		logsplit()
 		log.Infof("lock PLT...")
@@ -175,50 +178,60 @@ func PLTLock() (succeed bool) {
 		}
 	}
 
-	// waiting for unlock
-	//{
-	//	logsplit()
-	//	log.Infof("unlock PLT...")
-	//
-	//	var (
-	//		balanceBeforeUnlock,
-	//		balanceAfterUnlock *big.Int
-	//	)
-	//	for i := 0; i < 100; i++ {
-	//		balance, err := cli.BalanceOf(bindTo, "latest")
-	//		if err != nil {
-	//			log.Error(err)
-	//			return
-	//		}
-	//		if i == 0 {
-	//			balanceBeforeUnlock = balance
-	//			log.Infof("waiting for unlock")
-	//		} else if balance.Cmp(balanceBeforeUnlock) > 0 {
-	//			balanceAfterUnlock = balance
-	//			subAmount := utils.SafeSub(balanceAfterUnlock, balanceBeforeUnlock)
-	//			log.Infof("balance before unlock %d, after unlock %d, the sub amount is %d",
-	//				plt.PrintUPLT(balanceBeforeUnlock), plt.PrintUPLT(balanceAfterUnlock), plt.PrintUPLT(subAmount))
-	//			break
-	//		}
-	//		time.Sleep(3 * time.Second)
-	//	}
-	//}
+	return true
+}
 
-	// return plt
-	//{
-	//	hash, err := cli.PLTTransfer(common.HexToAddress(config.Conf.AdminAccount), amount)
-	//	if err != nil {
-	//		log.Infof("transfer back PLT to admin err: %s", err)
-	//		return true
-	//	}
-	//	_ = cli.DumpEventLog(hash)
-	//	balance, err := cli.BalanceOf(userAddr, "latest")
-	//	if err != nil {
-	//		log.Infof("check balance after unlock err: %s", err)
-	//	} else {
-	//		log.Infof("balance after unlock %d", plt.PrintUPLT(balance))
-	//	}
-	//}
+func PLTUnlock() (succeed bool) {
+	var params = struct {
+		Proof        string
+		RawHeader    string
+		HeaderProof  string
+		CurRawHeader string
+		HeaderSig    string
+		UnlockTo common.Address
+	}{}
+
+	if err := config.LoadParams("PLT-Unlock.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	balanceBeforeUnlock, _ := admcli.BalanceOf(params.UnlockTo, "latest")
+
+	proof, _ := hexutil.Decode(params.Proof)
+	rawHeader, _ := hexutil.Decode(params.RawHeader)
+	headerProof, _ := hexutil.Decode(params.HeaderProof)
+	curRawHeader, _ := hexutil.Decode(params.CurRawHeader)
+	headerSig, _ := hexutil.Decode(params.HeaderSig)
+
+	eccm := config.Conf.CrossChain.EthereumECCM
+	hash, err := ethInvoker.VerifyAndExecuteTx(
+		eccm,
+		proof,
+		rawHeader,
+		headerProof,
+		curRawHeader,
+		headerSig,
+	)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	for i := 0; i < 10000; i++ {
+		balance, err := admcli.BalanceOf(params.UnlockTo, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if balance.Cmp(balanceBeforeUnlock) > 0 {
+			subAmount := utils.SafeSub(balance, balanceBeforeUnlock)
+			log.Infof("balance before unlock %d, after unlock %d, the sub amount is %d, eth hash %s",
+				plt.PrintUPLT(balanceBeforeUnlock), plt.PrintUPLT(balance), plt.PrintUPLT(subAmount), hash.Hex())
+			break
+		}
+		time.Sleep(3 * time.Second)
+	}
 
 	return true
 }
