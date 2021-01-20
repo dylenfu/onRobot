@@ -252,7 +252,7 @@ func PLTSetCCMP() (succeed bool) {
 // asset的地址也是palette plt地址
 func PLTBindProxy() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
-	sideChainID := uint64(config.Conf.CrossChain.EthereumSideChainID)
+	sideChainID := config.Conf.CrossChain.EthereumSideChainID
 
 	// bind proxy
 	{
@@ -288,7 +288,7 @@ func PLTBindProxy() (succeed bool) {
 // 在palette native合约上记录以太坊erc20资产地址
 func PLTBindAsset() (succeed bool) {
 	asset := config.Conf.CrossChain.EthereumPLTAsset
-	sideChainID := uint64(config.Conf.CrossChain.EthereumSideChainID)
+	sideChainID := config.Conf.CrossChain.EthereumSideChainID
 
 	// bind asset
 	{

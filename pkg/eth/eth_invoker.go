@@ -29,7 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/palettechain/onRobot/pkg/encode"
 	"github.com/palettechain/onRobot/pkg/log"
-	pltabi "github.com/palettechain/palette_token/go_abi"
+	pltabi "github.com/palettechain/palette_token/go_abi/plt"
 	"github.com/polynetwork/eth-contracts/go_abi/eccd_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccm_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccmp_abi"

@@ -8,7 +8,7 @@ require (
 	github.com/ethereum/go-ethereum v1.9.15
 	github.com/jinzhu/gorm v1.9.12
 	github.com/ontio/ontology-crypto v1.0.9
-	github.com/palettechain/palette_token v0.0.0-20201224082758-1d53348154c2
+	github.com/palettechain/palette_token v0.0.0-20210120103528-1db803afdd45
 	github.com/polynetwork/eth-contracts v0.0.1
 	github.com/polynetwork/poly v0.0.1
 	github.com/polynetwork/poly-go-sdk v0.0.0-20200817120957-365691ad3493
