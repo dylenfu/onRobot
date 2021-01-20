@@ -32,7 +32,7 @@ func ETHDeployECCM() (succeed bool) {
 		log.Errorf("deploy eccm on ethereum failed, err: %s", err.Error())
 		return
 	} else {
-		log.Infof("deploy eccm %s on ethereum success", eccm.Hex())
+		log.Infof("deploy eccm %s on ethereum success, eecd %s", eccm.Hex(), eccd.Hex())
 	}
 
 	return true
@@ -45,7 +45,7 @@ func ETHDeployCCMP() (succeed bool) {
 		log.Errorf("deploy ccmp on ethereum failed, err: %s", err.Error())
 		return
 	} else {
-		log.Infof("deploy ccmp %s on ethereum success", ccmp.Hex())
+		log.Infof("deploy ccmp %s on ethereum success, eccm %s", ccmp.Hex(), eccm.Hex())
 	}
 
 	return true

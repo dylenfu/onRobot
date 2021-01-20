@@ -37,6 +37,7 @@ make robot t=eth-deploy-nft-proxy
 
 make robot t=eth-nft-ccmp
 
+# 2021.01.20 todo: 搞到这里了
 make robot t=eth-bind-nft-proxy
 
 make robot t=eth-syncGenesis

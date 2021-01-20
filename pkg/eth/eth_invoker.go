@@ -52,7 +52,7 @@ type EthInvoker struct {
 }
 
 var (
-	DefaultGasLimit = 5000000
+	DefaultGasLimit = 7000000
 )
 
 func NewEInvoker(chainID uint64, url string, privateKey *ecdsa.PrivateKey) *EthInvoker {
