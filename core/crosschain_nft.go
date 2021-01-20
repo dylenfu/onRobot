@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 )
@@ -110,35 +109,6 @@ func NFTLock() (succeed bool) {
 		}
 
 		log.Infof("balance before lock %d, balance after lock %d", balanceBeforeLock.Uint64(), balanceAfterLock.Uint64())
-	}
-
-	// waiting for unlock
-	{
-		logsplit()
-		log.Infof("unlock nft...")
-
-		var (
-			balanceBeforeUnlock,
-			balanceAfterUnlock *big.Int
-		)
-		for i := 0; i < 10000; i++ {
-			balance, err := nftBalance(asset, from)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			if i == 0 {
-				balanceBeforeUnlock = balance
-				log.Infof("waiting for unlock")
-			} else if balance.Cmp(balanceBeforeUnlock) > 0 {
-				balanceAfterUnlock = balance
-				subAmount := utils.SafeSub(balanceAfterUnlock, balanceBeforeUnlock)
-				log.Infof("balance before unlock %d, after unlock %d, the sub amount is %d",
-					balanceBeforeUnlock.Uint64(), balanceAfterUnlock.Uint64(), subAmount.Uint64())
-				break
-			}
-			time.Sleep(3 * time.Second)
-		}
 	}
 
 	return true

@@ -27,8 +27,9 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/palettechain/onRobot/pkg/encode"
 	"github.com/palettechain/onRobot/pkg/log"
-	pltabi "github.com/palettechain/palette_token/go_abi" // todo: this package redeclared "Address_ABI"
+	pltabi "github.com/palettechain/palette_token/go_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccd_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccm_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccmp_abi"
@@ -36,8 +37,11 @@ import (
 	"github.com/polynetwork/eth-contracts/go_abi/lock_proxy_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/nftlp"
 	nftmapping "github.com/polynetwork/eth-contracts/go_abi/nftmapping_abi"
-	polycm "github.com/polynetwork/poly/common"
 )
+
+// 部署在以太上的PLT token来自项目github.com/palettechain/palette-token.git
+// 该项目的proxy和admin合约用于合约升级，并不是跨链使用的lockProxy。
+// 而对应的proxy和NFT的proxy一样，来自项目github.com/polynetwork/eth-contracts.git
 
 type EthInvoker struct {
 	PrivateKey *ecdsa.PrivateKey
@@ -253,7 +257,9 @@ func (i *EthInvoker) VerifyAndExecuteTx(
 	rawHeader,
 	headerProof,
 	curRawHeader,
-	headerSig []byte) (common.Hash, error) {
+	headerSig []byte,
+) (common.Hash, error) {
+
 	eccm, err := eccm_abi.NewEthCrossChainManager(eccmAddr, i.backend())
 	if err != nil {
 		return utils.EmptyHash, err
@@ -291,7 +297,13 @@ func (i *EthInvoker) PLTUnlock(
 	}
 
 	auth, _ := i.makeAuth()
-	enc := _serializeTxArgs(toAsset, toAddress, amount)
+	args := encode.TxArgs{
+		ToAssetHash: toAsset.Bytes(),
+		ToAddress:   toAddress.Bytes(),
+		Amount:      amount,
+	}
+	enc := args.Serialization()
+
 	tx, err := proxy.Unlock(auth, enc, fromContract.Bytes(), fromChainID)
 	if err != nil {
 		return utils.EmptyHash, err
@@ -389,41 +401,4 @@ func (i *EthInvoker) waitTxConfirm(hash common.Hash) {
 
 func (i *EthInvoker) backend() bind.ContractBackend {
 	return i.Tools.GetEthClient()
-}
-
-func _serializeTxArgs(toAsset, toAddress common.Address, amount *big.Int) []byte {
-	sink := polycm.NewZeroCopySink(nil)
-
-	sink.WriteVarBytes(toAsset.Bytes())
-	sink.WriteVarBytes(toAddress.Bytes())
-	sink.WriteVarBytes(amount.Bytes())
-
-	//bytes memory buff;
-	//buff = abi.encodePacked(
-	//ZeroCopySink.WriteVarBytes(args.toAssetHash),
-	//ZeroCopySink.WriteVarBytes(args.toAddress),
-	//ZeroCopySink.WriteUint255(args.amount)
-	//);
-	//return buff;
-
-	return sink.Bytes()
-}
-
-func _deserializeTxArgs(valueBs []byte) (toAsset, toAddress common.Address, amount *big.Int) {
-	source := polycm.NewZeroCopySource(valueBs)
-	toAssetBz, _ := source.NextVarBytes()
-	toAddrBz, _ := source.NextVarBytes()
-	amountBz, _ := source.NextVarBytes()
-
-	toAsset = common.BytesToAddress(toAssetBz)
-	toAddress = common.BytesToAddress(toAddrBz)
-	amount = new(big.Int).SetBytes(amountBz)
-
-	return
-	//TxArgs memory args;
-	//uint256 off = 0;
-	//(args.toAssetHash, off) = ZeroCopySource.NextVarBytes(valueBs, off);
-	//(args.toAddress, off) = ZeroCopySource.NextVarBytes(valueBs, off);
-	//(args.amount, off) = ZeroCopySource.NextUint255(valueBs, off);
-	//return args;
 }
