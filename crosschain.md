@@ -25,7 +25,7 @@ make robot t=eth-approveRegisterSideChain
 make robot t=eth-deploy-plt
 ```
 
-5. deploy proxy contracts and set manager proxy
+5. deploy proxy contracts and set manager proxy, and record in config.json
 ```bash
 make robot t=eth-deploy-plt-proxy
 make robot t=eth-plt-ccmp
