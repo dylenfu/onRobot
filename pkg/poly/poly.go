@@ -19,7 +19,6 @@ import (
 	polycm "github.com/polynetwork/poly/common"
 	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
 	polytype "github.com/polynetwork/poly/core/types"
-	polyutils "github.com/polynetwork/poly/native/service/utils"
 )
 
 type PolyClient struct {
@@ -96,16 +95,15 @@ func (c *PolyClient) SyncGenesisBlock(
 	}
 }
 
-const (
-	sideChainName        = "palette"
-	sideChainBlockToWait = 1
-)
+const sideChainBlockToWait = 1
 
-var (
-	sideChainRouter = polyutils.QUORUM_ROUTER
-)
+func (c *PolyClient) RegisterSideChain(
+	chainID uint64,
+	eccdAddr common.Address,
+	sideChainRouter uint64,
+	sideChainName string,
+) error {
 
-func (c *PolyClient) RegisterSideChain(chainID uint64, eccdAddr common.Address) error {
 	acc := c.GetSideChainOwner()
 	eccd, err := hex.DecodeString(strings.Replace(eccdAddr.Hex(), "0x", "", 1))
 	if err != nil {
@@ -144,7 +142,12 @@ func (c *PolyClient) QuitSideChain(chainID uint64) error {
 	return c.WaitPolyTx(txhash)
 }
 
-func (c *PolyClient) UpdateSideChain(chainID uint64, eccdAddr common.Address) error {
+func (c *PolyClient) UpdateSideChain(
+	chainID uint64,
+	eccdAddr common.Address,
+	sideChainRouter uint64,
+	sideChainName string,
+) error {
 	acc := c.GetSideChainOwner()
 	eccd, err := hex.DecodeString(strings.Replace(eccdAddr.Hex(), "0x", "", 1))
 	if err != nil {

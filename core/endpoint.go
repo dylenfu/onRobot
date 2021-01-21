@@ -108,11 +108,13 @@ func Endpoint() {
 	frame.Tool.RegMethod("eth-deploy-plt", ETHDeployPLTAsset)
 	frame.Tool.RegMethod("eth-deploy-plt-proxy", ETHDeployPLTProxy)
 	frame.Tool.RegMethod("eth-bind-plt-proxy", ETHBindPLTProxy)
+	frame.Tool.RegMethod("eth-bind-plt-asset", ETHBindPLTAsset)
 	frame.Tool.RegMethod("eth-plt-ccmp", ETHSetPLTCCMP)
 	frame.Tool.RegMethod("eth-deploy-nft-asset", ETHDeployNFTAsset)
 	frame.Tool.RegMethod("eth-deploy-nft-proxy", ETHDeployNFTProxy)
 	frame.Tool.RegMethod("eth-nft-ccmp", ETHSetNFTCCMP)
 	frame.Tool.RegMethod("eth-bind-nft-proxy", ETHBindNFTProxy)
+	frame.Tool.RegMethod("eth-bind-nft-asset", ETHBindNFTAsset)
 	frame.Tool.RegMethod("eth-syncGenesis", ETHSyncGenesis)
 
 	// plt cross chain

@@ -6,6 +6,7 @@ import (
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/poly"
+	polyutils "github.com/polynetwork/poly/native/service/utils"
 )
 
 ///////////////////////////////////////////////////////
@@ -93,8 +94,10 @@ func ETHRegisterSideChain() (succeed bool) {
 	}
 
 	eccd := config.Conf.CrossChain.EthereumECCD
+	router := polyutils.ETH_ROUTER
+	name := "ethereum"
 	crossChainID := config.Conf.CrossChain.EthereumSideChainID
-	if err := polyCli.RegisterSideChain(crossChainID, eccd); err != nil {
+	if err := polyCli.RegisterSideChain(crossChainID, eccd, router, name); err != nil {
 		log.Errorf("failed to register side chain, err: %s", err)
 		return
 	}
@@ -157,12 +160,28 @@ func ETHDeployPLTProxy() (succeed bool) {
 }
 
 func ETHBindPLTProxy() (succeed bool) {
-	proxy := config.Conf.CrossChain.EthereumPLTProxy
+	localLockProxy := config.Conf.CrossChain.EthereumPLTProxy
+	targetLockProxy := common.HexToAddress(native.PLTContractAddress)
+	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
+
+	hash, err := ethInvoker.BindPLTProxy(localLockProxy, targetLockProxy, targetSideChainID)
+	if err != nil {
+		log.Errorf("bind PLT proxy on ethereum failed, err: %s", err.Error())
+		return
+	} else {
+		log.Infof("bind PLT proxy on ethereum success, hash %s", hash.Hex())
+	}
+
+	return true
+}
+
+func ETHBindPLTAsset() (succeed bool) {
+	localLockProxy := config.Conf.CrossChain.EthereumPLTProxy
 	fromAsset := config.Conf.CrossChain.EthereumPLTAsset
 	toAsset := common.HexToAddress(native.PLTContractAddress)
 	toChainId := config.Conf.CrossChain.PaletteSideChainID
 
-	hash, err := ethInvoker.BindPLTAssetHash(proxy, fromAsset, toAsset, toChainId)
+	hash, err := ethInvoker.BindPLTAsset(localLockProxy, fromAsset, toAsset, toChainId)
 	if err != nil {
 		log.Errorf("bind PLT proxy on ethereum failed, err: %s", err.Error())
 		return
@@ -234,6 +253,22 @@ func ETHSetNFTCCMP() (succeed bool) {
 }
 
 func ETHBindNFTProxy() (succeed bool) {
+	localLockProxy := config.Conf.CrossChain.EthereumNFTProxy
+	targetLockProxy := config.Conf.CrossChain.PaletteNFTProxy
+	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
+
+	tx, err := ethInvoker.BindNFTProxy(localLockProxy, targetLockProxy, targetSideChainID)
+	if err != nil {
+		log.Errorf("bind NFT proxy on ethereum failed, err: %s", err.Error())
+		return
+	} else {
+		log.Infof("bind NFT proxy on ethereum success, hash %s", tx.Hex())
+	}
+
+	return true
+}
+
+func ETHBindNFTAsset() (succeed bool) {
 	var params = struct {
 		EthereumNFTAsset common.Address
 		PaletteNFTAsset  common.Address
@@ -247,7 +282,7 @@ func ETHBindNFTProxy() (succeed bool) {
 	fromAsset := params.EthereumNFTAsset
 	toAsset := params.PaletteNFTAsset
 	chainID := config.Conf.CrossChain.PaletteSideChainID
-	hash, err := ethInvoker.BindNFTAssetHash(
+	hash, err := ethInvoker.BindNFTAsset(
 		proxy,
 		fromAsset,
 		toAsset,
@@ -266,7 +301,6 @@ func ETHBindNFTProxy() (succeed bool) {
 
 	return true
 }
-
 
 // sync eth genesis
 func ETHSyncGenesis() (succeed bool) {
@@ -303,7 +337,7 @@ func ETHSyncGenesis() (succeed bool) {
 		}
 
 		if err := polyCli.SyncGenesisBlock(crossChainID, hdrEnc); err != nil {
-			log.Errorf("SyncEthGenesisHeader failed: %v", err)
+			log.Errorf("SyncEthGenesisHeader, cross chainID %d, failed: %v", crossChainID, err)
 			return
 		}
 		log.Infof("successful to sync eth genesis header: txhash %s, block number %d",

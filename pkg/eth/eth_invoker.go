@@ -173,13 +173,14 @@ func (i *EthInvoker) DeployCCMPContract(eccmAddress common.Address) (common.Addr
 	return contractAddress, nil
 }
 
-func (i *EthInvoker) BindPLTAssetHash(
-	lockProxyAddr,
+func (i *EthInvoker) BindPLTAsset(
+	localLockProxyAddr,
 	fromAssetHash,
 	toAssetHash common.Address,
-	toChainId uint64) (common.Hash, error) {
+	toChainId uint64,
+) (common.Hash, error) {
 
-	proxy, err := lock_proxy_abi.NewLockProxy(lockProxyAddr, i.backend())
+	proxy, err := lock_proxy_abi.NewLockProxy(localLockProxyAddr, i.backend())
 	if err != nil {
 		return utils.EmptyHash, err
 	}
@@ -193,7 +194,27 @@ func (i *EthInvoker) BindPLTAssetHash(
 	return tx.Hash(), nil
 }
 
-func (i *EthInvoker) BindNFTAssetHash(
+func (i *EthInvoker) BindPLTProxy(
+	localLockProxy,
+	targetLockProxy common.Address,
+	targetSideChainID uint64,
+) (common.Hash, error) {
+
+	proxy, err := lock_proxy_abi.NewLockProxy(localLockProxy, i.backend())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	auth, _ := i.makeAuth()
+	tx, err := proxy.BindProxyHash(auth, targetSideChainID, targetLockProxy.Bytes())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	i.waitTxConfirm(tx.Hash())
+	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) BindNFTAsset(
 	lockProxyAddr,
 	fromAssetHash,
 	toAssetHash common.Address,
@@ -209,6 +230,27 @@ func (i *EthInvoker) BindNFTAssetHash(
 	if err != nil {
 		return utils.EmptyHash, err
 	}
+	i.waitTxConfirm(tx.Hash())
+	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) BindNFTProxy(
+	localLockProxy,
+	targetLockProxy common.Address,
+	targetSideChainID uint64,
+) (common.Hash, error) {
+
+	proxy, err := nftlp.NewNFTLockProxy(localLockProxy, i.backend())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	auth, _ := i.makeAuth()
+	tx, err := proxy.BindProxyHash(auth, targetSideChainID, targetLockProxy.Bytes())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
 	i.waitTxConfirm(tx.Hash())
 	return tx.Hash(), nil
 }

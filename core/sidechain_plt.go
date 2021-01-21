@@ -12,6 +12,7 @@ import (
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/poly"
 	"github.com/palettechain/onRobot/pkg/sdk"
+	polyutils "github.com/polynetwork/poly/native/service/utils"
 )
 
 func PolyHeight() (succeed bool) {
@@ -412,9 +413,11 @@ func PLTRegisterSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	eccd := config.Conf.CrossChain.PaletteECCD
 	crossChainID := config.Conf.CrossChain.PaletteSideChainID
-	if err := polyCli.RegisterSideChain(crossChainID, eccd); err != nil {
+	eccd := config.Conf.CrossChain.PaletteECCD
+	router := polyutils.QUORUM_ROUTER
+	name := "palette"
+	if err := polyCli.RegisterSideChain(crossChainID, eccd, router, name); err != nil {
 		log.Errorf("failed to register side chain, err: %s", err)
 		return
 	}
@@ -436,7 +439,9 @@ func PLTUpdateSideChain() (succeed bool) {
 
 	eccd := config.Conf.CrossChain.PaletteECCD
 	crossChainID := config.Conf.CrossChain.PaletteSideChainID
-	if err := polyCli.UpdateSideChain(crossChainID, eccd); err != nil {
+	router := polyutils.QUORUM_ROUTER
+	name := "palette"
+	if err := polyCli.UpdateSideChain(crossChainID, eccd, router, name); err != nil {
 		log.Errorf("failed to update side chain, err: %s", err)
 		return
 	}
