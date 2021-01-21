@@ -2,10 +2,10 @@ package core
 
 import (
 	"bytes"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
@@ -36,146 +36,58 @@ func PolyHeight() (succeed bool) {
 	return true
 }
 
-// 注意: bindProxy&bindAsset&Lock三个测试都是基于palette-poly-palette的回路测试
-type DeployContractParams struct {
-	Abi    string `json:"Abi"`
-	Object string `json:"Object"`
-}
+// 在palette合约部署成功后由三本合约:
+// eccd: 管理epoch
+// eccm: 管理跨链转账
+// ccmp: 记录eccm地址及升级等
+// 加入跨链事件从poly回到palette，事件流如下:
+// relayer:
+// 1. 执行palette eccm合约的verifyProofAndExecuteTx，这个方法会进入到palette native PLT合约的unlock方法
+// 2. palette native PLT unlock 取出ccmp地址，并进入该合约查询eccm地址，比较从relayer过来的eccm地址与该地址是否匹配
+// 3. 进入unlock资金逻辑
 
-func PLTUpgradeECCM() (succeed bool) {
-	params := new(DeployContractParams)
-	eccdAddr := config.Conf.CrossChain.PaletteECCD
-	ccmpAddr := config.Conf.CrossChain.PaletteCCMP
-
-	chainID := uint64(config.Conf.Environment.NetworkID)
-	if err := config.LoadParams("UpdateEccm.json", params); err != nil {
-		log.Error(err)
-		return
-	}
-
-	eccmAddr, _, err := deployContract(params.Abi, params.Object, eccdAddr, chainID)
-	if err != nil {
-		log.Errorf("failed to deploy test contract, err: %v", err)
-		return
-	}
-	log.Infof("new eccm contract %s", eccmAddr.Hex())
-
-	// eccm contract transfer ownership
+func PLTDeployECCD() (succeed bool) {
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 
-	// eccd contract transfer ownership
-	{
-		logsplit()
-		log.Info("eccd transferOwnership")
-		hash, err := cli.ECCDTransferOwnerShip(eccdAddr, eccmAddr)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		cli.WaitTransaction(hash)
+	eccd, err := cli.DeployECCD()
+	if err != nil {
+		log.Errorf("deploy eccd on palette failed, err: %s", err.Error())
+		return
 	}
 
-	// eccm contract transfer ownership
-	{
-		logsplit()
-		log.Info("eccm transferOwnership")
-		hash, err := cli.ECCMTransferOwnerShip(eccmAddr, ccmpAddr)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		cli.WaitTransaction(hash)
-	}
-
-	// pause eccmp
-	{
-		logsplit()
-		hash, err := cli.PauseCCMP(ccmpAddr)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof("pause tx %s", hash)
-		cli.WaitTransaction(hash)
-	}
-
-	// upgrade eccm
-	{
-		logsplit()
-		hash, err := cli.UpgradeECCM(eccmAddr, ccmpAddr)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof("upgrade tx %s", hash.Hex())
-		cli.WaitTransaction(hash)
-		log.Infof("upgrade success!")
-	}
-
-	// unpause eccmp
-	{
-		logsplit()
-		hash, err := cli.UnPauseCCMP(ccmpAddr)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof("unpause tx %s", hash.Hex())
-		cli.WaitTransaction(hash)
-		log.Infof("unpause success!")
-	}
-
-	// record contracts address
-	{
-		log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
-		log.Info("record these address in config.json NOW!")
-	}
-
+	log.Infof("deploy eccd %s on palette success!", eccd.Hex())
 	return true
 }
 
-func PLTDeployCrossChainContract() (succeed bool) {
-	eccdFileName := "PaletteECCD-raw.json"
-	eccmFileName := "PaletteECCM-raw.json"
-	ecmpFileName := "ECCMP-raw.json"
-	eccdParams := new(DeployContractParams)
-	eccmParams := new(DeployContractParams)
-	ecmpParams := new(DeployContractParams)
+func PLTDeployECCM() (succeed bool) {
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 
-	if err := config.LoadContract(eccdFileName, eccdParams); err != nil {
-		log.Errorf("failed to load contract %s, err: %v", eccdFileName, err)
-		return
-	}
-	eccdAddr, _, err := deployContract(eccdParams.Abi, eccdParams.Object)
+	eccd := config.Conf.CrossChain.PaletteECCD
+	sideChainID := config.Conf.CrossChain.PaletteSideChainID
+	eccm, err := cli.DeployECCM(eccd, sideChainID)
 	if err != nil {
-		log.Errorf("failed to deploy eccd contract, err: %v", err)
+		log.Errorf("deploy eccm on palette failed, err: %s", err.Error())
 		return
 	}
 
-	if err := config.LoadContract(eccmFileName, eccmParams); err != nil {
-		log.Errorf("failed to load contract %s, err: %v", eccmFileName, err)
-		return
-	}
-	crossChainID := uint64(config.Conf.CrossChain.PaletteSideChainID)
-	eccmAddr, _, err := deployContract(eccmParams.Abi, eccmParams.Object, eccdAddr, crossChainID)
+	log.Infof("deploy eccm %s on palette success!", eccm.Hex())
+	return true
+}
+
+func PLTDeployCCMP() (succeed bool) {
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+
+	eccm := config.Conf.CrossChain.PaletteECCM
+	ccmp, err := cli.DeployCCMP(eccm)
 	if err != nil {
-		log.Errorf("failed to deploy eccm contract, err: %v", err)
+		log.Errorf("deploy ccmp on palette failed, err: %s", err.Error())
 		return
 	}
 
-	if err := config.LoadContract(ecmpFileName, ecmpParams); err != nil {
-		log.Errorf("failed to load contract %s, err: %v", ecmpFileName, err)
-		return
-	}
-	ccmpAddr, _, err := deployContract(ecmpParams.Abi, ecmpParams.Object, eccmAddr)
-	if err != nil {
-		log.Errorf("failed to deploy ecmp contract, err: %v", err)
-		return
-	}
-
-	log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
-	log.Info("record these contract address in config.json NOW!")
+	log.Infof("deploy ccmp %s on palette success!", ccmp.Hex())
 	return true
 }
 
@@ -196,8 +108,7 @@ func PLTTransferOwnerShip() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		cli.WaitTransaction(hash)
-		log.Infof("transfer eccd %s to eccm %s success!", eccd.Hex(), eccm.Hex())
+		log.Infof("transfer eccd %s to eccm %s success! hash %s", eccd.Hex(), eccm.Hex(), hash.Hex())
 	}
 
 	// eccm contract transfer ownership
@@ -209,34 +120,24 @@ func PLTTransferOwnerShip() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		admcli.WaitTransaction(hash)
-		log.Infof("transfer eccm %s to ccmp %s success!", eccm.Hex(), ccmp.Hex())
+		log.Infof("transfer eccm %s to ccmp %s success! hash %s", eccm.Hex(), ccmp.Hex(), hash.Hex())
 	}
 
 	return true
 }
 
-// 在palette合约部署成功后由三本合约:
-// eccd: 管理epoch
-// eccm: 管理跨链转账
-// ccmp: 记录eccm地址及升级等
-// 加入跨链事件从poly回到palette，事件流如下:
-// relayer:
-// 1. 执行palette eccm合约的verifyProofAndExecuteTx，这个方法会进入到palette native PLT合约的unlock方法
-// 2. palette native PLT unlock 取出ccmp地址，并进入该合约查询eccm地址，比较从relayer过来的eccm地址与该地址是否匹配
-// 3. 进入unlock资金逻辑
 func PLTSetCCMP() (succeed bool) {
 	ccmp := config.Conf.CrossChain.PaletteCCMP
 	log.Infof("ccmp contract addr %s", ccmp.Hex())
 
-	tx, err := admcli.PLTSetCCMP(ccmp)
+	hash, err := admcli.SetPLTCCMP(ccmp)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	log.Infof("tx hash: %s", tx.Hex())
-	wait(2)
-	proxy, err := admcli.PLTGetCCMP("latest")
+	log.Infof("set PLT ccmp success! hash %s", hash.Hex())
+
+	proxy, err := admcli.GetPLTCCMP("latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -251,25 +152,25 @@ func PLTSetCCMP() (succeed bool) {
 // 在palette native合约上记录以太坊localProxy地址,
 // 这里我们将实现palette->poly->palette的循环，不走ethereum，那么proxy就直接是plt地址，
 // asset的地址也是palette plt地址
-func PLTBindProxy() (succeed bool) {
+func PLTBindPLTProxy() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	sideChainID := config.Conf.CrossChain.EthereumSideChainID
 
 	// bind proxy
 	{
 		log.Infof("bind proxy...")
-		tx, err := admcli.BindProxy(sideChainID, proxy)
+		tx, err := admcli.BindPLTProxy(sideChainID, proxy)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		admcli.WaitTransaction(tx)
+		log.Infof("bind PLT proxy on palette success! hash %s", tx.Hex())
 	}
 
 	// get and compare proxy
 	{
 		log.Infof("get bind proxy...")
-		actual, err := admcli.GetBindProxy(sideChainID, "latest")
+		actual, err := admcli.GetBindPLTProxy(sideChainID, "latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -287,25 +188,25 @@ func PLTBindProxy() (succeed bool) {
 }
 
 // 在palette native合约上记录以太坊erc20资产地址
-func PLTBindAsset() (succeed bool) {
+func PLTBindPLTAsset() (succeed bool) {
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	sideChainID := config.Conf.CrossChain.EthereumSideChainID
 
 	// bind asset
 	{
 		log.Infof("bind asset...")
-		tx, err := admcli.BindAsset(sideChainID, asset)
+		tx, err := admcli.BindPLTAsset(sideChainID, asset)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		admcli.WaitTransaction(tx)
+		log.Infof("bind PLT asset on palette success! hash %s", tx.Hex())
 	}
 
 	// get and compare asset
 	{
 		log.Infof("get bind asset...")
-		actual, err := admcli.GetBindAsset(sideChainID, "latest")
+		actual, err := admcli.GetBindPLTAsset(sideChainID, "latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -319,6 +220,99 @@ func PLTBindAsset() (succeed bool) {
 	}
 
 	return true
+}
+
+func PLTRegisterSideChain() (succeed bool) {
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
+	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
+	if err != nil {
+		log.Errorf("failed to generate poly client, err: %s", err)
+		return
+	} else {
+		log.Infof("generate poly client success!")
+	}
+
+	crossChainID := config.Conf.CrossChain.PaletteSideChainID
+	eccd := config.Conf.CrossChain.PaletteECCD
+	router := polyutils.QUORUM_ROUTER
+	name := config.Conf.CrossChain.PaletteSideChainName
+	if err := polyCli.RegisterSideChain(crossChainID, eccd, router, name); err != nil {
+		log.Errorf("failed to register side chain, err: %s", err)
+		return
+	}
+
+	log.Infof("register side chain %d eccd %s success", crossChainID, eccd.Hex())
+	return true
+}
+
+func PLTApproveRegisterSideChain() (succeed bool) {
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
+	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
+	if err != nil {
+		log.Errorf("failed to generate poly client, err: %s", err)
+		return
+	} else {
+		log.Infof("generate poly client success!")
+	}
+
+	crossChainID := config.Conf.CrossChain.PaletteSideChainID
+	if err := polyCli.ApproveRegisterSideChain(crossChainID); err != nil {
+		log.Errorf("failed to approve register side chain, err: %s", err)
+		return
+	}
+
+	log.Infof("approve register side chain %d success", crossChainID)
+	return true
+}
+
+func PLTDeployNFTProxy() (succeed bool) {
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+
+	addr, err := cli.DeployNFTProxy()
+	if err != nil {
+		log.Errorf("deploy NFT proxy on palette failed, err: %s", err.Error())
+		return
+	}
+
+	log.Infof("deploy NFT proxy %s on palette success!", addr.Hex())
+	return true
+}
+
+func PLTBindNFTProxy() (succeed bool) {
+	localLockproxy := config.Conf.CrossChain.PaletteNFTProxy
+	targetLockProxy := config.Conf.CrossChain.EthereumNFTProxy
+	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
+
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+
+	hash, err := cli.BindNFTProxy(localLockproxy, targetLockProxy, targetSideChainID)
+	if err != nil {
+		log.Errorf("bind NFT proxy on palette failed, err: %s", err.Error())
+		return
+	}
+
+	log.Infof("bind NFT proxy on palette success! hash %s", hash.Hex())
+	return true
+}
+
+func PLTSetNFTCCMP() (succeed bool) {
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+
+	proxy := config.Conf.CrossChain.PaletteNFTProxy
+	ccmp := config.Conf.CrossChain.PaletteCCMP
+	hash, err := cli.SetNFTCCMP(proxy, ccmp)
+	if err != nil {
+		log.Errorf("set ccmp on palette failed, err: %s", err.Error())
+		return
+	}
+
+	log.Infof("set ccmp on palette success! hash %s", hash.Hex())
+	return
 }
 
 // 同步palette区块头到poly链上
@@ -402,27 +396,134 @@ func PLTSyncGenesis() (succeed bool) {
 	return true
 }
 
-func PLTRegisterSideChain() (succeed bool) {
-	polyRPC := config.Conf.CrossChain.PolyRPCAddress
-	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
-	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
+func PLTBindNFTAsset() (succeed bool) {
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+
+	var params = struct {
+		EthereumNFTAsset common.Address
+		PaletteNFTAsset  common.Address
+	}{}
+	if err := config.LoadParams("BindNFTAsset.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	localLockProxy := config.Conf.CrossChain.PaletteNFTProxy
+	fromAsset := params.PaletteNFTAsset
+	toAsset := params.EthereumNFTAsset
+	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
+	hash, err := cli.BindNFTAsset(
+		localLockProxy,
+		fromAsset,
+		toAsset,
+		targetSideChainID,
+	)
 	if err != nil {
-		log.Errorf("failed to generate poly client, err: %s", err)
-		return
-	} else {
-		log.Infof("generate poly client success!")
-	}
-
-	crossChainID := config.Conf.CrossChain.PaletteSideChainID
-	eccd := config.Conf.CrossChain.PaletteECCD
-	router := polyutils.QUORUM_ROUTER
-	name := "palette"
-	if err := polyCli.RegisterSideChain(crossChainID, eccd, router, name); err != nil {
-		log.Errorf("failed to register side chain, err: %s", err)
+		log.Errorf("bind NFT proxy on palette failed, err: %s", err.Error())
 		return
 	}
 
-	log.Infof("register side chain %d eccd %s success", crossChainID, eccd.Hex())
+	log.Infof("bind NFT proxy on palette success, hash %s", hash.Hex())
+	return true
+}
+
+// 注意: bindProxy&bindAsset&Lock三个测试都是基于palette-poly-palette的回路测试
+type DeployContractParams struct {
+	Abi    string `json:"Abi"`
+	Object string `json:"Object"`
+}
+
+func PLTUpgradeECCM() (succeed bool) {
+	params := new(DeployContractParams)
+	eccdAddr := config.Conf.CrossChain.PaletteECCD
+	ccmpAddr := config.Conf.CrossChain.PaletteCCMP
+
+	chainID := uint64(config.Conf.Environment.NetworkID)
+	if err := config.LoadParams("UpdateEccm.json", params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	eccmAddr, _, err := deployContract(params.Abi, params.Object, eccdAddr, chainID)
+	if err != nil {
+		log.Errorf("failed to deploy test contract, err: %v", err)
+		return
+	}
+	log.Infof("new eccm contract %s", eccmAddr.Hex())
+
+	// eccm contract transfer ownership
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+
+	// eccd contract transfer ownership
+	{
+		logsplit()
+		log.Info("eccd transferOwnership")
+		hash, err := cli.ECCDTransferOwnerShip(eccdAddr, eccmAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Infof("transfer eccd %s ownership to eccm %s success! hash %s", eccdAddr.Hex(), eccmAddr.Hex(), hash.Hex())
+	}
+
+	// eccm contract transfer ownership
+	{
+		logsplit()
+		log.Info("eccm transferOwnership")
+		hash, err := cli.ECCMTransferOwnerShip(eccmAddr, ccmpAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Infof("transfer eccm %s ownership to ccmp %s success! hash %s", eccmAddr.Hex(), ccmpAddr.Hex(), hash.Hex())
+	}
+
+	// pause eccmp
+	{
+		logsplit()
+		hash, err := cli.PauseCCMP(ccmpAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Infof("pause tx %s", hash)
+		cli.WaitTransaction(hash)
+	}
+
+	// upgrade eccm
+	{
+		logsplit()
+		hash, err := cli.UpgradeECCM(eccmAddr, ccmpAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Infof("upgrade tx %s", hash.Hex())
+		cli.WaitTransaction(hash)
+		log.Infof("upgrade success!")
+	}
+
+	// unpause eccmp
+	{
+		logsplit()
+		hash, err := cli.UnPauseCCMP(ccmpAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Infof("unpause tx %s", hash.Hex())
+		cli.WaitTransaction(hash)
+		log.Infof("unpause success!")
+	}
+
+	// record contracts address
+	{
+		log.Infof(" {\n\teccd: %s\n\teccm: %s\n\tccmp: %s\n}", eccdAddr.Hex(), eccmAddr.Hex(), ccmpAddr.Hex())
+		log.Info("record these address in config.json NOW!")
+	}
+
 	return true
 }
 
@@ -440,7 +541,7 @@ func PLTUpdateSideChain() (succeed bool) {
 	eccd := config.Conf.CrossChain.PaletteECCD
 	crossChainID := config.Conf.CrossChain.PaletteSideChainID
 	router := polyutils.QUORUM_ROUTER
-	name := "palette"
+	name := config.Conf.CrossChain.PaletteSideChainName
 	if err := polyCli.UpdateSideChain(crossChainID, eccd, router, name); err != nil {
 		log.Errorf("failed to update side chain, err: %s", err)
 		return
@@ -461,34 +562,13 @@ func PLTQuitSideChain() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	crossChainID := uint64(config.Conf.CrossChain.PaletteSideChainID)
+	crossChainID := config.Conf.CrossChain.PaletteSideChainID
 	if err := polyCli.QuitSideChain(crossChainID); err != nil {
 		log.Errorf("failed to quit side chain, err: %s", err)
 		return
 	}
 
 	log.Infof("quit side chain %d success", crossChainID)
-	return true
-}
-
-func PLTApproveRegisterSideChain() (succeed bool) {
-	polyRPC := config.Conf.CrossChain.PolyRPCAddress
-	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
-	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
-	if err != nil {
-		log.Errorf("failed to generate poly client, err: %s", err)
-		return
-	} else {
-		log.Infof("generate poly client success!")
-	}
-
-	crossChainID := config.Conf.CrossChain.PaletteSideChainID
-	if err := polyCli.ApproveRegisterSideChain(crossChainID); err != nil {
-		log.Errorf("failed to approve register side chain, err: %s", err)
-		return
-	}
-
-	log.Infof("approve register side chain %d success", crossChainID)
 	return true
 }
 

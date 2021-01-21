@@ -201,7 +201,7 @@ func (c *Client) SendRawTransaction(hash common.Hash, signedTx string) (common.H
 }
 
 func (c *Client) DeployContract(abiStr, binStr string, params ...interface{}) (common.Address, *bind.BoundContract, error) {
-	auth := c.getDeployAuth()
+	auth := c.makeDeployAuth()
 
 	parsedABI, err := abi.JSON(strings.NewReader(abiStr))
 	if err != nil {
@@ -222,16 +222,16 @@ func (c *Client) DeployContract(abiStr, binStr string, params ...interface{}) (c
 	return address, contract, nil
 }
 
-func (c *Client) getDeployAuth() *bind.TransactOpts {
+func (c *Client) makeDeployAuth() *bind.TransactOpts {
 	auth := bind.NewKeyedTransactor(c.Key)
 	auth.GasLimit = 1e7
 	auth.Nonce = new(big.Int).SetUint64(c.GetNonce(c.Address().Hex()))
 	return auth
 }
 
-func (c *Client) getTransactAuth() *bind.TransactOpts {
+func (c *Client) makeAuth() *bind.TransactOpts {
 	auth := bind.NewKeyedTransactor(c.Key)
-	auth.GasLimit = 21000
+	auth.GasLimit = 2100000
 	return auth
 }
 

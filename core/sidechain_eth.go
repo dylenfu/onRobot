@@ -95,7 +95,7 @@ func ETHRegisterSideChain() (succeed bool) {
 
 	eccd := config.Conf.CrossChain.EthereumECCD
 	router := polyutils.ETH_ROUTER
-	name := "ethereum"
+	name := config.Conf.CrossChain.EthereumSideChainName
 	crossChainID := config.Conf.CrossChain.EthereumSideChainID
 	if err := polyCli.RegisterSideChain(crossChainID, eccd, router, name); err != nil {
 		log.Errorf("failed to register side chain, err: %s", err)
@@ -273,7 +273,7 @@ func ETHBindNFTAsset() (succeed bool) {
 		EthereumNFTAsset common.Address
 		PaletteNFTAsset  common.Address
 	}{}
-	if err := config.LoadParams("ETH-NFT-BindAsset.json", &params); err != nil {
+	if err := config.LoadParams("BindNFTAsset.json", &params); err != nil {
 		log.Error(err)
 		return
 	}

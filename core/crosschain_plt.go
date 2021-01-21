@@ -150,7 +150,7 @@ func PLTLock() (succeed bool) {
 			return
 		}
 
-		hash, err := cli.Lock(sideChainID, bindTo, amount)
+		hash, err := cli.LockPLT(sideChainID, bindTo, amount)
 		if err != nil {
 			log.Errorf("failed to call `lock` err: %v", err)
 			return

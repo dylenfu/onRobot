@@ -218,7 +218,7 @@ func (i *EthInvoker) BindNFTAsset(
 	lockProxyAddr,
 	fromAssetHash,
 	toAssetHash common.Address,
-	toChainId uint64) (common.Hash, error) {
+	targetSideChainId uint64) (common.Hash, error) {
 
 	proxy, err := nftlp.NewNFTLockProxy(lockProxyAddr, i.backend())
 	if err != nil {
@@ -226,7 +226,7 @@ func (i *EthInvoker) BindNFTAsset(
 	}
 
 	auth, _ := i.makeAuth()
-	tx, err := proxy.BindAssetHash(auth, fromAssetHash, toChainId, toAssetHash[:])
+	tx, err := proxy.BindAssetHash(auth, fromAssetHash, targetSideChainId, toAssetHash[:])
 	if err != nil {
 		return utils.EmptyHash, err
 	}

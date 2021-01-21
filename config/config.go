@@ -298,21 +298,23 @@ type CrossChainConfig struct {
 	PolyRPCAddress               string
 
 	// poly side chain configuration
-	PaletteSideChainID uint64
-	PaletteECCD        common.Address
-	PaletteECCM        common.Address
-	PaletteCCMP        common.Address
-	PaletteNFTProxy    common.Address
+	PaletteSideChainID   uint64
+	PaletteSideChainName string
+	PaletteECCD          common.Address
+	PaletteECCM          common.Address
+	PaletteCCMP          common.Address
+	PaletteNFTProxy      common.Address
 
 	// ethereum side chain configuration
-	EthereumSideChainID uint64
-	EthereumECCD        common.Address
-	EthereumECCM        common.Address
-	EthereumCCMP        common.Address
-	EthereumPLTAsset    common.Address
-	EthereumPLTProxy    common.Address
-	EthereumNFTProxy    common.Address
-	EthereumNFTMapping  common.Address
+	EthereumSideChainID   uint64
+	EthereumSideChainName string
+	EthereumECCD          common.Address
+	EthereumECCM          common.Address
+	EthereumCCMP          common.Address
+	EthereumPLTAsset      common.Address
+	EthereumPLTProxy      common.Address
+	EthereumNFTProxy      common.Address
+	EthereumNFTMapping    common.Address
 
 	// ethereum node rpc and account
 	EthereumRPCUrl          string
