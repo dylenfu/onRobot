@@ -87,7 +87,7 @@ func BalanceOf() (succeed bool) {
 		BlockNum string
 	}
 
-	if err := config.LoadParams("BalanceOf.json", &params); err != nil {
+	if err := config.LoadParams("PLT-Balance.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
@@ -110,7 +110,7 @@ func Transfer() (succeed bool) {
 		Amount int64
 	}
 
-	if err := config.LoadParams("Transfer.json", &params); err != nil {
+	if err := config.LoadParams("PLT-Transfer.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
@@ -187,7 +187,7 @@ func Approve() (succeed bool) {
 		Amount  int
 	}
 
-	if err := config.LoadParams("Approve.json", &params); err != nil {
+	if err := config.LoadParams("PLT-Approve.json", &params); err != nil {
 		log.Error(err)
 		return
 	}

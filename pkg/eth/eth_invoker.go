@@ -324,6 +324,29 @@ func (i *EthInvoker) VerifyAndExecuteTx(
 	return tx.Hash(), nil
 }
 
+func (i *EthInvoker) PLTLock(
+	proxyAddr common.Address,
+	fromAsset common.Address,
+	targetSideChainID uint64,
+	toAddr common.Address,
+	amount *big.Int,
+) (common.Hash, error) {
+
+	proxy, err := lock_proxy_abi.NewLockProxy(proxyAddr, i.backend())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	auth, _ := i.makeAuth()
+	tx, err := proxy.Lock(auth, fromAsset, targetSideChainID, toAddr.Bytes(), amount)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	i.waitTxConfirm(tx.Hash())
+	return tx.Hash(), nil
+}
+
 func (i *EthInvoker) PLTUnlock(
 	fromChainID uint64,
 	proxyAddr,

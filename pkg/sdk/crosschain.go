@@ -10,7 +10,6 @@ import (
 	"github.com/polynetwork/eth-contracts/go_abi/eccd_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccm_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccmp_abi"
-	"github.com/polynetwork/eth-contracts/go_abi/lock_proxy_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/nftlp"
 )
 
@@ -238,16 +237,23 @@ func (c *Client) PLTBurn(val *big.Int) (common.Hash, error) {
 	return c.sendPLTTx(payload)
 }
 
-func (c *Client) LockPLT(chainID uint64, dstAddr common.Address, amount *big.Int) (common.Hash, error) {
-	payload, err := c.packPLT(plt.MethodLock, chainID, dstAddr.Bytes(), amount)
+func (c *Client) LockPLT(targetChainID uint64, dstAddr common.Address, amount *big.Int) (common.Hash, error) {
+	payload, err := c.packPLT(plt.MethodLock, targetChainID, dstAddr.Bytes(), amount)
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	return c.sendPLTTx(payload)
+	hash, err := c.sendPLTTx(payload)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	c.WaitTransaction(hash)
+	return hash, nil
 }
 
 func (c *Client) SetNFTCCMP(proxyAddr, ccmp common.Address) (common.Hash, error) {
-	proxy, err := lock_proxy_abi.NewLockProxy(proxyAddr, c.backend)
+	//proxy, err := lock_proxy_abi.NewLockProxy(proxyAddr, c.backend)
+	proxy, err := nftlp.NewNFTLockProxy(proxyAddr, c.backend)
 	if err != nil {
 		return utils.EmptyHash, err
 	}
@@ -277,7 +283,7 @@ func (c *Client) BindNFTProxy(
 	targetSideChainID uint64,
 ) (common.Hash, error) {
 
-	proxy, err := lock_proxy_abi.NewLockProxy(localLockProxy, c.backend)
+	proxy, err := nftlp.NewNFTLockProxy(localLockProxy, c.backend)
 	if err != nil {
 		return utils.EmptyHash, err
 	}

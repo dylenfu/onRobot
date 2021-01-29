@@ -974,21 +974,38 @@ func GlobalParams() (succeed bool) {
 
 func StakeAmount() (succeed bool) {
 	nodes := config.Conf.ValidatorNodes()
-	for _, node := range nodes {
-		validator := node.NodeAddr()
-		stakeAddr := node.StakeAddr()
-		valStake := admcli.GetStakeAmount(validator, stakeAddr, "latest")
-		totalStake := admcli.GetValidatorTotalStakeAmount(validator, "latest")
+	for i:=0;i<100000;i++ {
+		for _, node := range nodes {
+			validator := node.NodeAddr()
+			stakeAddr := node.StakeAddr()
+			valStake := admcli.GetStakeAmount(validator, stakeAddr, "latest")
+			totalStake := admcli.GetValidatorTotalStakeAmount(validator, "latest")
 
-		dValStk := utils.DecimalFromBigInt(valStake)
-		dTotStk := utils.DecimalFromBigInt(totalStake)
+			dValStk := utils.DecimalFromBigInt(valStake)
+			dTotStk := utils.DecimalFromBigInt(totalStake)
 
-		valAmt := plt.PrintFPLT(dValStk)
-		totalAmt := plt.PrintFPLT(dTotStk)
-		delegateAmt := totalAmt - valAmt
+			valAmt := plt.PrintFPLT(dValStk)
+			totalAmt := plt.PrintFPLT(dTotStk)
+			delegateAmt := totalAmt - valAmt
 
-		log.Infof("validator %s, total stake %f, self stake %f, delegate amount %f",
-			node.NodeAddr().Hex(), totalAmt, valAmt, delegateAmt)
+			log.Infof("validator %s, total stake %f, self stake %f, delegate amount %f",
+				node.NodeAddr().Hex(), totalAmt, valAmt, delegateAmt)
+		}
+		//validator := node.NodeAddr()
+		//stakeAddr := node.StakeAddr()
+		//valStake := admcli.GetStakeAmount(validator, stakeAddr, "latest")
+		//totalStake := admcli.GetValidatorTotalStakeAmount(validator, "latest")
+		//
+		//dValStk := utils.DecimalFromBigInt(valStake)
+		//dTotStk := utils.DecimalFromBigInt(totalStake)
+		//
+		//valAmt := plt.PrintFPLT(dValStk)
+		//totalAmt := plt.PrintFPLT(dTotStk)
+		//delegateAmt := totalAmt - valAmt
+		//
+		//log.Infof("validator %s, total stake %f, self stake %f, delegate amount %f",
+		//	node.NodeAddr().Hex(), totalAmt, valAmt, delegateAmt)
+		time.Sleep(200 * time.Millisecond)
 	}
 
 	return true
