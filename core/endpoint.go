@@ -139,7 +139,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("nft-mint", NFTMint)
 	frame.Tool.RegMethod("nft-burn", NFTBurn)
 	frame.Tool.RegMethod("nft-lock", NFTLock)
-	frame.Tool.RegMethod("nft-unlock", NFTUnlock)
+	frame.Tool.RegMethod("nft-unlock", NFTUnLock)
 
 	// evm test
 	frame.Tool.RegMethod("test-deploy1", TestDeploy1)
