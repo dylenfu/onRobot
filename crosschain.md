@@ -90,7 +90,13 @@ make robot t=plt-bind-plt-proxy
 make robot t=plt-bind-nft-proxy
 ```
 
-## bind asset on both of palette and ethereum
+## bind plt asset on both of palette and ethereum
+```bash
+make robot t=plt-bind-plt-asset
+make robot t=eth-bind-plt-asset
+```
+
+## deploy and bind nft asset on both of palette and ethereum
 1. deploy nft contract on both of palette and ethereum, record them in cases/BindNFTAsset.json
 ```bash
 make robot t=plt-deploy-nft-asset
@@ -99,8 +105,6 @@ make robot t=eth-deploy-nft-asset
 
 2. bind plt and nft asset
 ```bash
-make robot t=plt-bind-plt-asset
 make robot t=plt-bind-nft-asset
-make robot t=eth-bind-plt-asset
 make robot t=eth-bind-nft-asset
 ```

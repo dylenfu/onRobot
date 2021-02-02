@@ -115,36 +115,85 @@ func PLTLock() (succeed bool) {
 	cli := sdk.NewSender(baseUrl, privKey)
 	amount := plt.MultiPLT(params.Amount)
 	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
+	ethAsset := config.Conf.CrossChain.EthereumPLTAsset
 
-	balanceBeforeLock, err := cli.BalanceOf(userAddr, "latest")
+	fromBalanceBeforeLockOnPalette, err := cli.BalanceOf(userAddr, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	if balanceBeforeLock.Cmp(amount) < 0 {
-		logsplit()
-		log.Infof("prepare test account balance...")
-		if _, err := admcli.PLTTransfer(userAddr, amount); err != nil {
-			log.Error(err)
-			return
+	{
+		if fromBalanceBeforeLockOnPalette.Cmp(amount) < 0 {
+			logsplit()
+			log.Infof("prepare test account balance...")
+			if _, err := admcli.PLTTransfer(userAddr, amount); err != nil {
+				log.Error(err)
+				return
+			}
+			fromBalanceBeforeLockOnPalette, _ = cli.BalanceOf(userAddr, "latest")
 		}
-		balanceBeforeLock, _ = cli.BalanceOf(userAddr, "latest")
 	}
 
+	toBalanceBeforeLockOnPalette, err := cli.BalanceOf(bindTo, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	fromBalanceBeforeLockOnEthereum, err := ethInvoker.PLTBalanceOf(ethAsset, userAddr)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	toBalanceBeforeLockOnEthereum, err := ethInvoker.PLTBalanceOf(ethAsset, bindTo)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	logsplit()
 	hash, err := cli.LockPLT(targetSideChainID, bindTo, amount)
 	if err != nil {
 		log.Errorf("failed to call `lock` err: %v", err)
 		return
 	}
 
-	balanceAfterLock, err := cli.BalanceOf(userAddr, "latest")
+	logsplit()
+	fromBalanceAfterLockOnPalette, err := cli.BalanceOf(userAddr, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	fromBalanceAfterLockOnEthereum, err := ethInvoker.PLTBalanceOf(ethAsset, userAddr)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	toBalanceAfterLockOnPalette, err := cli.BalanceOf(bindTo, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	toBalanceAfterLockOnEthereum, err := ethInvoker.PLTBalanceOf(ethAsset, bindTo)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	log.Infof("%s balance before lock %d, balance after lock %d, hash %s",
-		userAddr.Hex(), plt.PrintUPLT(balanceBeforeLock), plt.PrintUPLT(balanceAfterLock), hash.Hex())
+	log.Infof("tx hash %s, \r\n"+
+		"from %s: balance %d before lock on palette, balance %d after lock on palette, balance %d before lock on palette, balance %d after lock on ethereum\r\n"+
+		"to %s: balance %d before lock on palette, balance %d after lock on palette, balance %d before lock on palette, balance %d after lock on ethereum\r\n",
+		hash.Hex(),
+		userAddr.Hex(),
+		plt.PrintUPLT(fromBalanceBeforeLockOnPalette),
+		plt.PrintUPLT(fromBalanceAfterLockOnPalette),
+		plt.PrintUPLT(fromBalanceBeforeLockOnEthereum),
+		plt.PrintUPLT(fromBalanceAfterLockOnEthereum),
+		bindTo.Hex(),
+		plt.PrintUPLT(toBalanceBeforeLockOnPalette),
+		plt.PrintUPLT(toBalanceAfterLockOnPalette),
+		plt.PrintUPLT(toBalanceBeforeLockOnEthereum),
+		plt.PrintUPLT(toBalanceAfterLockOnEthereum),
+	)
 
 	return true
 }

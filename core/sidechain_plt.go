@@ -15,27 +15,6 @@ import (
 	polyutils "github.com/polynetwork/poly/native/service/utils"
 )
 
-func PolyHeight() (succeed bool) {
-	rpc := config.Conf.CrossChain.PolyRPCAddress
-	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
-	polyCli, err := poly.NewPolyClient(rpc, polyValidators)
-	if err != nil {
-		log.Errorf("failed to generate poly client, err: %s", err)
-		return
-	} else {
-		log.Infof("generate poly client success!")
-	}
-
-	height, err := polyCli.GetCurrentBlockHeight()
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	log.Infof("%s current height %d", rpc, height)
-	return true
-}
-
 // 在palette合约部署成功后由三本合约:
 // eccd: 管理epoch
 // eccm: 管理跨链转账
