@@ -130,7 +130,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("plt-unlock", PLTUnlock)
 
 	// nft
-	frame.Tool.RegMethod("nft-deploy", NFTDeploy)
+	frame.Tool.RegMethod("plt-deploy-nft-asset", NFTDeploy)
 	frame.Tool.RegMethod("nft-transfer", NFTTransfer)
 	frame.Tool.RegMethod("nft-balance", NFTBalance)
 	frame.Tool.RegMethod("nft-token-owner", NFTTokenOwner)

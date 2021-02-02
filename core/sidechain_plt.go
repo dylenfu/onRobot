@@ -2,10 +2,10 @@ package core
 
 import (
 	"bytes"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
@@ -57,6 +57,12 @@ func PLTDeployECCD() (succeed bool) {
 	}
 
 	log.Infof("deploy eccd %s on palette success!", eccd.Hex())
+
+	if err := config.Conf.CrossChain.StorePaletteECCD(eccd); err != nil {
+		log.Error("store palette eccd failed")
+		return
+	}
+
 	return true
 }
 
@@ -73,6 +79,12 @@ func PLTDeployECCM() (succeed bool) {
 	}
 
 	log.Infof("deploy eccm %s on palette success!", eccm.Hex())
+
+	if err := config.Conf.CrossChain.StorePaletteECCM(eccm); err != nil {
+		log.Error("store palette eccm failed")
+		return
+	}
+
 	return true
 }
 
@@ -88,6 +100,12 @@ func PLTDeployCCMP() (succeed bool) {
 	}
 
 	log.Infof("deploy ccmp %s on palette success!", ccmp.Hex())
+
+	if err := config.Conf.CrossChain.StorePaletteCCMP(ccmp); err != nil {
+		log.Error("store palette ccmp failed")
+		return
+	}
+
 	return true
 }
 
@@ -271,13 +289,19 @@ func PLTDeployNFTProxy() (succeed bool) {
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 
-	addr, err := cli.DeployNFTProxy()
+	proxy, err := cli.DeployNFTProxy()
 	if err != nil {
 		log.Errorf("deploy NFT proxy on palette failed, err: %s", err.Error())
 		return
 	}
 
-	log.Infof("deploy NFT proxy %s on palette success!", addr.Hex())
+	log.Infof("deploy NFT proxy %s on palette success!", proxy.Hex())
+
+	if err := config.Conf.CrossChain.StorePaletteNFTProxy(proxy); err != nil {
+		log.Error("store palette nft proxy failed")
+		return
+	}
+
 	return true
 }
 
@@ -312,7 +336,7 @@ func PLTSetNFTCCMP() (succeed bool) {
 	}
 
 	log.Infof("set ccmp on palette success! hash %s", hash.Hex())
-	return
+	return true
 }
 
 // 同步palette区块头到poly链上
@@ -358,7 +382,7 @@ func PLTSyncGenesis() (succeed bool) {
 			log.Errorf("SyncEthGenesisHeader failed: %v", err)
 			return
 		}
-		log.Infof("successful to sync eth genesis header: txhash %s, block number %d",
+		log.Infof("sync palette genesis header to poly success, txhash %s, block number %d",
 			hdr.Hash().Hex(), hdr.Number.Uint64())
 	}
 
@@ -388,9 +412,9 @@ func PLTSyncGenesis() (succeed bool) {
 			log.Errorf("failed to initGenesisBlock, err: %s", err)
 			return
 		} else {
-			log.Infof("sync genesis header success, txhash %s", txhash.Hex())
+			log.Infof("sync poly genesis header to palette success, txhash %s, block number %d",
+				txhash.Hex(), gB.Header.Height)
 		}
-		_ = cli.DumpEventLog(txhash)
 	}
 
 	return true

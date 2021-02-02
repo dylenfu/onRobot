@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"sort"
 	"sync"
@@ -31,6 +32,7 @@ var (
 	Conf, BakConf = new(Config), new(Config)
 	AdminKey      *ecdsa.PrivateKey
 	AdminAddr     common.Address
+	ConfigFilePath string
 )
 
 type Config struct {
@@ -152,7 +154,6 @@ type Node struct {
 	Host         string `json:"Host"`
 	RPCPort      string `json:"RPCPort"`
 	P2PPort      string `json:"P2PPort"`
-	NodeDir      string
 
 	once       sync.Once
 	ndpk, sapk *ecdsa.PrivateKey
@@ -181,19 +182,16 @@ func (n *Node) init() {
 	} else {
 		n.sapk = ks.PrivateKey
 	}
-
-	// load node workspace
-	nodedir := fmt.Sprintf("node%d", n.Index)
-	if Conf.Environment.Remote {
-		n.NodeDir = path.Join(Conf.Environment.RemoteWorkspace, nodedir)
-	} else {
-		n.NodeDir = path.Join(Conf.Environment.LocalWorkspace, nodedir)
-	}
 }
 
 func (n *Node) NodeDirPath() string {
 	n.once.Do(n.init)
-	return n.NodeDir
+	data := fmt.Sprintf("node%d", n.Index)
+	nodedir := path.Join(Conf.Environment.LocalWorkspace, data)
+	if Conf.Environment.Remote {
+		nodedir = path.Join(Conf.Environment.RemoteWorkspace, data)
+	}
+	return nodedir
 }
 
 func (n *Node) PrivateKey() *ecdsa.PrivateKey {
@@ -239,7 +237,8 @@ type Network struct {
 }
 
 func Init(path string) {
-	if err := LoadConfig(path, Conf); err != nil {
+	ConfigFilePath = path
+	if err := LoadConfig(ConfigFilePath, Conf); err != nil {
 		panic(err)
 	}
 
@@ -266,6 +265,14 @@ func LoadConfig(filepath string, ins interface{}) error {
 		return fmt.Errorf("json.Unmarshal TestConfig:%s error:%s", data, err)
 	}
 	return nil
+}
+
+func saveConfig(c *Config) error {
+	enc, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(ConfigFilePath, enc, os.ModePerm)
 }
 
 func LoadParams(fileName string, data interface{}) error {
@@ -369,6 +376,56 @@ func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {
 	}
 
 	return key.PrivateKey, nil
+}
+
+func (c *CrossChainConfig) StorePaletteECCD(addr common.Address) error {
+	c.PaletteECCD = addr
+	return saveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StorePaletteECCM(addr common.Address) error {
+	c.PaletteECCM = addr
+	return saveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StorePaletteCCMP(addr common.Address) error {
+	c.PaletteCCMP = addr
+	return saveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StorePaletteNFTProxy(addr common.Address) error {
+	c.PaletteNFTProxy = addr
+	return saveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StoreEthereumECCD(addr common.Address) error {
+	c.EthereumECCD = addr
+	return saveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StoreEthereumECCM(addr common.Address) error {
+	c.EthereumECCM = addr
+	return saveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StoreEthereumCCMP(addr common.Address) error {
+	c.EthereumCCMP = addr
+	return saveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StoreEthereumNFTProxy(addr common.Address) error {
+	c.EthereumNFTProxy = addr
+	return saveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StoreEthereumPLTAsset(addr common.Address) error {
+	c.EthereumPLTAsset = addr
+	return saveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StoreEthereumPLTProxy(addr common.Address) error {
+	c.EthereumPLTProxy = addr
+	return saveConfig(Conf)
 }
 
 func getPolyAccountByPassword(sdk *polysdk.PolySdk, path string, pwd []byte) (

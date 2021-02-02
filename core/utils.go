@@ -39,6 +39,8 @@ func initialize() {
 			config.Conf.CrossChain.EthereumRPCUrl,
 			ethPrivateKey,
 		)
+	} else {
+		log.Infof("load eth account err: %s", err.Error())
 	}
 }
 

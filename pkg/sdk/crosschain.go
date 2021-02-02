@@ -252,7 +252,6 @@ func (c *Client) LockPLT(targetChainID uint64, dstAddr common.Address, amount *b
 }
 
 func (c *Client) SetNFTCCMP(proxyAddr, ccmp common.Address) (common.Hash, error) {
-	//proxy, err := lock_proxy_abi.NewLockProxy(proxyAddr, c.backend)
 	proxy, err := nftlp.NewNFTLockProxy(proxyAddr, c.backend)
 	if err != nil {
 		return utils.EmptyHash, err

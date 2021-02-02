@@ -23,6 +23,11 @@ func ETHDeployECCD() (succeed bool) {
 		log.Infof("deploy eccd %s on ethereum success", eccd.Hex())
 	}
 
+	if err := config.Conf.CrossChain.StoreEthereumECCD(eccd); err != nil {
+		log.Error("store ethereum eccd failed")
+		return
+	}
+
 	return true
 }
 
@@ -36,6 +41,11 @@ func ETHDeployECCM() (succeed bool) {
 		log.Infof("deploy eccm %s on ethereum success, eecd %s", eccm.Hex(), eccd.Hex())
 	}
 
+	if err := config.Conf.CrossChain.StoreEthereumECCM(eccm); err != nil {
+		log.Error("store ethereum eccm failed")
+		return
+	}
+
 	return true
 }
 
@@ -47,6 +57,11 @@ func ETHDeployCCMP() (succeed bool) {
 		return
 	} else {
 		log.Infof("deploy ccmp %s on ethereum success, eccm %s", ccmp.Hex(), eccm.Hex())
+	}
+
+	if err := config.Conf.CrossChain.StoreEthereumCCMP(ccmp); err != nil {
+		log.Error("store ethereum ccmp failed")
+		return
 	}
 
 	return true
@@ -144,6 +159,10 @@ func ETHDeployPLTAsset() (succeed bool) {
 
 	log.Infof("deploy PLT asset %s on ethereum success!", pltAsset.Hex())
 
+	if err := config.Conf.CrossChain.StoreEthereumPLTAsset(pltAsset); err != nil {
+		log.Error("store ethereum plt asset failed")
+		return
+	}
 	return true
 }
 
@@ -154,6 +173,11 @@ func ETHDeployPLTProxy() (succeed bool) {
 		return
 	} else {
 		log.Infof("deploy PLT proxy %s on ethereum success!", proxy.Hex())
+	}
+
+	if err := config.Conf.CrossChain.StoreEthereumPLTProxy(proxy); err != nil {
+		log.Error("store ethereum plt proxy failed")
+		return
 	}
 
 	return true
@@ -227,14 +251,18 @@ func ETHDeployNFTAsset() (succeed bool) {
 }
 
 func ETHDeployNFTProxy() (succeed bool) {
-	contract, err := ethInvoker.DeployNFTLockProxy()
+	proxy, err := ethInvoker.DeployNFTLockProxy()
 	if err != nil {
 		log.Errorf("deploy nft lock proxy on ethereum failed, err: %s", err.Error())
 		return
 	} else {
-		log.Infof("deploy NFT lock proxy %s on ethereum success!", contract.Hex())
+		log.Infof("deploy NFT lock proxy %s on ethereum success!", proxy.Hex())
 	}
 
+	if err := config.Conf.CrossChain.StoreEthereumNFTProxy(proxy); err != nil {
+		log.Error("save ethereum nft proxy failed")
+		return
+	}
 	return true
 }
 
