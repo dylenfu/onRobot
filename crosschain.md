@@ -44,6 +44,13 @@ make robot t=eth-plt-transfer
 make robot t=eth-syncGenesis
 ```
 
+## bind proxies and PLT asset on ethereum chain
+```bash
+make robot t=eth-bind-plt-proxy
+make robot t=eth-bind-nft-proxy
+make robot t=eth-bind-plt-asset
+```
+
 ## prepare on palette chain
 1. deploy eccd, eccm, ccmp contracts and record in config.json
 ```bash
@@ -64,7 +71,8 @@ make robot t=plt-plt-ccmp
 
 4. register side chain id to poly chain and approve it with 4 poly validators' wallet file.
 ```bash
-make robot t=plt-registerSideChain,plt-approveRegisterSideChain
+make robot t=plt-registerSideChain
+make robot t=plt-approveRegisterSideChain
 ```
 
 5. deploy nft proxy
@@ -82,23 +90,11 @@ make robot t=plt-nft-ccmp
 make robot t=plt-syncGenesis
 ```
 
-## bind proxy on both of palette and ethereum
-1. bind plt and nft proxy on ethereum chain
-```bash
-make robot t=eth-bind-plt-proxy
-make robot t=eth-bind-nft-proxy
-```
-
-2. bind plt and nft proxy on palette chain
+## bind proxies and PLT asset on palette chain
 ```bash
 make robot t=plt-bind-plt-proxy
 make robot t=plt-bind-nft-proxy
-```
-
-## bind plt asset on both of palette and ethereum
-```bash
 make robot t=plt-bind-plt-asset
-make robot t=eth-bind-plt-asset
 ```
 
 ## deploy and bind nft asset on both of palette and ethereum
