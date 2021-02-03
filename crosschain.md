@@ -34,7 +34,12 @@ make robot t=eth-deploy-nft-proxy
 make robot t=eth-nft-ccmp
 ```
 
-6. sync genesis header
+6. mint plt from `plt asset contract` owner to `plt proxy`
+```bash
+make robot t=eth-plt-transfer
+```
+
+7. sync genesis header
 ```bash
 make robot t=eth-syncGenesis
 ```
