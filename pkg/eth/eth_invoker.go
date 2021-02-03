@@ -68,6 +68,26 @@ func NewEInvoker(chainID uint64, url string, privateKey *ecdsa.PrivateKey) *EthI
 	return instance
 }
 
+func (i *EthInvoker) TransferETH(to common.Address, amount *big.Int) (common.Hash, error) {
+	auth, _ := i.makeAuth()
+	auth.Value = amount
+	tx := types.NewTransaction(auth.Nonce.Uint64(), to, amount, auth.GasLimit, auth.GasPrice, []byte{})
+	tx, err := types.SignTx(tx, types.HomesteadSigner{}, i.PrivateKey)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	if err := i.Tools.ethclient.SendTransaction(context.Background(), tx, bind.PrivateTxArgs{}); err != nil {
+		return utils.EmptyHash, err
+	}
+	i.waitTxConfirm(tx.Hash())
+
+	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) ETHBalance(owner common.Address) (*big.Int, error) {
+	return i.Tools.ethclient.BalanceAt(context.Background(), owner, nil)
+}
+
 func (i *EthInvoker) DeployPLTLockProxy() (common.Address, error) {
 	auth, _ := i.makeAuth()
 	contractAddr, tx, _, err := lock_proxy_abi.DeployLockProxy(auth, i.backend())

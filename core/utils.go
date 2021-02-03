@@ -3,6 +3,7 @@ package core
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"math/big"
 	"strconv"
 	"time"
 
@@ -22,6 +23,7 @@ var (
 	admcli     *sdk.Client
 	valcli     *sdk.Client
 	ethInvoker *eth.EthInvoker
+	OneETH     = utils.Pow10toBigInt(int32(18))
 )
 
 func initialize() {
@@ -143,6 +145,36 @@ func getAndCheckValidator(nodeIndexList []int) (config.Nodes, error) {
 		nodes = append(nodes, node)
 	}
 	return nodes, nil
+}
+
+func prepareEth(to common.Address, amount *big.Int) error {
+	balanceBeforeTransfer, err := ethInvoker.ETHBalance(to)
+	if err != nil {
+		return err
+	}
+	if balanceBeforeTransfer.Cmp(amount) >= 0 {
+		return nil
+	}
+
+	hash, err := ethInvoker.TransferETH(to, amount)
+	if err != nil {
+		return err
+	}
+	balanceAfterTransfer, err := ethInvoker.ETHBalance(to)
+	if err != nil {
+		return err
+	}
+	if utils.SafeSub(balanceAfterTransfer, balanceBeforeTransfer).Cmp(amount) == 0 {
+		log.Infof("prepare %s ETH %d success, tx hash %s", to.Hex(), amount, hash.Hex())
+		return nil
+	} else {
+		return fmt.Errorf("prepare %s balance incorrect, balance before transfer %s, balance after transfer %s, txhash %s",
+			to.Hex(),
+			balanceBeforeTransfer.String(),
+			balanceAfterTransfer.String(),
+			hash.Hex(),
+		)
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
