@@ -29,9 +29,9 @@ const (
 )
 
 var (
-	Conf, BakConf = new(Config), new(Config)
-	AdminKey      *ecdsa.PrivateKey
-	AdminAddr     common.Address
+	Conf, BakConf  = new(Config), new(Config)
+	AdminKey       *ecdsa.PrivateKey
+	AdminAddr      common.Address
 	ConfigFilePath string
 )
 
@@ -267,8 +267,95 @@ func LoadConfig(filepath string, ins interface{}) error {
 	return nil
 }
 
-func saveConfig(c *Config) error {
-	enc, err := json.Marshal(c)
+func SaveConfig(c *Config) error {
+	type XCrossChainConfig struct {
+		// poly account and node rpc url
+		PolyAccountDefaultPassphrase string
+		PolyRPCAddress               string
+
+		// poly side chain configuration
+		PaletteSideChainID   uint64
+		PaletteSideChainName string
+		PaletteECCD          string
+		PaletteECCM          string
+		PaletteCCMP          string
+		PaletteNFTProxy      string
+
+		// ethereum side chain configuration
+		EthereumSideChainID   uint64
+		EthereumSideChainName string
+		EthereumECCD          string
+		EthereumECCM          string
+		EthereumCCMP          string
+		EthereumPLTAsset      string
+		EthereumPLTProxy      string
+		EthereumNFTProxy      string
+		EthereumNFTMapping    string
+
+		// ethereum node rpc and account
+		EthereumRPCUrl          string
+		EthereumAccountFullPath string
+		EthereumAccountPassword string
+	}
+
+	type XConfig struct {
+		Environment           *Env
+		Network               *Network
+		DefaultPassphrase     string
+		AdminAccount          string
+		BaseRewardPool        string
+		Accounts              []string
+		GasLimit              uint64
+		DeployGasLimit        uint64
+		BlockPeriod           encode.Duration
+		RewardEffectivePeriod int // 区块奖励周期/参数生效周期
+		Nodes                 []*Node
+		CrossChain            *XCrossChainConfig
+	}
+
+	x := new(XConfig)
+	x.Environment = c.Environment
+	x.Network = c.Network
+	x.DefaultPassphrase = c.DefaultPassphrase
+	x.AdminAccount = c.AdminAccount
+	x.BaseRewardPool = c.BaseRewardPool
+	x.Accounts = c.Accounts
+	x.GasLimit = c.GasLimit
+	x.DeployGasLimit = c.DeployGasLimit
+	x.BlockPeriod = c.BlockPeriod
+	x.RewardEffectivePeriod = c.RewardEffectivePeriod
+	x.Nodes = c.Nodes
+
+	xc := new(XCrossChainConfig)
+	xc.PolyAccountDefaultPassphrase = c.CrossChain.PolyAccountDefaultPassphrase
+	xc.PolyRPCAddress = c.CrossChain.PolyRPCAddress
+
+	// poly side chain configuration
+	xc.PaletteSideChainID = c.CrossChain.PaletteSideChainID
+	xc.PaletteSideChainName = c.CrossChain.PaletteSideChainName
+	xc.PaletteECCD = c.CrossChain.PaletteECCD.Hex()
+	xc.PaletteECCM = c.CrossChain.PaletteECCM.Hex()
+	xc.PaletteCCMP = c.CrossChain.PaletteCCMP.Hex()
+	xc.PaletteNFTProxy = c.CrossChain.PaletteNFTProxy.Hex()
+
+	// ethereum side chain configuration
+	xc.EthereumSideChainID = c.CrossChain.EthereumSideChainID
+	xc.EthereumSideChainName = c.CrossChain.EthereumSideChainName
+	xc.EthereumECCD = c.CrossChain.EthereumECCD.Hex()
+	xc.EthereumECCM = c.CrossChain.EthereumECCM.Hex()
+	xc.EthereumCCMP = c.CrossChain.EthereumCCMP.Hex()
+	xc.EthereumPLTAsset = c.CrossChain.EthereumPLTAsset.Hex()
+	xc.EthereumPLTProxy = c.CrossChain.EthereumPLTProxy.Hex()
+	xc.EthereumNFTProxy = c.CrossChain.EthereumNFTProxy.Hex()
+	xc.EthereumNFTMapping = c.CrossChain.EthereumNFTMapping.Hex()
+
+	// ethereum node rpc and account
+	xc.EthereumRPCUrl = c.CrossChain.EthereumRPCUrl
+	xc.EthereumAccountFullPath = c.CrossChain.EthereumAccountFullPath
+	xc.EthereumAccountPassword = c.CrossChain.EthereumAccountPassword
+	x.CrossChain = xc
+
+	enc, err := json.Marshal(x)
 	if err != nil {
 		return err
 	}
@@ -380,52 +467,52 @@ func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {
 
 func (c *CrossChainConfig) StorePaletteECCD(addr common.Address) error {
 	c.PaletteECCD = addr
-	return saveConfig(Conf)
+	return SaveConfig(Conf)
 }
 
 func (c *CrossChainConfig) StorePaletteECCM(addr common.Address) error {
 	c.PaletteECCM = addr
-	return saveConfig(Conf)
+	return SaveConfig(Conf)
 }
 
 func (c *CrossChainConfig) StorePaletteCCMP(addr common.Address) error {
 	c.PaletteCCMP = addr
-	return saveConfig(Conf)
+	return SaveConfig(Conf)
 }
 
 func (c *CrossChainConfig) StorePaletteNFTProxy(addr common.Address) error {
 	c.PaletteNFTProxy = addr
-	return saveConfig(Conf)
+	return SaveConfig(Conf)
 }
 
 func (c *CrossChainConfig) StoreEthereumECCD(addr common.Address) error {
 	c.EthereumECCD = addr
-	return saveConfig(Conf)
+	return SaveConfig(Conf)
 }
 
 func (c *CrossChainConfig) StoreEthereumECCM(addr common.Address) error {
 	c.EthereumECCM = addr
-	return saveConfig(Conf)
+	return SaveConfig(Conf)
 }
 
 func (c *CrossChainConfig) StoreEthereumCCMP(addr common.Address) error {
 	c.EthereumCCMP = addr
-	return saveConfig(Conf)
+	return SaveConfig(Conf)
 }
 
 func (c *CrossChainConfig) StoreEthereumNFTProxy(addr common.Address) error {
 	c.EthereumNFTProxy = addr
-	return saveConfig(Conf)
+	return SaveConfig(Conf)
 }
 
 func (c *CrossChainConfig) StoreEthereumPLTAsset(addr common.Address) error {
 	c.EthereumPLTAsset = addr
-	return saveConfig(Conf)
+	return SaveConfig(Conf)
 }
 
 func (c *CrossChainConfig) StoreEthereumPLTProxy(addr common.Address) error {
 	c.EthereumPLTProxy = addr
-	return saveConfig(Conf)
+	return SaveConfig(Conf)
 }
 
 func getPolyAccountByPassword(sdk *polysdk.PolySdk, path string, pwd []byte) (

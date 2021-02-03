@@ -14,6 +14,14 @@ import (
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
+func Simple() bool {
+	if err := config.SaveConfig(config.Conf); err != nil {
+		log.Error(err)
+		return false
+	}
+	return true
+}
+
 func BlockNumber() bool {
 	blockNumber := admcli.GetBlockNumber()
 	log.Infof("current block number %d", blockNumber)

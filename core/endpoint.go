@@ -15,6 +15,7 @@ func Endpoint() {
 	frame.Tool.RegGCFunc(gc)
 
 	// remote construct
+	frame.Tool.RegMethod("simple", Simple)
 	frame.Tool.RegMethod("remoteBuild", RemoteBuild)
 	frame.Tool.RegMethod("remoteSetup", RemoteSetup)
 
@@ -122,6 +123,9 @@ func Endpoint() {
 	frame.Tool.RegMethod("eth-bind-nft-proxy", ETHBindNFTProxy)
 	frame.Tool.RegMethod("eth-bind-nft-asset", ETHBindNFTAsset)
 	frame.Tool.RegMethod("eth-syncGenesis", ETHSyncGenesis)
+	frame.Tool.RegMethod("eth-plt-total-supply", ETHPLTTotalSupply)
+	frame.Tool.RegMethod("eth-plt-balance", ETHPLTBalance)
+	frame.Tool.RegMethod("eth-plt-transfer", ETHPLTTransfer)
 
 	// plt cross chain
 	frame.Tool.RegMethod("plt-mint", PLTMint)

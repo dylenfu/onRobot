@@ -33,7 +33,6 @@ import (
 	"github.com/polynetwork/eth-contracts/go_abi/eccd_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccm_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccmp_abi"
-	"github.com/polynetwork/eth-contracts/go_abi/erc20_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/lock_proxy_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/nftlp"
 	nftmapping "github.com/polynetwork/eth-contracts/go_abi/nftmapping_abi"
@@ -286,11 +285,35 @@ func (i *EthInvoker) TransferECCMOwnership(eccm, ccmp common.Address) (common.Ha
 }
 
 func (i *EthInvoker) PLTBalanceOf(asset, user common.Address) (*big.Int, error) {
-	instance, err := erc20_abi.NewERC20(asset, i.backend())
+	instance, err := pltabi.NewPaletteToken(asset, i.backend())
 	if err != nil {
 		return nil, err
 	}
 	return instance.BalanceOf(nil, user)
+}
+
+func (i *EthInvoker) PLTTotalSupply(asset common.Address) (*big.Int, error) {
+	instance, err := pltabi.NewPaletteToken(asset, i.backend())
+	if err != nil {
+		return nil, err
+	}
+	return instance.TotalSupply(nil)
+}
+
+func (i *EthInvoker) PLTTransfer(asset, from, to common.Address, amount *big.Int) (common.Hash, error) {
+	instance, err := pltabi.NewPaletteToken(asset, i.backend())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	auth, _ := i.makeAuth()
+	tx, err := instance.Transfer(auth, to, amount)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	i.waitTxConfirm(tx.Hash())
+
+	return tx.Hash(), nil
 }
 
 func (i *EthInvoker) VerifyAndExecuteTx(

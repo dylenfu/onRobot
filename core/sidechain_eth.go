@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native"
+	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/poly"
@@ -401,6 +402,89 @@ func ETHSyncGenesis() (succeed bool) {
 			log.Infof("sync genesis header success, txhash %s", txhash.Hex())
 		}
 	}
+
+	return true
+}
+
+func ETHPLTBalance() (succeed bool) {
+	var params struct {
+		Owner common.Address
+	}
+	if err := config.LoadParams("ETH-PLT-Balance.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+	data, err := ethInvoker.PLTBalanceOf(config.Conf.CrossChain.EthereumPLTAsset, params.Owner)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Infof("PLT on ethereum %s balance %d", params.Owner.Hex(), plt.PrintUPLT(data))
+	return true
+}
+
+func ETHPLTTotalSupply() (succeed bool) {
+	data, err := ethInvoker.PLTTotalSupply(config.Conf.CrossChain.EthereumPLTAsset)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Infof("ethereum PLT asset total supply %d", plt.PrintUPLT(data))
+	return true
+}
+
+func ETHPLTTransfer() (succeed bool) {
+	var params struct {
+		From   common.Address
+		To     common.Address
+		Amount int
+	}
+	if err := config.LoadParams("ETH-PLT-Transfer.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+	amount := plt.MultiPLT(params.Amount)
+	asset := config.Conf.CrossChain.EthereumPLTAsset
+	fromBalanceBeforeTransfer, err := ethInvoker.PLTBalanceOf(asset, params.From)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	toBalanceBeforeTransfer, err := ethInvoker.PLTBalanceOf(asset, params.To)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	hash, err := ethInvoker.PLTTransfer(asset, params.From, params.To, amount)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	fromBalanceAfterTransfer, err := ethInvoker.PLTBalanceOf(asset, params.From)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	toBalanceAfterTransfer, err := ethInvoker.PLTBalanceOf(asset, params.To)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Infof("tx hash %s \r\n"+
+		"from %s, balance before transfer %d, balance after transfer %d \r\n"+
+		"to %s, balance before transfer %d, balance after transfer %d",
+		hash.Hex(),
+		params.From.Hex(),
+		plt.PrintUPLT(fromBalanceBeforeTransfer),
+		plt.PrintUPLT(fromBalanceAfterTransfer),
+		params.To.Hex(),
+		plt.PrintUPLT(toBalanceBeforeTransfer),
+		plt.PrintUPLT(toBalanceAfterTransfer),
+	)
 
 	return true
 }
