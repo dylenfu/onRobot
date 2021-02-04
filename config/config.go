@@ -347,7 +347,6 @@ func SaveConfig(c *Config) error {
 	xc.EthereumPLTAsset = c.CrossChain.EthereumPLTAsset.Hex()
 	xc.EthereumPLTProxy = c.CrossChain.EthereumPLTProxy.Hex()
 	xc.EthereumNFTProxy = c.CrossChain.EthereumNFTProxy.Hex()
-	xc.EthereumNFTMapping = c.CrossChain.EthereumNFTMapping.Hex()
 
 	// ethereum node rpc and account
 	xc.EthereumRPCUrl = c.CrossChain.EthereumRPCUrl
@@ -408,7 +407,6 @@ type CrossChainConfig struct {
 	EthereumPLTAsset      common.Address
 	EthereumPLTProxy      common.Address
 	EthereumNFTProxy      common.Address
-	EthereumNFTMapping    common.Address
 
 	// ethereum node rpc and account
 	EthereumRPCUrl          string
