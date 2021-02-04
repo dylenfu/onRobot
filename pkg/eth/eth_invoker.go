@@ -312,6 +312,28 @@ func (i *EthInvoker) PLTBalanceOf(asset, user common.Address) (*big.Int, error) 
 	return instance.BalanceOf(nil, user)
 }
 
+func (i *EthInvoker) PLTAllowance(asset, owner, spender common.Address) (*big.Int, error) {
+	instance, err := pltabi.NewPaletteToken(asset, i.backend())
+	if err != nil {
+		return nil, err
+	}
+	return instance.Allowance(nil, owner, spender)
+}
+
+func (i *EthInvoker) PLTApprove(asset, spender common.Address, amount *big.Int) (common.Hash, error) {
+	instance, err := pltabi.NewPaletteToken(asset, i.backend())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	auth, _ := i.makeAuth()
+	tx, err := instance.Approve(auth, spender, amount)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	i.waitTxConfirm(tx.Hash())
+	return tx.Hash(), nil
+}
+
 func (i *EthInvoker) PLTTotalSupply(asset common.Address) (*big.Int, error) {
 	instance, err := pltabi.NewPaletteToken(asset, i.backend())
 	if err != nil {

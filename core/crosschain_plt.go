@@ -187,6 +187,15 @@ func PLTLock() (succeed bool) {
 	return true
 }
 
+// 以太坊lock对应到palette的unlock:
+// 1.准备需要的eth作为gas
+// 2.准备ethereum proxy需要的allowance
+// 3.lock前查询from在以太上的余额
+// 4.lock前查询to在palette上的余额
+// 5.lock锁定
+// 6.循环内查询lock后from在以太上的余额
+// 7.循环内查询lock后to在palette上的余额
+// 8.比较并判断是否成功
 func PLTUnlock() (succeed bool) {
 	var params struct {
 		From   common.Address
@@ -216,6 +225,12 @@ func PLTUnlock() (succeed bool) {
 		config.Conf.CrossChain.EthereumRPCUrl,
 		config.LoadAccount(from.Hex()),
 	)
+
+	// prepare allowance
+	if err := prepareAllowance(invoker, from, proxy, amount); err != nil {
+		log.Error(err)
+		return
+	}
 
 	fromBalanceBeforeLockOnEthereum, err := invoker.PLTBalanceOf(asset, from)
 	if err != nil {

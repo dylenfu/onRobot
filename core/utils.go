@@ -177,6 +177,25 @@ func prepareEth(to common.Address, amount *big.Int) error {
 	}
 }
 
+func prepareAllowance(invoker *eth.EthInvoker, owner, spender common.Address, amount *big.Int) error {
+	asset := config.Conf.CrossChain.EthereumPLTAsset
+	curAmt, err := invoker.PLTAllowance(asset, owner, spender)
+	if err != nil {
+		return err
+	}
+	if curAmt.Cmp(amount) >= 0 {
+		log.Infof("(owner, spender) (%s, %s) allowance %d enough", owner.Hex(), spender.Hex(), plt.PrintUPLT(amount))
+		return nil
+	}
+
+	hash, err := invoker.PLTApprove(asset, spender, amount)
+	if err != nil {
+		return err
+	}
+	log.Infof("(owner, spender) (%s, %s) approve %d success, ethereum tx hash %s", owner.Hex(), spender.Hex(), plt.PrintUPLT(amount), hash.Hex())
+	return nil
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 //
 // exec shell scripts
