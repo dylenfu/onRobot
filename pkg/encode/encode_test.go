@@ -30,14 +30,14 @@ func TestDurationText(t *testing.T) {
 
 func TestConcurrentMapReadAndMapWrite(t *testing.T) {
 	m := make(map[int]string)
-	for i:=0;i<3;i++ {
+	for i := 0; i < 3; i++ {
 		m[i] = fmt.Sprintf("data%d", i)
 	}
 
 	//for i := 0;i<100;i++ {
 	//	go t.Logf(m[2][:])
 	//}
-	for i := 0; i<60;i++ {
+	for i := 0; i < 60; i++ {
 		go func(idx int) {
 			m[2] = fmt.Sprintf("data%d", idx)
 		}(i)

@@ -136,13 +136,7 @@ func Transfer() (succeed bool) {
 	}
 
 	// transfer and waiting for commit
-	hash, err := admcli.PLTTransfer(to, amount)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	wait(2)
-	if err := admcli.DumpEventLog(hash); err != nil {
+	if _, err := admcli.PLTTransfer(to, amount); err != nil {
 		log.Error(err)
 		return
 	}
@@ -207,13 +201,7 @@ func Approve() (succeed bool) {
 		return
 	}
 
-	hash, err := cli.PLTApprove(spender, amount)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	wait(2)
-	if err := cli.DumpEventLog(hash); err != nil {
+	if _, err := cli.PLTApprove(spender, amount); err != nil {
 		log.Error(err)
 		return
 	}

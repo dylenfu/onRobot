@@ -89,12 +89,7 @@ func (c *Client) PLTTransfer(to common.Address, amount *big.Int) (common.Hash, e
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	hash, err := c.sendPLTTx(payload)
-	if err != nil {
-		return utils.EmptyHash, err
-	}
-	c.WaitTransaction(hash)
-	return hash, nil
+	return c.sendPLTTx(payload)
 }
 
 func (c *Client) PLTTransferFrom(from, to common.Address, amount *big.Int) (common.Hash, error) {
@@ -158,7 +153,12 @@ func (c *Client) unpackPLT(method string, output interface{}, enc []byte) error 
 	return utils.UnpackOutputs(PLTABI, method, output, enc)
 }
 func (c *Client) sendPLTTx(payload []byte) (common.Hash, error) {
-	return c.SendTransaction(PLTAddress, payload)
+	hash, err := c.SendTransaction(PLTAddress, payload)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	c.WaitTransaction(hash)
+	return hash, nil
 }
 func (c *Client) callPLT(payload []byte, blockNum string) ([]byte, error) {
 	return c.CallContract(c.Address(), PLTAddress, payload, blockNum)

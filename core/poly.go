@@ -26,6 +26,7 @@ func PolyHeight() (succeed bool) {
 	log.Infof("%s current height %d", rpc, height)
 	return true
 }
+
 //
 //func PolyTx() (succeed bool) {
 //	var params struct {

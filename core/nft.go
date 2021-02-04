@@ -51,18 +51,10 @@ func NFTMint() (succeed bool) {
 		return
 	}
 
-	{
-		hash, err := valcli.NFTMint(params.Asset, owner, token, params.Uri)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		wait(2)
-		if err := valcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
+	// mint
+	if _, err := valcli.NFTMint(params.Asset, owner, token, params.Uri); err != nil {
+		log.Error(err)
+		return
 	}
 
 	balanceAfterMint, err := nftBalance(params.Asset, owner)
@@ -92,14 +84,7 @@ func NFTBurn() (succeed bool) {
 	}
 
 	token := new(big.Int).SetUint64(params.TokenID)
-	hash, err := valcli.NFTBurn(params.Asset, token)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	wait(2)
-	if err := valcli.DumpEventLog(hash); err != nil {
+	if _, err := valcli.NFTBurn(params.Asset, token); err != nil {
 		log.Error(err)
 		return
 	}
@@ -123,19 +108,10 @@ func NFTTransfer() (succeed bool) {
 	asset := params.Asset
 	token := new(big.Int).SetUint64(params.TokenID)
 	to := common.HexToAddress(config.Conf.Accounts[params.ToAccountIndex])
-	{
-		owner := valcli.Address()
-		hash, err := valcli.NFTTransferFrom(asset, owner, to, token)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		wait(2)
-		if err := valcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
+	owner := valcli.Address()
+	if _, err := valcli.NFTTransferFrom(asset, owner, to, token); err != nil {
+		log.Error(err)
+		return
 	}
 
 	// transfer back to validator
@@ -191,15 +167,7 @@ func nftTransferBack(asset common.Address, tokenID *big.Int, from common.Address
 	cli := sdk.NewSender(url, acc)
 	to := valcli.Address()
 
-	hash, err := cli.NFTTransferFrom(asset, from, to, tokenID)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	wait(2)
-
-	if err := cli.DumpEventLog(hash); err != nil {
+	if _, err := cli.NFTTransferFrom(asset, from, to, tokenID); err != nil {
 		log.Error(err)
 		return
 	}

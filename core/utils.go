@@ -74,18 +74,6 @@ func PrivKey2Addr(pk *ecdsa.PrivateKey) common.Address {
 	return crypto.PubkeyToAddress(pk.PublicKey)
 }
 
-func DumpHashList(hashlist []common.Hash, mark string) error {
-	for _, hash := range hashlist {
-		if err := admcli.DumpEventLog(hash); err != nil {
-			log.Errorf("failed to dump receipt, hash %s, [%v]", hash.Hex(), err)
-			return err
-		}
-	}
-	log.Infof("dump %s event log success", mark)
-	logsplit()
-	return nil
-}
-
 func deployContract(abiJson, objectCode string, params ...interface{}) (common.Address, *bind.BoundContract, error) {
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())

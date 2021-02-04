@@ -492,7 +492,6 @@ func PLTUpgradeECCM() (succeed bool) {
 			return
 		}
 		log.Infof("pause tx %s", hash)
-		cli.WaitTransaction(hash)
 	}
 
 	// upgrade eccm
@@ -504,8 +503,6 @@ func PLTUpgradeECCM() (succeed bool) {
 			return
 		}
 		log.Infof("upgrade tx %s", hash.Hex())
-		cli.WaitTransaction(hash)
-		log.Infof("upgrade success!")
 	}
 
 	// unpause eccmp
@@ -517,8 +514,6 @@ func PLTUpgradeECCM() (succeed bool) {
 			return
 		}
 		log.Infof("unpause tx %s", hash.Hex())
-		cli.WaitTransaction(hash)
-		log.Infof("unpause success!")
 	}
 
 	// record contracts address
@@ -664,7 +659,6 @@ func PLTChangeBookKeepers() (succeed bool) {
 	}
 
 	stakeAndDumpEvent := func(revoke bool) {
-		stakeHashList := make([]common.Hash, 0)
 		for _, node := range nodes {
 			cli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
 			stkAmt := plt.MultiPLT(params.InitAmount)
@@ -678,11 +672,6 @@ func PLTChangeBookKeepers() (succeed bool) {
 				return
 			}
 			log.Infof("stake for validator, hash %s", hash.Hex())
-			stakeHashList = append(stakeHashList, hash)
-		}
-		wait(2)
-		if err := DumpHashList(stakeHashList, "stake"); err != nil {
-			return
 		}
 	}
 
@@ -695,7 +684,6 @@ func PLTChangeBookKeepers() (succeed bool) {
 	}
 
 	adminAddValidator := func(revoke bool) {
-		hs := make([]common.Hash, 0)
 		for _, node := range nodes {
 			hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), revoke)
 			if err != nil {
@@ -703,18 +691,12 @@ func PLTChangeBookKeepers() (succeed bool) {
 				return
 			}
 			log.Infof("admin add validator %s success, tx hash %s", node.NodeAddr().Hex(), hash.Hex())
-			hs = append(hs, hash)
-		}
-		wait(2)
-		if err := DumpHashList(hs, "admin add validators"); err != nil {
-			return
 		}
 	}
 
 	// 1.deposit and dump event log
 	{
 		log.Infof("admin deposit to validator")
-		hs := make([]common.Hash, 0)
 		for _, node := range nodes {
 			balance := checkBalance(node, "before deposit")
 			if balance >= params.InitAmount {
@@ -728,12 +710,6 @@ func PLTChangeBookKeepers() (succeed bool) {
 			} else {
 				log.Infof("admin deposit to %s %d PLT, hash %s", node.NodeAddr().Hex(), addAmount, hash.Hex())
 			}
-			hs = append(hs, hash)
-		}
-		wait(2)
-		if err := DumpHashList(hs, "deposit for validator"); err != nil {
-			log.Error(err)
-			return
 		}
 	}
 

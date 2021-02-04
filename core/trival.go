@@ -113,23 +113,13 @@ func Deposit() (succeed bool) {
 
 	amount := plt.MultiFloatPLT(params.Amount)
 	accounts := config.Conf.Accounts
-	hashList := make([]common.Hash, len(accounts))
-	for i, acc := range accounts {
+	for _, acc := range accounts {
 		to := common.HexToAddress(acc)
-		hash, err := admcli.PLTTransfer(to, amount.BigInt())
-		if err != nil {
+		if _, err := admcli.PLTTransfer(to, amount.BigInt()); err != nil {
 			log.Errorf("failed to deposit to %s, amount %f, err: %v", to.Hex(), plt.PrintFPLT(amount), err)
 			return
 		}
-		hashList[i] = hash
 	}
-
-	wait(2)
-
-	if err := DumpHashList(hashList, "deposit"); err != nil {
-		return
-	}
-
 	return true
 }
 
@@ -185,7 +175,6 @@ func TestEVM1() (succeed bool) {
 			log.Errorf("failed to transfer PLT to contract, err: %v", err)
 			return
 		}
-		wait(1)
 		balance, err := admcli.BalanceOf(contract, "latest")
 		if err != nil {
 			log.Errorf("failed to get balance of contract, err: %v", err)
@@ -213,13 +202,7 @@ func TestEVM1() (succeed bool) {
 	} else {
 		log.Infof("send tx %s success", hash.Hex())
 	}
-
-	wait(2)
-
-	if err := admcli.DumpEventLog(hash); err != nil {
-		log.Errorf("failed to dump tx %s, err: %v", hash.Hex(), err)
-		return
-	}
+	admcli.WaitTransaction(hash)
 
 	b2, err := admcli.BalanceOf(to, "latest")
 	if err != nil {
@@ -293,7 +276,7 @@ func DumpBlock() (succeed bool) {
 	}
 
 	for _, block := range params.Blocks {
-		admcli.DumpBlock(block)
+		_ = admcli.DumpBlock(block)
 	}
 	return true
 }

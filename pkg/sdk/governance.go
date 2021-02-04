@@ -276,7 +276,12 @@ func (c *Client) packGovernance(method string, args ...interface{}) ([]byte, err
 	return utils.PackMethod(GovernanceABI, method, args...)
 }
 func (c *Client) SendGovernanceTx(payload []byte) (common.Hash, error) {
-	return c.SendTransaction(GovernanceAddress, payload)
+	hash, err := c.SendTransaction(GovernanceAddress, payload)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	c.WaitTransaction(hash)
+	return hash, nil
 }
 func (c *Client) CallGovernance(payload []byte, blockNum string) ([]byte, error) {
 	return c.CallContract(c.Address(), GovernanceAddress, payload, blockNum)

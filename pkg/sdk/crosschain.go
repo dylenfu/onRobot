@@ -126,12 +126,7 @@ func (c *Client) SetPLTCCMP(ccmp common.Address) (common.Hash, error) {
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	hash, err := c.sendPLTTx(payload)
-	if err != nil {
-		return utils.EmptyHash, err
-	}
-	c.WaitTransaction(hash)
-	return hash, nil
+	return c.sendPLTTx(payload)
 }
 
 func (c *Client) GetPLTCCMP(blockNum string) (common.Address, error) {
@@ -158,14 +153,7 @@ func (c *Client) BindPLTProxy(targetChainID uint64, targetProxy common.Address) 
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-
-	hash, err := c.sendPLTTx(payload)
-	if err != nil {
-		return utils.EmptyHash, err
-	}
-
-	c.WaitTransaction(hash)
-	return hash, nil
+	return c.sendPLTTx(payload)
 }
 
 func (c *Client) GetBindPLTProxy(targetChainID uint64, blockNum string) (common.Address, error) {
@@ -192,14 +180,7 @@ func (c *Client) BindPLTAsset(targetChainID uint64, targetAsset common.Address) 
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-
-	hash, err := c.sendPLTTx(payload)
-	if err != nil {
-		return utils.EmptyHash, err
-	}
-
-	c.WaitTransaction(hash)
-	return hash, err
+	return c.sendPLTTx(payload)
 }
 
 func (c *Client) GetBindPLTAsset(targetChainID uint64, blockNum string) (common.Address, error) {
@@ -242,13 +223,7 @@ func (c *Client) LockPLT(targetChainID uint64, dstAddr common.Address, amount *b
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	hash, err := c.sendPLTTx(payload)
-	if err != nil {
-		return utils.EmptyHash, err
-	}
-
-	c.WaitTransaction(hash)
-	return hash, nil
+	return c.sendPLTTx(payload)
 }
 
 func (c *Client) SetNFTCCMP(proxyAddr, ccmp common.Address) (common.Hash, error) {

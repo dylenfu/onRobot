@@ -34,14 +34,7 @@ func NFTLock() (succeed bool) {
 	if params.NeedMint {
 		log.Info("mint token")
 		owner := valcli.Address()
-		hash, err := valcli.NFTMint(params.Asset, owner, token, params.Uri)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		wait(3)
-		if err := valcli.DumpEventLog(hash); err != nil {
+		if _, err := valcli.NFTMint(params.Asset, owner, token, params.Uri); err != nil {
 			log.Error(err)
 			return
 		}
@@ -88,14 +81,7 @@ func NFTLock() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		hash, err := valcli.NFTSafeTransferFrom(asset, from, proxy, token, to, sideChainID)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		wait(2)
-		if err := valcli.DumpEventLog(hash); err != nil {
+		if _, err := valcli.NFTSafeTransferFrom(asset, from, proxy, token, to, sideChainID); err != nil {
 			log.Error(err)
 			return
 		}
@@ -138,18 +124,10 @@ func NFTUnLock() (succeed bool) {
 	if params.NeedMint {
 		log.Info("mint token")
 		owner := valcli.Address()
-		hash, err := valcli.NFTMint(params.Asset, owner, token, params.Uri)
-		if err != nil {
+		if _, err := valcli.NFTMint(params.Asset, owner, token, params.Uri); err != nil {
 			log.Error(err)
 			return
 		}
-
-		wait(3)
-		if err := valcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
-
 		// check owner
 		actualOwner, err := valcli.NFTTokenOwner(asset, token, "latest")
 		if err != nil {
@@ -192,17 +170,11 @@ func NFTUnLock() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		hash, err := valcli.NFTSafeTransferFrom(asset, from, proxy, token, to, sideChainID)
-		if err != nil {
+		if _, err := valcli.NFTSafeTransferFrom(asset, from, proxy, token, to, sideChainID); err != nil {
 			log.Error(err)
 			return
 		}
 
-		wait(2)
-		if err := valcli.DumpEventLog(hash); err != nil {
-			log.Error(err)
-			return
-		}
 		balanceAfterLock, err := nftBalance(asset, from)
 		if err != nil {
 			log.Error(err)

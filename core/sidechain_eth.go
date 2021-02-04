@@ -322,10 +322,6 @@ func ETHBindNFTAsset() (succeed bool) {
 		return
 	}
 
-	if err := ethOwner.DumpTx(hash); err != nil {
-		log.Error(err)
-		return
-	}
 	log.Infof("bind NFT proxy on ethereum success, hash %s", hash.Hex())
 
 	return true

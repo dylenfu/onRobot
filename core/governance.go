@@ -39,6 +39,8 @@ func AddValidators() (succeed bool) {
 
 	// check balance before stake
 	{
+		logsplit()
+		log.Infof("check stake account balance before stake......")
 		for i, node := range nodes {
 			data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
 			if err != nil {
@@ -52,45 +54,31 @@ func AddValidators() (succeed bool) {
 
 	// deposit and dump event log
 	{
-		depositHashList := make([]common.Hash, 0)
+		logsplit()
+		log.Infof("prepare stake account balance......")
 		for i, balance := range balances {
 			if balance < params.InitAmount {
 				addAmount := params.InitAmount - balance
 				node := nodes[i]
-				hash, err := admcli.PLTTransfer(node.StakeAddr(), plt.MultiPLT(addAmount))
-				if err != nil {
+				if _, err := admcli.PLTTransfer(node.StakeAddr(), plt.MultiPLT(addAmount)); err != nil {
 					log.Errorf("failed to deposit to node %s, amount %d", node.NodeAddr().Hex(), addAmount)
 					return
-				} else {
-					depositHashList = append(depositHashList, hash)
-					balances[i] += addAmount
 				}
 			}
-		}
-		wait(3)
-		if err := DumpHashList(depositHashList, "deposit for validator"); err != nil {
-			log.Error(err)
-			return
 		}
 	}
 
 	// stake and dump event log
 	{
-		stakeHashList := make([]common.Hash, 0)
+		logsplit()
 		log.Infof("validators stake at block %d", admcli.GetBlockNumber())
 		for i, node := range nodes {
 			nodecli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
 			stkAmt := balances[i]
-			hash, err := nodecli.Stake(node.NodeAddr(), node.StakeAddr(), plt.MultiPLT(stkAmt), false)
-			if err != nil {
+			if _, err := nodecli.Stake(node.NodeAddr(), node.StakeAddr(), plt.MultiPLT(stkAmt), false); err != nil {
 				log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), stkAmt)
 				return
 			}
-			stakeHashList = append(stakeHashList, hash)
-		}
-		wait(3)
-		if err := DumpHashList(stakeHashList, "stake"); err != nil {
-			return
 		}
 	}
 
@@ -98,6 +86,8 @@ func AddValidators() (succeed bool) {
 
 	// check balance after stake
 	{
+		logsplit()
+		log.Infof("check stake account balance after stake......")
 		for _, node := range nodes {
 			data, err := admcli.BalanceOf(node.StakeAddr(), "latest")
 			if err != nil {
@@ -110,24 +100,19 @@ func AddValidators() (succeed bool) {
 
 	// admin add validators and dump event logs
 	{
-		adminAddValidatorHashList := make([]common.Hash, 0)
+		logsplit()
+		log.Infof("admin add validators......")
 		for _, node := range nodes {
-			hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), false)
-			if err != nil {
-				log.Errorf("failed to add validator %s, hash %s, [%v]", node.NodeAddr().Hex(), hash.Hex(), err)
+			if _, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), false); err != nil {
+				log.Errorf("failed to add validator %s, err: %v", node.NodeAddr().Hex(), err)
 				return
 			}
-			adminAddValidatorHashList = append(adminAddValidatorHashList, hash)
-		}
-		log.Infof("add validator at block %d", admcli.GetBlockNumber())
-		wait(3)
-		if err := DumpHashList(adminAddValidatorHashList, "admin add validators"); err != nil {
-			return
 		}
 	}
 
 	// check pending validators
 	{
+		logsplit()
 		log.Infof("check pending validators at block %d", admcli.GetBlockNumber())
 		for i, node := range nodes {
 			expectNodeAddrList[i] = node.NodeAddr()
@@ -144,6 +129,7 @@ func AddValidators() (succeed bool) {
 
 	// check effective validators
 	{
+		logsplit()
 		log.Infof("check effective validators at block %d", admcli.GetBlockNumber())
 		effectiveValidators := admcli.GetEffectiveValidators("latest")
 		if !HasAddrs(effectiveValidators, expectNodeAddrList) {
@@ -334,7 +320,6 @@ func Delegate() (succeed bool) {
 	{
 		balanceBeforeDeposit := checkBalance("before deposit")
 		log.Infof("admin deposit to fans")
-		hs := make([]common.Hash, 0)
 		for _, fan := range params.Fans {
 			to := common.HexToAddress(fan.Address)
 			curAmt := balanceBeforeDeposit[to]
@@ -342,48 +327,32 @@ func Delegate() (succeed bool) {
 				continue
 			}
 			amt := plt.MultiPLT(fan.Amount - int(curAmt))
-			if hash, err := admcli.PLTTransfer(to, amt); err != nil {
+			if _, err := admcli.PLTTransfer(to, amt); err != nil {
 				log.Errorf("admin transfer to %s failed, err: %v", to.Hex(), err)
 				return
-			} else {
-				hs = append(hs, hash)
 			}
-		}
-		wait(2)
-		if err := DumpHashList(hs, "admin deposit"); err != nil {
-			log.Errorf("dump hash list for delegate admin transfer err, %v", err)
-			return
 		}
 		checkBalance("after deposit")
 	}
 
 	// fans delegate
 	{
-		hs := make([]common.Hash, 0)
+		logsplit()
+		log.Infof("fans delegate......")
 		for _, fan := range params.Fans {
 			cli := clients[fan.Address]
 			node := config.Conf.Nodes[fan.NodeIndex]
 			amt := plt.MultiPLT(fan.Amount)
-			hash, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), amt, false)
-			if err != nil {
-				log.Errorf("%s stake to node%d failed, hash %s, err: %v", fan.Address, node.Index, hash.Hex(), err)
+			if _, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), amt, false); err != nil {
+				log.Errorf("%s stake to node%d failed, err: %v", fan.Address, node.Index, err)
 				return
-			} else {
-				log.Infof("%s stake to node%d, hash %s", fan.Address, node.Index, hash.Hex())
 			}
-			hs = append(hs, hash)
-		}
-
-		wait(2)
-
-		if err := DumpHashList(hs, "delegate"); err != nil {
-			log.Error(err)
-			return
 		}
 	}
 
 	// waiting for reward
 	{
+		logsplit()
 		log.Infof("waiting for delegate taking effective......")
 		wait(config.Conf.RewardEffectivePeriod*2 + 2)
 
@@ -400,25 +369,14 @@ func Delegate() (succeed bool) {
 	{
 		logsplit()
 		log.Infof("revoke delegate")
-		hs := make([]common.Hash, 0)
 		for _, fan := range params.Fans {
 			cli := clients[fan.Address]
 			node := config.Conf.Nodes[fan.NodeIndex]
 			amt := plt.MultiPLT(fan.Amount)
-			hash, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), amt, true)
-			if err != nil {
-				log.Errorf("%s revoke stake failed, hash %s, err: %v", fan.Address, hash.Hex(), err)
+			if _, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), amt, true); err != nil {
+				log.Errorf("%s revoke stake failed, err: %v", fan.Address, err)
 				return
-			} else {
-				log.Infof("%s revoke stake, hash %s", fan.Address, hash.Hex())
 			}
-			hs = append(hs, hash)
-		}
-
-		wait(2)
-		if err := DumpHashList(hs, "revoke delegate"); err != nil {
-			log.Error(err)
-			return
 		}
 	}
 
@@ -444,24 +402,15 @@ func Delegate() (succeed bool) {
 	{
 		logsplit()
 		log.Infof("transfer back PLT to admin account")
-		hs := make([]common.Hash, 0)
 		to := config.AdminAddr
 		for _, fan := range params.Fans {
 			cli := clients[fan.Address]
 			amt := plt.MultiPLT(fan.Amount)
-			if hash, err := cli.PLTTransfer(to, amt); err != nil {
+			if _, err := cli.PLTTransfer(to, amt); err != nil {
 				log.Errorf("admin transfer to %s failed, err: %v", to.Hex(), err)
 				return
-			} else {
-				hs = append(hs, hash)
 			}
 		}
-		wait(2)
-		if err := DumpHashList(hs, ""); err != nil {
-			log.Errorf("dump hash list for delegate admin transfer err, %v", err)
-			return
-		}
-
 		checkBalance("after testing")
 	}
 
@@ -555,7 +504,6 @@ func DelValidators() (succeed bool) {
 	}
 
 	stakeAndDumpEvent := func(revoke bool) {
-		stakeHashList := make([]common.Hash, 0)
 		for _, node := range nodes {
 			cli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
 			stkAmt := plt.MultiPLT(params.InitAmount)
@@ -569,11 +517,6 @@ func DelValidators() (succeed bool) {
 				return
 			}
 			log.Infof("stake for validator, hash %s", hash.Hex())
-			stakeHashList = append(stakeHashList, hash)
-		}
-		wait(2)
-		if err := DumpHashList(stakeHashList, "stake"); err != nil {
-			return
 		}
 	}
 
@@ -586,7 +529,6 @@ func DelValidators() (succeed bool) {
 	}
 
 	adminAddValidator := func(revoke bool) {
-		hs := make([]common.Hash, 0)
 		for _, node := range nodes {
 			hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), revoke)
 			if err != nil {
@@ -594,18 +536,12 @@ func DelValidators() (succeed bool) {
 				return
 			}
 			log.Infof("admin add validator %s success, tx hash %s", node.NodeAddr().Hex(), hash.Hex())
-			hs = append(hs, hash)
-		}
-		wait(2)
-		if err := DumpHashList(hs, "admin add validators"); err != nil {
-			return
 		}
 	}
 
 	// 1.deposit and dump event log
 	{
 		log.Infof("admin deposit to validator")
-		hs := make([]common.Hash, 0)
 		for _, node := range nodes {
 			balance := checkBalance(node, "before deposit")
 			if balance >= params.InitAmount {
@@ -619,12 +555,6 @@ func DelValidators() (succeed bool) {
 			} else {
 				log.Infof("admin deposit to %s %d PLT, hash %s", node.NodeAddr().Hex(), addAmount, hash.Hex())
 			}
-			hs = append(hs, hash)
-		}
-		wait(2)
-		if err := DumpHashList(hs, "deposit for validator"); err != nil {
-			log.Error(err)
-			return
 		}
 	}
 
@@ -778,21 +708,13 @@ func Proposal() (succeed bool) {
 	// vote and dump hash list
 	{
 		log.Infof("voting......")
-		voteHashList := make([]common.Hash, 0)
-		var hash common.Hash
 		for _, voteNode := range voteNodes {
 			voteNodeCli := sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), voteNode.PrivateKey())
-			if hash, err = voteNodeCli.Vote(proposalID); err != nil {
+			if _, err = voteNodeCli.Vote(proposalID); err != nil {
 				log.Error(err)
 				return
 			}
-			voteHashList = append(voteHashList, hash)
-			log.Infof("%s vote to proposalID %s, hash %s", voteNode.NodeAddr().Hex(), proposalID.Hex(), hash.Hex())
-		}
-		wait(2)
-		if err := DumpHashList(voteHashList, "vote"); err != nil {
-			log.Error(err)
-			return
+			log.Infof("%s vote to proposalID %s", voteNode.NodeAddr().Hex(), proposalID.Hex())
 		}
 	}
 
@@ -874,21 +796,14 @@ func RewardPeriod() (succeed bool) {
 	{
 		logsplit()
 		log.Infof("voting......")
-		voteHashList := make([]common.Hash, 0)
 		for _, voteNode := range voteNodes {
 			voteNodeCli := sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), voteNode.PrivateKey())
 			if hash, err := voteNodeCli.Vote(proposalID); err != nil {
 				log.Error(err)
 				return
 			} else {
-				voteHashList = append(voteHashList, hash)
 				log.Infof("%s vote to proposalID %s, hash %s", voteNode.NodeAddr().Hex(), proposalID.Hex(), hash.Hex())
 			}
-		}
-		wait(2)
-		if err := DumpHashList(voteHashList, "vote"); err != nil {
-			log.Error(err)
-			return
 		}
 		wait(config.Conf.RewardEffectivePeriod + 2)
 	}
@@ -974,7 +889,7 @@ func GlobalParams() (succeed bool) {
 
 func StakeAmount() (succeed bool) {
 	nodes := config.Conf.ValidatorNodes()
-	for i:=0;i<100000;i++ {
+	for i := 0; i < 100000; i++ {
 		for _, node := range nodes {
 			validator := node.NodeAddr()
 			stakeAddr := node.StakeAddr()

@@ -24,7 +24,6 @@ func (c *Client) NFTDeploy(name string, symbol string) (common.Hash, common.Addr
 		return utils.EmptyHash, utils.EmptyAddress, err
 	}
 
-	c.WaitTransaction(hash)
 	receipts, err := c.GetReceipt(hash)
 	if err != nil {
 		return utils.EmptyHash, utils.EmptyAddress, fmt.Errorf("nft depoly - get receipt %s err: %s", hash.Hex(), err)
@@ -156,11 +155,7 @@ func (c *Client) NFTMint(asset common.Address, owner common.Address, tokenID *bi
 		return utils.EmptyHash, err
 	}
 
-	hash, err := c.sendNFT(asset, payload)
-	if err != nil {
-		return utils.EmptyHash, err
-	}
-	return hash, nil
+	return c.sendNFT(asset, payload)
 }
 
 func (c *Client) NFTBurn(asset common.Address, tokenID *big.Int) (common.Hash, error) {
@@ -169,11 +164,7 @@ func (c *Client) NFTBurn(asset common.Address, tokenID *big.Int) (common.Hash, e
 		return common.BytesToHash([]byte{}), err
 	}
 
-	hash, err := c.sendNFT(asset, payload)
-	if err != nil {
-		return utils.EmptyHash, err
-	}
-	return hash, nil
+	return c.sendNFT(asset, payload)
 }
 
 func (c *Client) NFTBalance(asset, user common.Address, blockNum string) (*big.Int, error) {
@@ -206,7 +197,6 @@ func (c *Client) NFTTransferFrom(
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-
 	return c.sendNFT(asset, payload)
 }
 
@@ -241,7 +231,6 @@ func (c *Client) NFTApprove(
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-
 	return c.sendNFT(asset, payload)
 }
 
@@ -280,7 +269,12 @@ func (c *Client) unpackNFT(method string, output interface{}, enc []byte) error 
 	return utils.UnpackOutputs(NFTABI, method, output, enc)
 }
 func (c *Client) sendNFT(nftAddr common.Address, payload []byte) (common.Hash, error) {
-	return c.SendTransaction(nftAddr, payload)
+	hash, err := c.SendTransaction(nftAddr, payload)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	c.WaitTransaction(hash)
+	return hash, nil
 }
 func (c *Client) callNFT(nftAddr common.Address, payload []byte, blockNum string) ([]byte, error) {
 	return c.CallContract(c.Address(), nftAddr, payload, blockNum)
@@ -294,7 +288,12 @@ func (c *Client) unpackNFTManager(method string, output interface{}, enc []byte)
 	return utils.UnpackOutputs(NFTManagerABI, method, output, enc)
 }
 func (c *Client) sendNFTManager(payload []byte) (common.Hash, error) {
-	return c.SendTransaction(NFTMangerAddress, payload)
+	hash, err := c.SendTransaction(NFTMangerAddress, payload)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	c.WaitTransaction(hash)
+	return hash, nil
 }
 func (c *Client) callNFTManager(payload []byte, blockNum string) ([]byte, error) {
 	return c.CallContract(c.Address(), NFTMangerAddress, payload, blockNum)

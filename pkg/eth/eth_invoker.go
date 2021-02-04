@@ -592,7 +592,9 @@ func (i *EthInvoker) makeAuth() (*bind.TransactOpts, error) {
 
 func (i *EthInvoker) waitTxConfirm(hash common.Hash) {
 	i.Tools.WaitTransactionConfirm(hash)
-	_ = i.DumpTx(hash)
+	if err := i.DumpTx(hash); err != nil {
+		log.Error(err)
+	}
 }
 
 func (i *EthInvoker) backend() bind.ContractBackend {

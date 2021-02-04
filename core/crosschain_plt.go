@@ -29,13 +29,7 @@ func PLTMint() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	tx, err := admcli.PLTMint(params.To, amount)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	wait(2)
-	if err := admcli.DumpEventLog(tx); err != nil {
+	if _, err := admcli.PLTMint(params.To, amount); err != nil {
 		log.Error(err)
 		return
 	}
@@ -74,13 +68,7 @@ func PLTBurn() (succeed bool) {
 		return
 	}
 
-	tx, err := admcli.PLTBurn(amount)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	wait(2)
-	if err := admcli.DumpEventLog(tx); err != nil {
+	if _, err := admcli.PLTBurn(amount); err != nil {
 		log.Error(err)
 		return
 	}
