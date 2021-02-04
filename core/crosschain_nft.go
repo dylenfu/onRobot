@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
-	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
 // 在palette上lock，ethereum上unlock
@@ -42,9 +41,9 @@ func NFTLock() (succeed bool) {
 	amount := big.NewInt(1)
 
 	// generate new sender
-	baseUrl := config.Conf.Nodes[0].RPCAddr()
-	privKey := config.LoadAccount(from.Hex())
-	cli := sdk.NewSender(baseUrl, privKey)
+	//baseUrl := config.Conf.Nodes[0].RPCAddr()
+	//privKey := config.LoadAccount(from.Hex())
+	//cli := sdk.NewSender(baseUrl, privKey)
 
 	// mint or transfer ownership
 	{
@@ -60,7 +59,7 @@ func NFTLock() (succeed bool) {
 			}
 		}
 		if err != nil && err.Error() == nft.NOT_VALID_NFT {
-			if _, err := valcli.NFTMint(asset, from, token, params.Uri); err != nil {
+			if _, err := valcli.NFTMint(asset, owner, token, params.Uri); err != nil {
 				log.Errorf("mint token on palette err: %s", err.Error())
 				return
 			} else {
@@ -69,39 +68,41 @@ func NFTLock() (succeed bool) {
 		}
 	}
 
-	// approve to nft proxy on palette chain
-	{
-		logsplit()
-		log.Infof("approve token's ownership to NFT proxy......")
-		spender := config.Conf.CrossChain.PaletteNFTProxy
-		approved, _ := cli.NFTGetApproved(asset, token, "latest")
-		if approved != spender {
-			if _, err := cli.NFTApprove(asset, spender, token); err != nil {
-				log.Errorf("approve token to nft proxy err: %s", err.Error())
-				return
-			} else {
-				log.Infof("%s approve token%d to nft proxy success", from.Hex(), token.Uint64())
-			}
-		}
-	}
+	//// approve to nft proxy on palette chain
+	//{
+	//	logsplit()
+	//	log.Infof("approve token's ownership to NFT proxy......")
+	//	spender := config.Conf.CrossChain.PaletteNFTProxy
+	//	approved, _ := cli.NFTGetApproved(asset, token, "latest")
+	//	if approved != spender {
+	//		if _, err := cli.NFTApprove(asset, spender, token); err != nil {
+	//			log.Errorf("approve token to nft proxy err: %s", err.Error())
+	//			return
+	//		} else {
+	//			log.Infof("%s approve token%d to nft proxy success", from.Hex(), token.Uint64())
+	//		}
+	//	} else {
+	//		log.Info("spender is just user `from`")
+	//	}
+	//}
 
 	// lock
 	logsplit()
 	log.Info("lock token.....")
-	fromBalanceBeforeLockOnPalette, err := cli.NFTBalance(asset, from, "latest")
+	fromBalanceBeforeLockOnPalette, err := valcli.NFTBalance(asset, from, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	toBalanceBeforeLockOnEthereum, err := ethInvoker.NFTBalance(asset, to)
-	hash, err := cli.NFTSafeTransferFrom(asset, from, proxy, token, to, sideChainID)
+	hash, err := valcli.NFTSafeTransferFrom(asset, from, proxy, token, to, sideChainID)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	for i := 0; i < 100; i++ {
-		fromBalanceAfterLockOnPalette, err := cli.NFTBalance(asset, from, "latest")
+		fromBalanceAfterLockOnPalette, err := valcli.NFTBalance(asset, from, "latest")
 		if err != nil {
 			log.Error(err)
 			return

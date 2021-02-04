@@ -103,7 +103,9 @@ func (c *Client) NFTTokenOwner(asset common.Address, tokenID *big.Int, blockNum 
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
-
+	if data == nil || len(data) == 0 {
+		return utils.EmptyAddress, fmt.Errorf(nft.NOT_VALID_NFT)
+	}
 	result := new(nft.OwnerOfResult)
 	if err := c.unpackNFT(nft.MethodOwnerOf, result, data); err != nil {
 		return utils.EmptyAddress, err

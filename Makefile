@@ -8,7 +8,6 @@ prepare:
 	cp -r scripts/*.sh build/target/
 
 compile:
-	cp -r cases build/target
 	$(GOBUILD) -o build/target/robot cmd/main.go
 
 compile-local:
@@ -17,6 +16,7 @@ compile-local:
 	cp -r build/env/local/poly_keystore build/target
 	cp -r build/env/local/eth_keystore build/target
 	cp -r build/env/local/setup build/target
+	cp -r build/env/local/cases build/target
 	cp config/local.json build/target/config.json
 
 compile-dev:
@@ -25,6 +25,7 @@ compile-dev:
 	cp -r build/env/dev/poly_keystore build/target
 	cp -r build/env/dev/eth_keystore build/target
 	cp -r build/env/dev/setup build/target
+	cp -r build/env/dev/cases build/target
 	cp config/dev.json build/target/config.json
 
 compile-test:
@@ -33,6 +34,7 @@ compile-test:
 	cp -r build/env/test/poly_keystore build/target
 	cp -r build/env/test/eth_keystore build/target
 	cp -r build/env/test/setup build/target
+	cp -r build/env/test/cases build/target
 	cp config/test.json build/target/config.json
 
 compile-linux:
@@ -45,5 +47,6 @@ robot:
 clean:
 	rm -rf build/target/keystore
 	rm -rf build/target/poly_keystore
+	rm -rf build/target/eth_keystore
 	rm -rf build/target/setup
 	rm -rf build/target/case
