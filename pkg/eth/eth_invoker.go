@@ -166,17 +166,24 @@ func (i *EthInvoker) DeployPLTAsset() (common.Address, error) {
 	return contractAddr, nil
 }
 
-func (i *EthInvoker) DeployNewNFT() (common.Address, error) {
+func (i *EthInvoker) DeployNFT(lockProxy common.Address, name, symbol string) (common.Address, error) {
 	auth, err := i.makeAuth()
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
-	contractAddr, tx, _, err := nftmapping.DeployAddress(auth, i.backend())
+	address, tx, inst, err := nftmapping.DeployCrossChainNFTMapping(auth, i.backend(), lockProxy, name, symbol)
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
 	i.waitTxConfirm(tx.Hash())
-	return contractAddr, nil
+	nameAfterDeploy, err := inst.Name(nil)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	if nameAfterDeploy != name {
+		return utils.EmptyAddress, fmt.Errorf("mapping contract deployed name %s != %s", nameAfterDeploy, name)
+	}
+	return address, nil
 }
 
 func (i *EthInvoker) DeployECCDContract() (common.Address, error) {
@@ -501,6 +508,39 @@ func (i *EthInvoker) PLTUnlock(
 	i.waitTxConfirm(tx.Hash())
 
 	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) NFTApprove(asset, to common.Address, token *big.Int) (common.Hash, error) {
+	cm, err := nftmapping.NewCrossChainNFTMapping(asset, i.backend())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	tx, err := cm.Approve(auth, to, token)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	i.waitTxConfirm(tx.Hash())
+	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) NFTBalance(asset, owner common.Address) (*big.Int, error) {
+	cm, err := nftmapping.NewCrossChainNFTMapping(asset, i.backend())
+	if err != nil {
+		return nil, err
+	}
+	return cm.BalanceOf(nil, owner)
+}
+
+func (i *EthInvoker) NFTGetApproved(asset common.Address, tokenID *big.Int) (common.Address, error) {
+	cm, err := nftmapping.NewCrossChainNFTMapping(asset, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	return cm.GetApproved(nil, tokenID)
 }
 
 func (i *EthInvoker) DumpTx(hash common.Hash) error {

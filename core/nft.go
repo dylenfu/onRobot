@@ -45,7 +45,7 @@ func NFTMint() (succeed bool) {
 
 	owner := valcli.Address()
 	token := new(big.Int).SetUint64(params.TokenID)
-	balanceBeforeMint, err := nftBalance(params.Asset, owner)
+	balanceBeforeMint, err := valcli.NFTBalance(params.Asset, owner, "latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -57,7 +57,7 @@ func NFTMint() (succeed bool) {
 		return
 	}
 
-	balanceAfterMint, err := nftBalance(params.Asset, owner)
+	balanceAfterMint, err := valcli.NFTBalance(params.Asset, owner, "latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -94,9 +94,9 @@ func NFTBurn() (succeed bool) {
 
 func NFTTransfer() (succeed bool) {
 	var params struct {
-		Asset          common.Address
-		TokenID        uint64
-		ToAccountIndex int
+		Asset   common.Address
+		TokenID uint64
+		To      common.Address
 	}
 
 	if err := config.LoadParams("NFT-Transfer.json", &params); err != nil {
@@ -107,15 +107,15 @@ func NFTTransfer() (succeed bool) {
 	// validator transfer to someone
 	asset := params.Asset
 	token := new(big.Int).SetUint64(params.TokenID)
-	to := common.HexToAddress(config.Conf.Accounts[params.ToAccountIndex])
 	owner := valcli.Address()
-	if _, err := valcli.NFTTransferFrom(asset, owner, to, token); err != nil {
+	if _, err := valcli.NFTTransferFrom(asset, owner, params.To, token); err != nil {
 		log.Error(err)
 		return
 	}
 
+	//return true
 	// transfer back to validator
-	return nftTransferBack(asset, token, to)
+	return nftTransferBack(asset, token, params.To)
 }
 
 func NFTBalance() (succeed bool) {

@@ -1,5 +1,5 @@
 {
   "Asset": "0x0000000000000000000000000000000000001001",
-  "TokenID": 2,
-  "ToAccountIndex": 0
+  "TokenID": 3,
+  "To": "0x2cd9d589d46122e4eddc495b49feda0b526c1af7"
 }

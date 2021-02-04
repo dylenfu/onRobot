@@ -6,6 +6,7 @@ require (
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/ethereum/go-ethereum v1.9.15
+	github.com/go-delve/delve v1.6.0 // indirect
 	github.com/jinzhu/gorm v1.9.12
 	github.com/ontio/ontology-crypto v1.0.9
 	github.com/palettechain/palette_token v0.0.0-20210120103528-1db803afdd45

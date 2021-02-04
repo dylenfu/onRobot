@@ -240,7 +240,16 @@ func ETHSetPLTCCMP() (succeed bool) {
 ///////////////////////////////////////////////////////
 
 func ETHDeployNFTAsset() (succeed bool) {
-	contract, err := ethOwner.DeployNewNFT()
+	var params struct {
+		Name   string
+		Symbol string
+	}
+	if err := config.LoadParams("ETH-NFT-Deploy.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+	proxy := config.Conf.CrossChain.EthereumNFTProxy
+	contract, err := ethOwner.DeployNFT(proxy, params.Name, params.Symbol)
 	if err != nil {
 		log.Errorf("deploy new NFT contract on ethereum failed, err: %s", err.Error())
 		return

@@ -149,8 +149,8 @@ func (c *Client) NFTTotalSupply(asset common.Address, blockNum string) (*big.Int
 }
 
 // NFTMint validator mint asset to someone owner
-func (c *Client) NFTMint(asset common.Address, owner common.Address, tokenID *big.Int, uri string) (common.Hash, error) {
-	payload, err := c.packNFT(nft.MethodMint, owner, tokenID, uri)
+func (c *Client) NFTMint(asset common.Address, mintTo common.Address, tokenID *big.Int, uri string) (common.Hash, error) {
+	payload, err := c.packNFT(nft.MethodMint, mintTo, tokenID, uri)
 	if err != nil {
 		return utils.EmptyHash, err
 	}
@@ -234,8 +234,8 @@ func (c *Client) NFTApprove(
 	return c.sendNFT(asset, payload)
 }
 
-func (c *Client) NFTGetApproved(asset common.Address, amount *big.Int, blockNum string) (common.Address, error) {
-	payload, err := c.packNFT(nft.MethodGetApproved, amount)
+func (c *Client) NFTGetApproved(asset common.Address, tokenID *big.Int, blockNum string) (common.Address, error) {
+	payload, err := c.packNFT(nft.MethodGetApproved, tokenID)
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
