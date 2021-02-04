@@ -46,7 +46,7 @@ func initialize() {
 	}
 
 	if ethPrivateKey, err := config.Conf.CrossChain.LoadETHOwner(); err == nil {
-		ethInvoker = eth.NewEInvoker(
+		ethOwner = eth.NewEInvoker(
 			config.Conf.CrossChain.EthereumSideChainID,
 			config.Conf.CrossChain.EthereumRPCUrl,
 			ethPrivateKey,

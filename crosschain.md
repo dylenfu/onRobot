@@ -44,13 +44,6 @@ make robot t=eth-plt-transfer
 make robot t=eth-syncGenesis
 ```
 
-## bind proxies and PLT asset on ethereum chain
-```bash
-make robot t=eth-bind-plt-proxy
-make robot t=eth-bind-nft-proxy
-make robot t=eth-bind-plt-asset
-```
-
 ## prepare on palette chain
 1. deploy eccd, eccm, ccmp contracts and record in config.json
 ```bash
@@ -88,6 +81,13 @@ make robot t=plt-nft-ccmp
 7. sync palette header to palette chain and store poly book keepers in the palette chain
 ```bash
 make robot t=plt-syncGenesis
+```
+
+## bind proxies and PLT asset on ethereum chain
+```bash
+make robot t=eth-bind-plt-proxy
+make robot t=eth-bind-nft-proxy
+make robot t=eth-bind-plt-asset
 ```
 
 ## bind proxies and PLT asset on palette chain
