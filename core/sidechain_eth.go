@@ -16,7 +16,7 @@ import (
 //
 ///////////////////////////////////////////////////////
 func ETHDeployECCD() (succeed bool) {
-	eccd, err := ethInvoker.DeployECCDContract()
+	eccd, err := ethOwner.DeployECCDContract()
 	if err != nil {
 		log.Errorf("deploy eccd on ethereum failed, err: %s", err.Error())
 		return
@@ -34,7 +34,7 @@ func ETHDeployECCD() (succeed bool) {
 
 func ETHDeployECCM() (succeed bool) {
 	eccd := config.Conf.CrossChain.EthereumECCD
-	eccm, err := ethInvoker.DeployECCMContract(eccd)
+	eccm, err := ethOwner.DeployECCMContract(eccd)
 	if err != nil {
 		log.Errorf("deploy eccm on ethereum failed, err: %s", err.Error())
 		return
@@ -52,7 +52,7 @@ func ETHDeployECCM() (succeed bool) {
 
 func ETHDeployCCMP() (succeed bool) {
 	eccm := config.Conf.CrossChain.EthereumECCM
-	ccmp, err := ethInvoker.DeployCCMPContract(eccm)
+	ccmp, err := ethOwner.DeployCCMPContract(eccm)
 	if err != nil {
 		log.Errorf("deploy ccmp on ethereum failed, err: %s", err.Error())
 		return
@@ -73,7 +73,7 @@ func ETHTransferOwnership() (succeed bool) {
 	eccm := config.Conf.CrossChain.EthereumECCM
 	ccmp := config.Conf.CrossChain.EthereumCCMP
 
-	hash, err := ethInvoker.TransferECCDOwnership(eccd, eccm)
+	hash, err := ethOwner.TransferECCDOwnership(eccd, eccm)
 	if err != nil {
 		log.Errorf("transfer eccd ownership to eccm on ethereum failed, err: %s", err.Error())
 		return
@@ -152,7 +152,7 @@ func ETHApproveRegisterSideChain() (succeed bool) {
 ///////////////////////////////////////////////////////
 
 func ETHDeployPLTAsset() (succeed bool) {
-	pltAsset, err := ethInvoker.DeployPLTAsset()
+	pltAsset, err := ethOwner.DeployPLTAsset()
 	if err != nil {
 		log.Errorf("deploy PLT asset on ethereum failed, err: %s", err)
 		return
@@ -168,7 +168,7 @@ func ETHDeployPLTAsset() (succeed bool) {
 }
 
 func ETHDeployPLTProxy() (succeed bool) {
-	proxy, err := ethInvoker.DeployPLTLockProxy()
+	proxy, err := ethOwner.DeployPLTLockProxy()
 	if err != nil {
 		log.Errorf("deploy PLT proxy on ethereum failed, err: %s", err)
 		return
@@ -189,7 +189,7 @@ func ETHBindPLTProxy() (succeed bool) {
 	targetLockProxy := common.HexToAddress(native.PLTContractAddress)
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
 
-	hash, err := ethInvoker.BindPLTProxy(localLockProxy, targetLockProxy, targetSideChainID)
+	hash, err := ethOwner.BindPLTProxy(localLockProxy, targetLockProxy, targetSideChainID)
 	if err != nil {
 		log.Errorf("bind PLT proxy on ethereum failed, err: %s", err.Error())
 		return
@@ -206,7 +206,7 @@ func ETHBindPLTAsset() (succeed bool) {
 	toAsset := common.HexToAddress(native.PLTContractAddress)
 	toChainId := config.Conf.CrossChain.PaletteSideChainID
 
-	hash, err := ethInvoker.BindPLTAsset(localLockProxy, fromAsset, toAsset, toChainId)
+	hash, err := ethOwner.BindPLTAsset(localLockProxy, fromAsset, toAsset, toChainId)
 	if err != nil {
 		log.Errorf("bind PLT proxy on ethereum failed, err: %s", err.Error())
 		return
@@ -220,7 +220,7 @@ func ETHBindPLTAsset() (succeed bool) {
 func ETHSetPLTCCMP() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	ccmp := config.Conf.CrossChain.EthereumCCMP
-	hash, err := ethInvoker.SetPLTCCMP(proxy, ccmp)
+	hash, err := ethOwner.SetPLTCCMP(proxy, ccmp)
 	if err != nil {
 		log.Errorf("register PLT proxy to ccmp on ethereum failed, err: %s", err.Error())
 		return
@@ -240,7 +240,7 @@ func ETHSetPLTCCMP() (succeed bool) {
 ///////////////////////////////////////////////////////
 
 func ETHDeployNFTAsset() (succeed bool) {
-	contract, err := ethInvoker.DeployNewNFT()
+	contract, err := ethOwner.DeployNewNFT()
 	if err != nil {
 		log.Errorf("deploy new NFT contract on ethereum failed, err: %s", err.Error())
 		return
@@ -252,7 +252,7 @@ func ETHDeployNFTAsset() (succeed bool) {
 }
 
 func ETHDeployNFTProxy() (succeed bool) {
-	proxy, err := ethInvoker.DeployNFTLockProxy()
+	proxy, err := ethOwner.DeployNFTLockProxy()
 	if err != nil {
 		log.Errorf("deploy nft lock proxy on ethereum failed, err: %s", err.Error())
 		return
@@ -270,7 +270,7 @@ func ETHDeployNFTProxy() (succeed bool) {
 func ETHSetNFTCCMP() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumNFTProxy
 	ccmp := config.Conf.CrossChain.EthereumCCMP
-	hash, err := ethInvoker.SetNFTCCMP(proxy, ccmp)
+	hash, err := ethOwner.SetNFTCCMP(proxy, ccmp)
 	if err != nil {
 		log.Errorf("register NFT proxy to ccmp on ethereum failed, err: %s", err.Error())
 		return
@@ -286,7 +286,7 @@ func ETHBindNFTProxy() (succeed bool) {
 	targetLockProxy := config.Conf.CrossChain.PaletteNFTProxy
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
 
-	tx, err := ethInvoker.BindNFTProxy(localLockProxy, targetLockProxy, targetSideChainID)
+	tx, err := ethOwner.BindNFTProxy(localLockProxy, targetLockProxy, targetSideChainID)
 	if err != nil {
 		log.Errorf("bind NFT proxy on ethereum failed, err: %s", err.Error())
 		return
@@ -311,7 +311,7 @@ func ETHBindNFTAsset() (succeed bool) {
 	fromAsset := params.EthereumNFTAsset
 	toAsset := params.PaletteNFTAsset
 	chainID := config.Conf.CrossChain.PaletteSideChainID
-	hash, err := ethInvoker.BindNFTAsset(
+	hash, err := ethOwner.BindNFTAsset(
 		proxy,
 		fromAsset,
 		toAsset,
@@ -322,7 +322,7 @@ func ETHBindNFTAsset() (succeed bool) {
 		return
 	}
 
-	if err := ethInvoker.DumpTx(hash); err != nil {
+	if err := ethOwner.DumpTx(hash); err != nil {
 		log.Error(err)
 		return
 	}
@@ -349,12 +349,12 @@ func ETHSyncGenesis() (succeed bool) {
 		logsplit()
 		crossChainID := config.Conf.CrossChain.EthereumSideChainID
 
-		curr, err := ethInvoker.GetCurrentHeight()
+		curr, err := ethOwner.GetCurrentHeight()
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		hdr, err := ethInvoker.GetHeader(curr)
+		hdr, err := ethOwner.GetHeader(curr)
 		if err != nil {
 			log.Error(err)
 			return
@@ -394,7 +394,7 @@ func ETHSyncGenesis() (succeed bool) {
 		headerEnc := gB.Header.ToArray()
 
 		eccm := config.Conf.CrossChain.EthereumECCM
-		txhash, err := ethInvoker.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
+		txhash, err := ethOwner.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
 		if err != nil {
 			log.Errorf("failed to initGenesisBlock, err: %s", err)
 			return

@@ -23,6 +23,7 @@ var (
 	admcli     *sdk.Client
 	valcli     *sdk.Client
 	ethInvoker *eth.EthInvoker
+	ethOwner 	*eth.EthInvoker
 	OneETH     = utils.Pow10toBigInt(int32(18))
 )
 
@@ -34,8 +35,7 @@ func initialize() {
 	node := config.Conf.ValidatorNodes()[0]
 	valcli = sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 
-	ethPrivateKey, err := config.Conf.CrossChain.LoadETHAccount()
-	if err == nil {
+	if ethPrivateKey, err := config.Conf.CrossChain.LoadETHAccount(); err == nil {
 		ethInvoker = eth.NewEInvoker(
 			config.Conf.CrossChain.EthereumSideChainID,
 			config.Conf.CrossChain.EthereumRPCUrl,
@@ -43,6 +43,16 @@ func initialize() {
 		)
 	} else {
 		log.Infof("load eth account err: %s", err.Error())
+	}
+
+	if ethPrivateKey, err := config.Conf.CrossChain.LoadETHOwner(); err == nil {
+		ethInvoker = eth.NewEInvoker(
+			config.Conf.CrossChain.EthereumSideChainID,
+			config.Conf.CrossChain.EthereumRPCUrl,
+			ethPrivateKey,
+		)
+	} else {
+		log.Infof("load eth owner err: %s", err.Error())
 	}
 }
 

@@ -414,6 +414,7 @@ type CrossChainConfig struct {
 	EthereumRPCUrl          string
 	EthereumAccountFullPath string
 	EthereumAccountPassword string
+	EthereumOwnerFullPath   string
 }
 
 func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {
@@ -458,6 +459,28 @@ func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {
 	}
 
 	key, err := keystore.DecryptKey(keyJson, c.EthereumAccountPassword)
+	if err != nil {
+		return nil, err
+	}
+
+	return key.PrivateKey, nil
+}
+
+func (c *CrossChainConfig) LoadETHOwner() (*ecdsa.PrivateKey, error) {
+	enc, err := ioutil.ReadFile(c.EthereumOwnerFullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(enc) <= 64 {
+		bz, err := hex.DecodeString(string(enc))
+		if err != nil {
+			return nil, err
+		}
+		return crypto.ToECDSA(bz)
+	}
+
+	key, err := keystore.DecryptKey(enc, c.EthereumAccountPassword)
 	if err != nil {
 		return nil, err
 	}

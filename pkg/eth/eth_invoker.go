@@ -58,6 +58,9 @@ func NewEInvoker(chainID uint64, url string, privateKey *ecdsa.PrivateKey) *EthI
 	instance := &EthInvoker{}
 	instance.ChainID = chainID
 	instance.Tools = NewEthTools(url)
+	if instance.Tools == nil {
+		log.Errorf("dail eth failed")
+	}
 	instance.NM = NewNonceManager(instance.Tools.GetEthClient())
 	instance.PrivateKey = privateKey
 	address := crypto.PubkeyToAddress(privateKey.PublicKey)
@@ -69,11 +72,13 @@ func NewEInvoker(chainID uint64, url string, privateKey *ecdsa.PrivateKey) *EthI
 }
 
 func (i *EthInvoker) TransferETH(to common.Address, amount *big.Int) (common.Hash, error) {
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	auth.Value = amount
 	tx := types.NewTransaction(auth.Nonce.Uint64(), to, amount, auth.GasLimit, auth.GasPrice, []byte{})
-	tx, err := types.SignTx(tx, types.HomesteadSigner{}, i.PrivateKey)
-	if err != nil {
+	if tx, err = types.SignTx(tx, types.HomesteadSigner{}, i.PrivateKey); err != nil {
 		return utils.EmptyHash, err
 	}
 	if err := i.Tools.ethclient.SendTransaction(context.Background(), tx, bind.PrivateTxArgs{}); err != nil {
@@ -89,7 +94,10 @@ func (i *EthInvoker) ETHBalance(owner common.Address) (*big.Int, error) {
 }
 
 func (i *EthInvoker) DeployPLTLockProxy() (common.Address, error) {
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
 	contractAddr, tx, _, err := lock_proxy_abi.DeployLockProxy(auth, i.backend())
 	if err != nil {
 		return utils.EmptyAddress, err
@@ -99,7 +107,10 @@ func (i *EthInvoker) DeployPLTLockProxy() (common.Address, error) {
 }
 
 func (i *EthInvoker) DeployNFTLockProxy() (common.Address, error) {
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
 	contractAddr, tx, _, err := nftlp.DeployNFTLockProxy(auth, i.backend())
 	if err != nil {
 		return utils.EmptyAddress, err
@@ -113,7 +124,10 @@ func (i *EthInvoker) SetPLTCCMP(proxyAddr, ccmpAddr common.Address) (common.Hash
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := proxy.SetManagerProxy(auth, ccmpAddr)
 	if err != nil {
 		return utils.EmptyHash, err
@@ -127,7 +141,10 @@ func (i *EthInvoker) SetNFTCCMP(proxyAddr, ccmpAddr common.Address) (common.Hash
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := proxy.SetManagerProxy(auth, ccmpAddr)
 	if err != nil {
 		return utils.EmptyHash, err
@@ -137,7 +154,10 @@ func (i *EthInvoker) SetNFTCCMP(proxyAddr, ccmpAddr common.Address) (common.Hash
 }
 
 func (i *EthInvoker) DeployPLTAsset() (common.Address, error) {
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
 	contractAddr, tx, _, err := pltabi.DeployPaletteToken(auth, i.backend())
 	if err != nil {
 		return utils.EmptyAddress, err
@@ -147,7 +167,10 @@ func (i *EthInvoker) DeployPLTAsset() (common.Address, error) {
 }
 
 func (i *EthInvoker) DeployNewNFT() (common.Address, error) {
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
 	contractAddr, tx, _, err := nftmapping.DeployAddress(auth, i.backend())
 	if err != nil {
 		return utils.EmptyAddress, err
@@ -183,7 +206,10 @@ func (i *EthInvoker) DeployECCMContract(eccd common.Address) (common.Address, er
 }
 
 func (i *EthInvoker) DeployCCMPContract(eccmAddress common.Address) (common.Address, error) {
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
 	contractAddress, tx, _, err := eccmp_abi.DeployEthCrossChainManagerProxy(auth, i.backend(), eccmAddress)
 	if err != nil {
 		return utils.EmptyAddress, fmt.Errorf("DeployCCMPContract, err: %v", err)
@@ -204,7 +230,10 @@ func (i *EthInvoker) BindPLTAsset(
 		return utils.EmptyHash, err
 	}
 
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := proxy.BindAssetHash(auth, fromAssetHash, toChainId, toAssetHash[:])
 	if err != nil {
 		return utils.EmptyHash, err
@@ -224,7 +253,10 @@ func (i *EthInvoker) BindPLTProxy(
 		return utils.EmptyHash, err
 	}
 
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := proxy.BindProxyHash(auth, targetSideChainID, targetLockProxy.Bytes())
 	if err != nil {
 		return utils.EmptyHash, err
@@ -244,7 +276,10 @@ func (i *EthInvoker) BindNFTAsset(
 		return utils.EmptyHash, err
 	}
 
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := proxy.BindAssetHash(auth, fromAssetHash, targetSideChainId, toAssetHash[:])
 	if err != nil {
 		return utils.EmptyHash, err
@@ -264,7 +299,10 @@ func (i *EthInvoker) BindNFTProxy(
 		return utils.EmptyHash, err
 	}
 
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := proxy.BindProxyHash(auth, targetSideChainID, targetLockProxy.Bytes())
 	if err != nil {
 		return utils.EmptyHash, err
@@ -280,7 +318,10 @@ func (i *EthInvoker) TransferECCDOwnership(eccd, eccm common.Address) (common.Ha
 		return utils.EmptyHash, fmt.Errorf("TransferECCDOwnership, err: %v", err)
 	}
 
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := eccdContract.TransferOwnership(auth, eccm)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("TransferECCDOwnership, err: %v", err)
@@ -295,7 +336,10 @@ func (i *EthInvoker) TransferECCMOwnership(eccm, ccmp common.Address) (common.Ha
 		return utils.EmptyHash, fmt.Errorf("TransferECCMOwnership err: %v", err)
 	}
 
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := eccmContract.TransferOwnership(auth, ccmp)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("TransferECCMOwnership err: %v", err)
@@ -325,7 +369,10 @@ func (i *EthInvoker) PLTApprove(asset, spender common.Address, amount *big.Int) 
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := instance.Approve(auth, spender, amount)
 	if err != nil {
 		return utils.EmptyHash, err
@@ -347,7 +394,10 @@ func (i *EthInvoker) PLTTransfer(asset, from, to common.Address, amount *big.Int
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := instance.Transfer(auth, to, amount)
 	if err != nil {
 		return utils.EmptyHash, err
@@ -372,7 +422,10 @@ func (i *EthInvoker) VerifyAndExecuteTx(
 		return utils.EmptyHash, err
 	}
 
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := eccm.VerifyHeaderAndExecuteTx(
 		auth,
 		proof,
@@ -402,7 +455,10 @@ func (i *EthInvoker) PLTLock(
 		return utils.EmptyHash, err
 	}
 
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := proxy.Lock(auth, fromAsset, targetSideChainID, toAddr.Bytes(), amount)
 	if err != nil {
 		return utils.EmptyHash, err
@@ -426,7 +482,10 @@ func (i *EthInvoker) PLTUnlock(
 		return utils.EmptyHash, err
 	}
 
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	args := encode.TxArgs{
 		ToAssetHash: toAsset.Bytes(),
 		ToAddress:   toAddress.Bytes(),
@@ -487,7 +546,10 @@ func (i *EthInvoker) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickey
 		return utils.EmptyHash, fmt.Errorf("new EthCrossChainManager err: %s", err)
 	}
 
-	auth, _ := i.makeAuth()
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
 	tx, err := eccm.InitGenesisBlock(auth, rawHdr, publickeys)
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("call eccm InitGenesisBlock err: %s", err)
@@ -507,7 +569,7 @@ func (i *EthInvoker) makeAuth() (*bind.TransactOpts, error) {
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	nonce, err := i.backend().PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		return nil, fmt.Errorf("makeAuth, %v", err)
+		return nil, fmt.Errorf("makeAuth, addr %s, err %v", fromAddress.Hex(), err)
 	}
 
 	gasPrice, err := i.backend().SuggestGasPrice(context.Background())
