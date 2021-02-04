@@ -23,7 +23,7 @@ var (
 	admcli     *sdk.Client
 	valcli     *sdk.Client
 	ethInvoker *eth.EthInvoker
-	ethOwner 	*eth.EthInvoker
+	ethOwner   *eth.EthInvoker
 	OneETH     = utils.Pow10toBigInt(int32(18))
 )
 
@@ -157,6 +157,14 @@ func getAndCheckValidator(nodeIndexList []int) (config.Nodes, error) {
 	return nodes, nil
 }
 
+func calculateGasFee(invoker *eth.EthInvoker, gasLimit uint64) (*big.Int, error) {
+	gasPrice, err := invoker.SuggestGasPrice()
+	if err != nil {
+		return nil, err
+	}
+	return utils.SafeMul(gasPrice, new(big.Int).SetUint64(gasLimit)), nil
+}
+
 func prepareEth(to common.Address, amount *big.Int) error {
 	balanceBeforeTransfer, err := ethInvoker.ETHBalance(to)
 	if err != nil {
@@ -177,14 +185,14 @@ func prepareEth(to common.Address, amount *big.Int) error {
 	if utils.SafeSub(balanceAfterTransfer, balanceBeforeTransfer).Cmp(amount) == 0 {
 		log.Infof("prepare %s ETH %d success, tx hash %s", to.Hex(), amount, hash.Hex())
 		return nil
-	} else {
-		return fmt.Errorf("prepare %s balance incorrect, balance before transfer %s, balance after transfer %s, txhash %s",
-			to.Hex(),
-			balanceBeforeTransfer.String(),
-			balanceAfterTransfer.String(),
-			hash.Hex(),
-		)
 	}
+	log.Infof("prepare %s balance incorrect, balance before transfer %s, balance after transfer %s, txhash %s",
+		to.Hex(),
+		balanceBeforeTransfer.String(),
+		balanceAfterTransfer.String(),
+		hash.Hex(),
+	)
+	return nil
 }
 
 func prepareAllowance(invoker *eth.EthInvoker, owner, spender common.Address, amount *big.Int) error {

@@ -559,6 +559,10 @@ func (i *EthInvoker) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickey
 	return tx.Hash(), nil
 }
 
+func (i *EthInvoker) SuggestGasPrice() (*big.Int, error) {
+	return i.backend().SuggestGasPrice(context.Background())
+}
+
 func (i *EthInvoker) makeAuth() (*bind.TransactOpts, error) {
 	publicKey := i.PrivateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)

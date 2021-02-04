@@ -214,24 +214,39 @@ func PLTUnlock() (succeed bool) {
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	amount := plt.MultiPLT(params.Amount)
 
-	// prepare ETH for gas fee
-	if err := prepareEth(from, OneETH); err != nil {
-		log.Errorf("prepare eth as gas failed, err: %s", err.Error())
-		return
-	}
-
 	invoker := eth.NewEInvoker(
 		config.Conf.CrossChain.EthereumSideChainID,
 		config.Conf.CrossChain.EthereumRPCUrl,
 		config.LoadAccount(from.Hex()),
 	)
 
+	// prepare ETH for gas fee
+	{
+		logsplit()
+		log.Infof("prepare eth gas fee......")
+		gasLimit := 210000
+		gasFee, err := calculateGasFee(invoker, uint64(gasLimit))
+		if err != nil {
+			log.Errorf("calculate gas fee err %s", err.Error())
+		}
+		amount := utils.SafeMul(gasFee, big.NewInt(2))
+		if err := prepareEth(from, amount); err != nil {
+			log.Errorf("prepare eth as gas failed, err: %s", err.Error())
+			return
+		}
+	}
+
 	// prepare allowance
+	logsplit()
+	log.Infof("prepare from account allowance for proxy......")
 	if err := prepareAllowance(invoker, from, proxy, amount); err != nil {
 		log.Error(err)
 		return
 	}
 
+	// unlock
+	logsplit()
+	log.Infof("lock plt on ethereum......")
 	fromBalanceBeforeLockOnEthereum, err := invoker.PLTBalanceOf(asset, from)
 	if err != nil {
 		log.Error(err)
