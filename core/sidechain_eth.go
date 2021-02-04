@@ -244,7 +244,7 @@ func ETHDeployNFTAsset() (succeed bool) {
 		Name   string
 		Symbol string
 	}
-	if err := config.LoadParams("ETH-NFT-Deploy.json", &params); err != nil {
+	if err := config.LoadParams("NFT-Deploy.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
