@@ -11,7 +11,7 @@ compile:
 	$(GOBUILD) -o build/target/robot cmd/main.go
 
 compile-local:
-	make clean
+	make clean compile
 	cp -r build/env/local/keystore build/target
 	cp -r build/env/local/poly_keystore build/target
 	cp -r build/env/local/eth_keystore build/target
@@ -20,7 +20,7 @@ compile-local:
 	cp config/local.json build/target/config.json
 
 compile-dev:
-	make clean
+	make clean compile
 	cp -r build/env/dev/keystore build/target
 	cp -r build/env/dev/poly_keystore build/target
 	cp -r build/env/dev/eth_keystore build/target
@@ -29,7 +29,7 @@ compile-dev:
 	cp config/dev.json build/target/config.json
 
 compile-test:
-	make clean
+	make clean compile
 	cp -r build/env/test/keystore build/target
 	cp -r build/env/test/poly_keystore build/target
 	cp -r build/env/test/eth_keystore build/target

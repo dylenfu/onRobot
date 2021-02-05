@@ -5,10 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/nft"
-	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
+	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
 // 在palette上lock，ethereum上unlock
@@ -18,11 +18,12 @@ import (
 // 4. 在两条链上检查余额
 func NFTLock() (succeed bool) {
 	var params struct {
-		From    common.Address
-		To      common.Address
-		Asset   common.Address
-		TokenID uint64
-		Uri     string
+		From     common.Address
+		To       common.Address
+		Asset    common.Address
+		NFTAsset common.Address
+		TokenID  uint64
+		Uri      string
 	}
 
 	if err := config.LoadParams("NFT-Lock.json", &params); err != nil {
@@ -41,16 +42,16 @@ func NFTLock() (succeed bool) {
 	amount := big.NewInt(1)
 
 	// generate new sender
-	//baseUrl := config.Conf.Nodes[0].RPCAddr()
-	//privKey := config.LoadAccount(from.Hex())
-	//cli := sdk.NewSender(baseUrl, privKey)
+	baseUrl := config.Conf.Nodes[0].RPCAddr()
+	privKey := config.LoadAccount(from.Hex())
+	cli := sdk.NewSender(baseUrl, privKey)
 
 	// mint or transfer ownership
 	{
 		logsplit()
 		log.Infof("mint if token not exist or ownership is not user `from`......")
-		curOwner, err := valcli.NFTTokenOwner(asset, token, "latest")
-		if curOwner != utils.EmptyAddress && curOwner != from {
+		preOwner, err := valcli.NFTTokenOwner(asset, token, "latest")
+		if preOwner != utils.EmptyAddress && preOwner != from {
 			if _, err := valcli.NFTTransferFrom(asset, owner, from, token); err != nil {
 				log.Errorf("transfer nft ownership err: %s", err.Error())
 				return
@@ -59,55 +60,54 @@ func NFTLock() (succeed bool) {
 			}
 		}
 		if err != nil && err.Error() == nft.NOT_VALID_NFT {
-			if _, err := valcli.NFTMint(asset, owner, token, params.Uri); err != nil {
+			if _, err := valcli.NFTMint(asset, from, token, params.Uri); err != nil {
 				log.Errorf("mint token on palette err: %s", err.Error())
 				return
 			} else {
 				log.Infof("%s mint token%d to %s on asset %s, uri is %s", owner.Hex(), token.Uint64(), from.Hex(), asset.Hex(), params.Uri)
 			}
 		}
-	}
 
-	//// approve to nft proxy on palette chain
-	//{
-	//	logsplit()
-	//	log.Infof("approve token's ownership to NFT proxy......")
-	//	spender := config.Conf.CrossChain.PaletteNFTProxy
-	//	approved, _ := cli.NFTGetApproved(asset, token, "latest")
-	//	if approved != spender {
-	//		if _, err := cli.NFTApprove(asset, spender, token); err != nil {
-	//			log.Errorf("approve token to nft proxy err: %s", err.Error())
-	//			return
-	//		} else {
-	//			log.Infof("%s approve token%d to nft proxy success", from.Hex(), token.Uint64())
-	//		}
-	//	} else {
-	//		log.Info("spender is just user `from`")
-	//	}
-	//}
+		// check ownership
+		curOwner, err := cli.NFTTokenOwner(asset, token, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if curOwner != from {
+			log.Errorf("token%d current owner %s!=%s", token.Uint64(), curOwner.Hex(), from.Hex())
+		} else {
+			log.Infof("token%d current owner is %s", token.Uint64(), from.Hex())
+		}
+	}
 
 	// lock
 	logsplit()
 	log.Info("lock token.....")
-	fromBalanceBeforeLockOnPalette, err := valcli.NFTBalance(asset, from, "latest")
+	fromBalanceBeforeLockOnPalette, err := cli.NFTBalance(asset, from, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	toBalanceBeforeLockOnEthereum, err := ethInvoker.NFTBalance(asset, to)
-	hash, err := valcli.NFTSafeTransferFrom(asset, from, proxy, token, to, sideChainID)
+	toBalanceBeforeLockOnEthereum, err := ethInvoker.NFTBalance(params.NFTAsset, to)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	hash, err := cli.NFTSafeTransferFrom(asset, from, proxy, token, to, sideChainID)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	for i := 0; i < 100; i++ {
-		fromBalanceAfterLockOnPalette, err := valcli.NFTBalance(asset, from, "latest")
+		fromBalanceAfterLockOnPalette, err := cli.NFTBalance(asset, from, "latest")
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		toBalanceAfterLockOnEthereum, err := ethInvoker.NFTBalance(asset, to)
+		toBalanceAfterLockOnEthereum, err := ethInvoker.NFTBalance(params.NFTAsset, to)
 		if err != nil {
 			log.Error(err)
 			return
@@ -115,13 +115,13 @@ func NFTLock() (succeed bool) {
 
 		log.Infof("palette %s: balance before lock [%d], balance after lock [%d]",
 			params.From.Hex(),
-			plt.PrintUPLT(fromBalanceBeforeLockOnPalette),
-			plt.PrintUPLT(fromBalanceAfterLockOnPalette),
+			fromBalanceBeforeLockOnPalette.Uint64(),
+			fromBalanceAfterLockOnPalette.Uint64(),
 		)
 		log.Infof("ethereum %s: balance before lock [%d], balance after lock [%d]",
 			params.To.Hex(),
-			plt.PrintUPLT(toBalanceBeforeLockOnEthereum),
-			plt.PrintUPLT(toBalanceAfterLockOnEthereum),
+			toBalanceBeforeLockOnEthereum.Uint64(),
+			toBalanceAfterLockOnEthereum.Uint64(),
 		)
 		subFrom := utils.SafeSub(fromBalanceBeforeLockOnPalette, fromBalanceAfterLockOnPalette)
 		subTo := utils.SafeSub(toBalanceAfterLockOnEthereum, toBalanceBeforeLockOnEthereum)
