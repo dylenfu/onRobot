@@ -409,15 +409,26 @@ func PLTBindNFTAsset() (succeed bool) {
 		return
 	}
 
-	localLockProxy := config.Conf.CrossChain.PaletteNFTProxy
+	proxy := config.Conf.CrossChain.PaletteNFTProxy
 	fromAsset := params.PaletteNFTAsset
 	toAsset := params.EthereumNFTAsset
+	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
 
 	node := config.Conf.ValidatorNodes()[0]
 	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
+
+	curAddr, _ := cli.GetBoundNFTAsset(proxy, fromAsset, targetSideChainID)
+	if curAddr != utils.EmptyAddress {
+		if curAddr == toAsset {
+			log.Infof("ethereum NFT asset %s bound already", toAsset.Hex())
+			return
+		} else {
+			log.Infof("ethereum NFT asset %s bound != asset %s", curAddr.Hex(), toAsset.Hex())
+		}
+	}
+
 	hash, err := cli.BindNFTAsset(
-		localLockProxy,
+		proxy,
 		fromAsset,
 		toAsset,
 		targetSideChainID,

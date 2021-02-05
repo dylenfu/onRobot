@@ -316,6 +316,19 @@ func (c *Client) BindNFTAsset(
 	return tx.Hash(), nil
 }
 
+func (c *Client) GetBoundNFTAsset(lockProxy, fromAsset common.Address, toChainID uint64) (common.Address, error) {
+	proxy, err := nftlp.NewNFTLockProxy(lockProxy, c.backend)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	bz, err := proxy.AssetHashMap(nil, fromAsset, toChainID)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	return common.BytesToAddress(bz), nil
+}
+
 func (c *Client) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickeys []byte) (common.Hash, error) {
 	eccm, err := eccm_abi.NewEthCrossChainManager(eccmAddr, c.backend)
 	if err != nil {
