@@ -7,23 +7,23 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/native/nft"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
+	"github.com/palettechain/onRobot/pkg/eth"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
 // 在palette上lock，ethereum上unlock
 // 1. palette validator[0] mint token to user `from`, 合约是validators[0]部署的，只有他有权限mint给相关用户
-// 2. 用户授权给nft proxy合约
-// 3. lock
-// 4. 在两条链上检查余额
+// 2. lock之前并不需要授权给nft proxy，因为safeTransferFrom本身是将nft转账给proxy，to只会打包到data args中传过去
+// 3. 在两条链上检查余额
 func NFTLock() (succeed bool) {
 	var params struct {
-		From     common.Address
-		To       common.Address
-		Asset    common.Address
-		NFTAsset common.Address
-		TokenID  uint64
-		Uri      string
+		From        common.Address
+		To          common.Address
+		PLTNFTAsset common.Address
+		ETHNFTAsset common.Address
+		TokenID     uint64
+		Uri         string
 	}
 
 	if err := config.LoadParams("NFT-Lock.json", &params); err != nil {
@@ -33,7 +33,7 @@ func NFTLock() (succeed bool) {
 
 	// cross chain params
 	owner := valcli.Address()
-	asset := params.Asset
+	asset := params.PLTNFTAsset
 	from := params.From
 	to := params.To
 	token := new(big.Int).SetUint64(params.TokenID)
@@ -89,7 +89,7 @@ func NFTLock() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	toBalanceBeforeLockOnEthereum, err := ethInvoker.NFTBalance(params.NFTAsset, to)
+	toBalanceBeforeLockOnEthereum, err := ethInvoker.NFTBalance(params.ETHNFTAsset, to)
 	if err != nil {
 		log.Error(err)
 		return
@@ -107,7 +107,7 @@ func NFTLock() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		toBalanceAfterLockOnEthereum, err := ethInvoker.NFTBalance(params.NFTAsset, to)
+		toBalanceAfterLockOnEthereum, err := ethInvoker.NFTBalance(params.ETHNFTAsset, to)
 		if err != nil {
 			log.Error(err)
 			return
@@ -139,148 +139,114 @@ func NFTLock() (succeed bool) {
 
 func NFTUnLock() (succeed bool) {
 	var params struct {
-		Asset    common.Address
-		TokenID  uint64
-		Uri      string
-		NeedMint bool
+		From        common.Address
+		To          common.Address
+		PLTNFTAsset common.Address
+		ETHNFTAsset common.Address
+		TokenID     uint64
 	}
 
-	if err := config.LoadParams("NFT-Lock.json", &params); err != nil {
+	if err := config.LoadParams("NFT-UnLock.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
 
-	// 这个流程的大致轮廓是 palette nft -> palette nft proxy
-	// 假设validator A depoly了一个nft合约，同时将token mint给了自己
-	// safe transfer的时候
-	asset := params.Asset
-	sideChainID := config.Conf.CrossChain.EthereumSideChainID
-	from := valcli.Address()
-	to := from
-	proxy := config.Conf.CrossChain.PaletteNFTProxy
+	// cross chain params
+	asset := params.ETHNFTAsset
+	targetAsset := params.PLTNFTAsset
+	from := params.From
+	to := params.To
 	token := new(big.Int).SetUint64(params.TokenID)
+	proxy := config.Conf.CrossChain.EthereumNFTProxy
+	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
+	amount := big.NewInt(1)
 
-	// mint
-	if params.NeedMint {
-		log.Info("mint token")
-		owner := valcli.Address()
-		if _, err := valcli.NFTMint(params.Asset, owner, token, params.Uri); err != nil {
-			log.Error(err)
-			return
-		}
-		// check owner
-		actualOwner, err := valcli.NFTTokenOwner(asset, token, "latest")
+	invoker := eth.NewEInvoker(
+		config.Conf.CrossChain.EthereumSideChainID,
+		config.Conf.CrossChain.EthereumRPCUrl,
+		config.LoadAccount(from.Hex()),
+	)
+
+	// check ownership
+	curOwner, err := invoker.NFTOwner(asset, token)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if curOwner != from {
+		log.Errorf("token%d current owner %s!=%s", token.Uint64(), curOwner.Hex(), from.Hex())
+	} else {
+		log.Infof("token%d current owner is %s", token.Uint64(), from.Hex())
+	}
+
+	// prepare ETH for gas fee
+	{
+		logsplit()
+		log.Infof("prepare eth gas fee......")
+		gasLimit := 210000
+		gasFee, err := calculateGasFee(invoker, uint64(gasLimit))
 		if err != nil {
-			log.Error(err)
+			log.Errorf("calculate gas fee err %s", err.Error())
+		}
+		amount := utils.SafeMul(gasFee, big.NewInt(2))
+		if err := prepareEth(from, amount); err != nil {
+			log.Errorf("prepare eth as gas failed, err: %s", err.Error())
 			return
 		}
-		if actualOwner != owner {
-			log.Error("expect owner %s actual %s", owner.Hex(), actualOwner.Hex())
-		}
-
-		// check uri
-		actualUri, err := valcli.NFTTokenURI(asset, token, "latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		if actualUri != params.Uri {
-			log.Errorf("expect uri %s, actual %s", params.Uri, actualUri)
-			return
-		}
-
-		// check balance
-		actualBalance, err := valcli.NFTBalance(asset, owner, "latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		log.Infof("%s asset %s balance %d after mint, uri %s, nft proxy %s",
-			owner.Hex(), asset.Hex(), actualBalance.Uint64(), actualUri, proxy.Hex())
 	}
 
 	// lock
-	{
+	logsplit()
+	log.Info("lock token.....")
+	fromBalanceBeforeLockOnEthereum, err := invoker.NFTBalance(asset, from)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	toBalanceBeforeLockOnPalette, err := admcli.NFTBalance(targetAsset, to, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	hash, err := invoker.NFTSafeTransferFrom(asset, from, proxy, token, to, targetSideChainID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	for i := 0; i < 100; i++ {
+		fromBalanceAfterLockOnEthereum, err := invoker.NFTBalance(asset, from)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		toBalanceAfterLockOnPalette, err := admcli.NFTBalance(targetAsset, to, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		log.Infof("ethereum %s: balance before lock [%d], balance after lock [%d]",
+			params.From.Hex(),
+			fromBalanceBeforeLockOnEthereum.Uint64(),
+			fromBalanceAfterLockOnEthereum.Uint64(),
+		)
+		log.Infof("palette %s: balance before lock [%d], balance after lock [%d]",
+			params.To.Hex(),
+			toBalanceBeforeLockOnPalette.Uint64(),
+			toBalanceAfterLockOnPalette.Uint64(),
+		)
+		subFrom := utils.SafeSub(fromBalanceBeforeLockOnEthereum, fromBalanceAfterLockOnEthereum)
+		subTo := utils.SafeSub(toBalanceAfterLockOnPalette, toBalanceBeforeLockOnPalette)
+		zero := big.NewInt(0)
+		if new(big.Int).Sub(subFrom, amount).Cmp(zero) == 0 && new(big.Int).Sub(subTo, amount).Cmp(zero) == 0 {
+			log.Infof("lock tx hash %s success!", hash.Hex())
+			break
+		}
 		logsplit()
-		log.Info("lock token")
-
-		balanceBeforeLock, err := nftBalance(asset, from)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		if _, err := valcli.NFTSafeTransferFrom(asset, from, proxy, token, to, sideChainID); err != nil {
-			log.Error(err)
-			return
-		}
-
-		balanceAfterLock, err := nftBalance(asset, from)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		log.Infof("balance before lock %d, balance after lock %d", balanceBeforeLock.Uint64(), balanceAfterLock.Uint64())
+		wait(1)
 	}
 
 	return true
 }
-
-//func NFTUnlock() (succeed bool) {
-//	var params = struct {
-//		UnlockTo     common.Address
-//		Asset        common.Address
-//		Proof        string
-//		RawHeader    string
-//		HeaderProof  string
-//		CurRawHeader string
-//		HeaderSig    string
-//	}{}
-//
-//	if err := config.LoadParams("NFT-Unlock.json", &params); err != nil {
-//		log.Error(err)
-//		return
-//	}
-//
-//	_b, _ := admcli.NFTBalance(params.Asset, params.UnlockTo, "latest")
-//	balanceBeforeUnlock := _b.Uint64()
-//
-//	proof, _ := hexutil.Decode(params.Proof)
-//	rawHeader, _ := hexutil.Decode(params.RawHeader)
-//	headerProof, _ := hexutil.Decode(params.HeaderProof)
-//	curRawHeader, _ := hexutil.Decode(params.CurRawHeader)
-//	headerSig, _ := hexutil.Decode(params.HeaderSig)
-//
-//	eccm := config.Conf.CrossChain.EthereumECCM
-//	hash, err := ethInvoker.VerifyAndExecuteTx(
-//		eccm,
-//		proof,
-//		rawHeader,
-//		headerProof,
-//		curRawHeader,
-//		headerSig,
-//	)
-//	if err != nil {
-//		log.Error(err)
-//		return
-//	}
-//
-//	for i := 0; i < 10000; i++ {
-//		_b, err = admcli.NFTBalance(params.Asset, params.UnlockTo, "latest")
-//		if err != nil {
-//			log.Error(err)
-//			return
-//		}
-//		balanceAfterUnlock := _b.Uint64()
-//		if balanceAfterUnlock > balanceBeforeUnlock {
-//			subAmount := balanceAfterUnlock - balanceBeforeUnlock
-//			log.Infof("balance before unlock %d, after unlock %d, the sub amount is %d, eth hash %s",
-//				balanceBeforeUnlock, balanceAfterUnlock, subAmount, hash.Hex())
-//			break
-//		}
-//		time.Sleep(3 * time.Second)
-//	}
-//
-//	return true
-//}

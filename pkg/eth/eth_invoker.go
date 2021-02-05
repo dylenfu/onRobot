@@ -36,6 +36,7 @@ import (
 	"github.com/polynetwork/eth-contracts/go_abi/lock_proxy_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/nftlp"
 	nftmapping "github.com/polynetwork/eth-contracts/go_abi/nftmapping_abi"
+	polycm "github.com/polynetwork/poly/common"
 )
 
 // 部署在以太上的PLT token来自项目github.com/palettechain/palette-token.git
@@ -543,6 +544,42 @@ func (i *EthInvoker) NFTGetApproved(asset common.Address, tokenID *big.Int) (com
 	return cm.GetApproved(nil, tokenID)
 }
 
+func (i *EthInvoker) NFTOwner(asset common.Address, tokenID *big.Int) (common.Address, error) {
+	cm, err := nftmapping.NewCrossChainNFTMapping(asset, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	return cm.OwnerOf(nil, tokenID)
+}
+
+func (i *EthInvoker) NFTSafeTransferFrom(
+	asset,
+	from,
+	proxy common.Address,
+	tokenID *big.Int,
+	to common.Address,
+	toChainID uint64,
+) (common.Hash, error) {
+
+	cm, err := nftmapping.NewCrossChainNFTMapping(asset, i.backend())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	data := assembleSafeTransferCallData(to, toChainID)
+	tx, err := cm.SafeTransferFrom0(auth, from, proxy, tokenID, data)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	i.waitTxConfirm(tx.Hash())
+	return tx.Hash(), nil
+}
+
 func (i *EthInvoker) DumpTx(hash common.Hash) error {
 	tx, err := i.GetReceipt(hash)
 	if err != nil {
@@ -639,4 +676,11 @@ func (i *EthInvoker) waitTxConfirm(hash common.Hash) {
 
 func (i *EthInvoker) backend() bind.ContractBackend {
 	return i.Tools.GetEthClient()
+}
+
+func assembleSafeTransferCallData(toAddress common.Address, chainID uint64) []byte {
+	sink := polycm.NewZeroCopySink(nil)
+	sink.WriteVarBytes(toAddress.Bytes())
+	sink.WriteUint64(chainID)
+	return sink.Bytes()
 }
