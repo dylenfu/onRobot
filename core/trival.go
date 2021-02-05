@@ -293,19 +293,3 @@ func RemoteSetup() (succeed bool) {
 	execRemoteSetup()
 	return true
 }
-
-func PLTDumpContractCode() (succeed bool) {
-	var param struct {
-		List []common.Address
-	}
-	if err := config.LoadParams("PLT-DumpContract.json", &param); err != nil {
-		log.Error(err)
-		return
-	}
-	for _, addr := range param.List {
-		if err := admcli.DumpContractCode(addr); err != nil {
-			log.Errorf("dum contract %s code err: %s", addr.Hex(), err)
-		}
-	}
-	return true
-}
