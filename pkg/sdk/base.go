@@ -246,6 +246,15 @@ func (c *Client) getCallOpts() *bind.CallOpts {
 	return auth
 }
 
+func (c *Client) DumpContractCode(addr common.Address) error {
+	bz, err := c.backend.PendingCodeAt(context.Background(), addr)
+	if err != nil {
+		return err
+	}
+	log.Infof("contract %s code:\r\n %s", addr.Hex(), hex.EncodeToString(bz))
+	return nil
+}
+
 func (c *Client) DumpEventLog(hash common.Hash) error {
 	raw, err := c.GetReceipt(hash)
 	if err != nil {

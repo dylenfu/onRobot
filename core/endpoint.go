@@ -132,6 +132,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("plt-burn", PLTBurn)
 	frame.Tool.RegMethod("plt-lock", PLTLock)
 	frame.Tool.RegMethod("plt-unlock", PLTUnlock)
+	frame.Tool.RegMethod("plt-dump-contract", PLTDumpContractCode)
 
 	// nft
 	frame.Tool.RegMethod("plt-deploy-nft-asset", NFTDeploy)
