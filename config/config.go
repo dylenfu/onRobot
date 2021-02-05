@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -371,6 +372,7 @@ func LoadParams(fileName string, data interface{}) error {
 }
 
 func LoadAccount(address string) *ecdsa.PrivateKey {
+	address = strings.ToLower(address)
 	filepath := files.FullPath(Conf.Environment.LocalWorkspace, keystoreDir, address)
 	keyJson, err := ioutil.ReadFile(filepath)
 	if err != nil {
