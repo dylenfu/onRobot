@@ -400,13 +400,10 @@ func PLTSyncGenesis() (succeed bool) {
 }
 
 func PLTBindNFTAsset() (succeed bool) {
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-
-	var params = struct {
+	var params struct {
 		EthereumNFTAsset common.Address
 		PaletteNFTAsset  common.Address
-	}{}
+	}
 	if err := config.LoadParams("BindNFTAsset.json", &params); err != nil {
 		log.Error(err)
 		return
@@ -415,6 +412,9 @@ func PLTBindNFTAsset() (succeed bool) {
 	localLockProxy := config.Conf.CrossChain.PaletteNFTProxy
 	fromAsset := params.PaletteNFTAsset
 	toAsset := params.EthereumNFTAsset
+
+	node := config.Conf.ValidatorNodes()[0]
+	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
 	hash, err := cli.BindNFTAsset(
 		localLockProxy,

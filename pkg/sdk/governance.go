@@ -280,7 +280,9 @@ func (c *Client) SendGovernanceTx(payload []byte) (common.Hash, error) {
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	c.WaitTransaction(hash)
+	if err := c.WaitTransaction(hash); err != nil {
+		return utils.EmptyHash, err
+	}
 	return hash, nil
 }
 func (c *Client) CallGovernance(payload []byte, blockNum string) ([]byte, error) {

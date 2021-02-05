@@ -225,24 +225,6 @@ func (s *ETHTools) GetSmartContractEventByBlock(contractAddr string, height uint
 				Height:   height,
 			})
 		}
-		if err != nil {
-			return nil, nil, fmt.Errorf("GetSmartContractEventByBlock, error :%s", err.Error())
-		}
-
-		if events == nil {
-			return nil, nil, fmt.Errorf("GetSmartContractEventByBlock - no events found on FilterCrossChainEvent")
-		}
-
-		for events.Next() {
-			evt := events.Event
-			ethunlockevents = append(ethunlockevents, &UnlockEvent{
-				Method: "unlock",
-				Txid:   evt.Raw.TxHash.String(),
-				RTxid:  hex.EncodeToString(evt.CrossChainTxHash),
-				Token:  hex.EncodeToString(evt.ToContract),
-				Height: height,
-			})
-		}
 	}
 	return ethlockevents, ethunlockevents, nil
 }
@@ -316,9 +298,8 @@ func (s *ETHTools) WaitTransactionsConfirm(hashs []common.Hash) {
 }
 
 func (s *ETHTools) WaitTransactionConfirm(hash common.Hash) {
-	log.Infof("wait tx %s confirm", hash.Hex())
 	for {
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Second * 1)
 		_, ispending, err := s.ethclient.TransactionByHash(context.Background(), hash)
 		if err != nil {
 			log.Errorf("failed to call TransactionByHash: %v", err)

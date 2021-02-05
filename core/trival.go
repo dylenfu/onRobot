@@ -202,7 +202,10 @@ func TestEVM1() (succeed bool) {
 	} else {
 		log.Infof("send tx %s success", hash.Hex())
 	}
-	admcli.WaitTransaction(hash)
+	if err := admcli.WaitTransaction(hash); err != nil {
+		log.Error(err)
+		return
+	}
 
 	b2, err := admcli.BalanceOf(to, "latest")
 	if err != nil {

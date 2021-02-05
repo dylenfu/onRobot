@@ -216,7 +216,9 @@ func (c *Client) DeployContract(abiStr, binStr string, params ...interface{}) (c
 		return utils.EmptyAddress, nil, err
 	}
 
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyAddress, nil, err
+	}
 
 	log.Infof("deploy contract tx %v\r\n, contract %v\r\n, address %s\r\n", tx, contract, address.Hex())
 	return address, contract, nil
@@ -232,6 +234,8 @@ func (c *Client) makeDeployAuth() *bind.TransactOpts {
 func (c *Client) makeAuth() *bind.TransactOpts {
 	auth := bind.NewKeyedTransactor(c.Key)
 	auth.GasLimit = 2100000
+	auth.Nonce = new(big.Int).SetUint64(c.GetNonce(c.Address().Hex()))
+	auth.Value = big.NewInt(0)
 	return auth
 }
 

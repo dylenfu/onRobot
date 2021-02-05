@@ -127,7 +127,7 @@ func (c *Client) PLTAllowance(owner, spender common.Address, blockNum string) (*
 	return output.Value, nil
 }
 
-func (self *Client) WaitTransaction(hash common.Hash) {
+func (self *Client) WaitTransaction(hash common.Hash) error {
 	for {
 		time.Sleep(time.Second * 1)
 		_, ispending, err := self.backend.TransactionByHash(context.Background(), hash)
@@ -140,10 +140,11 @@ func (self *Client) WaitTransaction(hash common.Hash) {
 		}
 
 		if err := self.DumpEventLog(hash); err != nil {
-			log.Error(err)
+			return err
 		}
 		break
 	}
+	return nil
 }
 
 func (c *Client) packPLT(method string, args ...interface{}) ([]byte, error) {
@@ -157,7 +158,9 @@ func (c *Client) sendPLTTx(payload []byte) (common.Hash, error) {
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	c.WaitTransaction(hash)
+	if err := c.WaitTransaction(hash); err != nil {
+		return utils.EmptyHash, err
+	}
 	return hash, nil
 }
 func (c *Client) callPLT(payload []byte, blockNum string) ([]byte, error) {

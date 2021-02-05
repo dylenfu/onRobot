@@ -85,8 +85,9 @@ func (i *EthInvoker) TransferETH(to common.Address, amount *big.Int) (common.Has
 	if err := i.Tools.ethclient.SendTransaction(context.Background(), tx, bind.PrivateTxArgs{}); err != nil {
 		return utils.EmptyHash, err
 	}
-	i.waitTxConfirm(tx.Hash())
-
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -103,7 +104,9 @@ func (i *EthInvoker) DeployPLTLockProxy() (common.Address, error) {
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	return contractAddr, nil
 }
 
@@ -116,7 +119,9 @@ func (i *EthInvoker) DeployNFTLockProxy() (common.Address, error) {
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	return contractAddr, nil
 }
 
@@ -133,7 +138,9 @@ func (i *EthInvoker) SetPLTCCMP(proxyAddr, ccmpAddr common.Address) (common.Hash
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -150,7 +157,9 @@ func (i *EthInvoker) SetNFTCCMP(proxyAddr, ccmpAddr common.Address) (common.Hash
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -163,7 +172,9 @@ func (i *EthInvoker) DeployPLTAsset() (common.Address, error) {
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	return contractAddr, nil
 }
 
@@ -176,7 +187,9 @@ func (i *EthInvoker) DeployNFT(lockProxy common.Address, name, symbol string) (c
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	nameAfterDeploy, err := inst.Name(nil)
 	if err != nil {
 		return utils.EmptyAddress, err
@@ -196,7 +209,9 @@ func (i *EthInvoker) DeployECCDContract() (common.Address, error) {
 	if err != nil {
 		return common.Address{}, fmt.Errorf("DeployECCDContract, err: %v", err)
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	return contractAddress, nil
 }
 
@@ -209,7 +224,9 @@ func (i *EthInvoker) DeployECCMContract(eccd common.Address) (common.Address, er
 	if err != nil {
 		return common.Address{}, fmt.Errorf("DeployECCMContract, err: %v", err)
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	return contractAddress, nil
 }
 
@@ -222,7 +239,9 @@ func (i *EthInvoker) DeployCCMPContract(eccmAddress common.Address) (common.Addr
 	if err != nil {
 		return utils.EmptyAddress, fmt.Errorf("DeployCCMPContract, err: %v", err)
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	return contractAddress, nil
 }
 
@@ -246,7 +265,9 @@ func (i *EthInvoker) BindPLTAsset(
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -269,7 +290,9 @@ func (i *EthInvoker) BindPLTProxy(
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -292,7 +315,9 @@ func (i *EthInvoker) BindNFTAsset(
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -316,7 +341,9 @@ func (i *EthInvoker) BindNFTProxy(
 		return utils.EmptyHash, err
 	}
 
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -334,7 +361,9 @@ func (i *EthInvoker) TransferECCDOwnership(eccd, eccm common.Address) (common.Ha
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("TransferECCDOwnership, err: %v", err)
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -352,7 +381,9 @@ func (i *EthInvoker) TransferECCMOwnership(eccm, ccmp common.Address) (common.Ha
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("TransferECCMOwnership err: %v", err)
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -385,7 +416,9 @@ func (i *EthInvoker) PLTApprove(asset, spender common.Address, amount *big.Int) 
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -411,8 +444,9 @@ func (i *EthInvoker) PLTTransfer(asset, from, to common.Address, amount *big.Int
 		return utils.EmptyHash, err
 	}
 
-	i.waitTxConfirm(tx.Hash())
-
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -445,8 +479,9 @@ func (i *EthInvoker) VerifyAndExecuteTx(
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -472,7 +507,9 @@ func (i *EthInvoker) PLTLock(
 		return utils.EmptyHash, err
 	}
 
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -506,8 +543,9 @@ func (i *EthInvoker) PLTUnlock(
 		return utils.EmptyHash, err
 	}
 
-	i.waitTxConfirm(tx.Hash())
-
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -524,7 +562,9 @@ func (i *EthInvoker) NFTApprove(asset, to common.Address, token *big.Int) (commo
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -576,7 +616,9 @@ func (i *EthInvoker) NFTSafeTransferFrom(
 		return utils.EmptyHash, err
 	}
 
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -632,7 +674,9 @@ func (i *EthInvoker) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickey
 		return utils.EmptyHash, fmt.Errorf("call eccm InitGenesisBlock err: %s", err)
 	}
 
-	i.waitTxConfirm(tx.Hash())
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -667,11 +711,12 @@ func (i *EthInvoker) makeAuth() (*bind.TransactOpts, error) {
 	return auth, nil
 }
 
-func (i *EthInvoker) waitTxConfirm(hash common.Hash) {
+func (i *EthInvoker) waitTxConfirm(hash common.Hash) error {
 	i.Tools.WaitTransactionConfirm(hash)
 	if err := i.DumpTx(hash); err != nil {
-		log.Error(err)
+		return err
 	}
+	return nil
 }
 
 func (i *EthInvoker) backend() bind.ContractBackend {

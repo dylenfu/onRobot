@@ -19,7 +19,9 @@ func (c *Client) DeployECCD() (common.Address, error) {
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	return addr, nil
 }
 
@@ -29,7 +31,9 @@ func (c *Client) DeployECCM(eccd common.Address, sideChainID uint64) (common.Add
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	return addr, nil
 }
 
@@ -39,7 +43,9 @@ func (c *Client) DeployCCMP(eccm common.Address) (common.Address, error) {
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	return addr, nil
 }
 
@@ -55,7 +61,9 @@ func (c *Client) PauseCCMP(ccmpAddr common.Address) (common.Hash, error) {
 		return utils.EmptyHash, fmt.Errorf("call ccmp pause err: %s", err)
 	}
 
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -71,7 +79,9 @@ func (c *Client) UnPauseCCMP(ccmpAddr common.Address) (common.Hash, error) {
 		return utils.EmptyHash, fmt.Errorf("call ccmp unpause err: %s", err)
 	}
 
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -87,7 +97,9 @@ func (c *Client) UpgradeECCM(newEccmAddr, ccmpAddr common.Address) (common.Hash,
 		return utils.EmptyHash, fmt.Errorf("call upgradeEthCrossChainManager err: %s", err)
 	}
 
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -102,7 +114,9 @@ func (c *Client) ECCDTransferOwnerShip(eccdAddr, eccmAddr common.Address) (commo
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("call transferOwnerShip err: %s", err)
 	}
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -117,7 +131,9 @@ func (c *Client) ECCMTransferOwnerShip(eccmAddr, ccmpAddr common.Address) (commo
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("call transferOwnerShip err: %s", err)
 	}
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -237,7 +253,9 @@ func (c *Client) SetNFTCCMP(proxyAddr, ccmp common.Address) (common.Hash, error)
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -247,7 +265,9 @@ func (c *Client) DeployNFTProxy() (common.Address, error) {
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
 	return addr, nil
 }
 
@@ -267,7 +287,9 @@ func (c *Client) BindNFTProxy(
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -288,7 +310,9 @@ func (c *Client) BindNFTAsset(
 	if err != nil {
 		return utils.EmptyHash, err
 	}
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
 
@@ -304,6 +328,8 @@ func (c *Client) InitGenesisBlock(eccmAddr common.Address, rawHdr, publickeys []
 		return utils.EmptyHash, fmt.Errorf("call eccm InitGenesisBlock err: %s", err)
 	}
 
-	c.WaitTransaction(tx.Hash())
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
 	return tx.Hash(), nil
 }
