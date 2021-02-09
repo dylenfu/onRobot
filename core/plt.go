@@ -115,7 +115,7 @@ func Transfer() (succeed bool) {
 		return
 	}
 
-	key := config.LoadAccount(params.From)
+	key := customLoadAccount(params.From)
 	to := common.HexToAddress(params.To)
 	amount := utils.SafeMul(big.NewInt(params.Amount), plt.OnePLT)
 
@@ -187,7 +187,7 @@ func Approve() (succeed bool) {
 	}
 
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
-	key := config.LoadAccount(params.Owner)
+	key := customLoadAccount(params.Owner)
 	cli := sdk.NewSender(baseUrl, key)
 
 	owner := PrivKey2Addr(key)

@@ -139,6 +139,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("nft-transfer", NFTTransfer)
 	frame.Tool.RegMethod("nft-balance", NFTBalance)
 	frame.Tool.RegMethod("nft-token-owner", NFTTokenOwner)
+	frame.Tool.RegMethod("nft-set-uri", NFTSetUri)
 
 	// nft cross chain
 	frame.Tool.RegMethod("nft-mint", NFTMint)

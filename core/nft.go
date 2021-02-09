@@ -1,11 +1,14 @@
 package core
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
+	"strings"
+
 	//polycm "github.com/polynetwork/poly/common"
 	"math/big"
 )
@@ -92,6 +95,54 @@ func NFTBurn() (succeed bool) {
 	return true
 }
 
+func NFTSetUri() (succeed bool) {
+	var params struct {
+		List    []common.Address
+		Storage string
+	}
+
+	if err := config.LoadParams("SetAssetUri.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+	if !strings.HasSuffix(params.Storage, "/") {
+		params.Storage += "/"
+	}
+
+	getSuffix := func(src common.Address) string {
+		num := new(big.Int).SetBytes(src.Bytes()).Uint64()
+		return fmt.Sprintf("%x/", num)
+	}
+
+	rpc := admcli.Url()
+	for _, asset := range params.List {
+		owner, _ := admcli.NFTAssetOwner(asset, "latest")
+		if owner == utils.EmptyAddress {
+			continue
+		}
+
+		cli := sdk.NewSender(rpc, customLoadAccount(owner.Hex()))
+
+		suffix := getSuffix(asset)
+		uri := params.Storage + suffix
+		hash, err := cli.NFTSetBaseUri(asset, uri)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		uri, _  = admcli.NFTGetBaseUri(asset, "latest")
+		log.Infof("hash %s, asset: %s, owner: %s, uri: %s", hash.Hex(), asset.Hex(), owner.Hex(), uri)
+
+		for i:= 0;i<10;i++ {
+			token := big.NewInt(int64(i))
+			if uri, _ := admcli.NFTTokenURI(asset, token, "latest"); uri != "" {
+				log.Infof("token uri %s", uri)
+			}
+		}
+	}
+	return true
+}
+
 func NFTTransfer() (succeed bool) {
 	var params struct {
 		Asset   common.Address
@@ -163,8 +214,7 @@ func NFTTokenOwner() (succeed bool) {
 
 func nftTransferBack(asset common.Address, tokenID *big.Int, from common.Address) (succeed bool) {
 	url := valcli.Url()
-	acc := config.LoadAccount(from.Hex())
-	cli := sdk.NewSender(url, acc)
+	cli := sdk.NewSender(url, customLoadAccount(from.Hex()))
 	to := valcli.Address()
 
 	if _, err := cli.NFTTransferFrom(asset, from, to, tokenID); err != nil {

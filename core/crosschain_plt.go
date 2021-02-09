@@ -99,7 +99,7 @@ func PLTLock() (succeed bool) {
 	}
 
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
-	privKey := config.LoadAccount(params.From.Hex())
+	privKey := customLoadAccount(params.From.Hex())
 	userAddr := params.From
 	bindTo := params.To
 	cli := sdk.NewSender(baseUrl, privKey)
@@ -205,7 +205,7 @@ func PLTUnlock() (succeed bool) {
 	invoker := eth.NewEInvoker(
 		config.Conf.CrossChain.EthereumSideChainID,
 		config.Conf.CrossChain.EthereumRPCUrl,
-		config.LoadAccount(from.Hex()),
+		customLoadAccount(from.Hex()),
 	)
 
 	// prepare ETH for gas fee

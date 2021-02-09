@@ -229,6 +229,7 @@ type Env struct {
 	IpList          []string
 	SSHPort         string
 	RemoteGoPath    string
+	NFTServer       string
 }
 
 type Network struct {
@@ -239,7 +240,8 @@ type Network struct {
 
 func Init(path string) {
 	ConfigFilePath = path
-	if err := LoadConfig(ConfigFilePath, Conf); err != nil {
+	err := LoadConfig(ConfigFilePath, Conf)
+	if err != nil {
 		panic(err)
 	}
 
@@ -251,7 +253,10 @@ func Init(path string) {
 	// load nodes privateKey
 	sdk.Init(Conf.GasLimit, Conf.DeployGasLimit, time.Duration(Conf.BlockPeriod))
 
-	AdminKey = LoadAccount(Conf.AdminAccount)
+	AdminKey, err = LoadAccount(Conf.AdminAccount)
+	if err != nil {
+		panic(err)
+	}
 	AdminAddr = crypto.PubkeyToAddress(AdminKey.PublicKey)
 	BakConf = Conf.DeepCopy()
 }
@@ -371,20 +376,20 @@ func LoadParams(fileName string, data interface{}) error {
 	return json.Unmarshal(bz, data)
 }
 
-func LoadAccount(address string) *ecdsa.PrivateKey {
+func LoadAccount(address string) (*ecdsa.PrivateKey, error) {
 	address = strings.ToLower(address)
 	filepath := files.FullPath(Conf.Environment.LocalWorkspace, keystoreDir, address)
 	keyJson, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		panic(fmt.Errorf("failed to read file: [%v]", err))
+		return nil, fmt.Errorf("failed to read file: [%v]", err)
 	}
 
 	key, err := keystore.DecryptKey(keyJson, Conf.DefaultPassphrase)
 	if err != nil {
-		panic(fmt.Errorf("failed to decrypt keyjson: [%v]", err))
+		return nil, fmt.Errorf("failed to decrypt keyjson: [%v]", err)
 	}
 
-	return key.PrivateKey
+	return key.PrivateKey, nil
 }
 
 type CrossChainConfig struct {

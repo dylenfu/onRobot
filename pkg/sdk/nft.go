@@ -132,6 +132,32 @@ func (c *Client) NFTTokenURI(asset common.Address, tokenID *big.Int, blockNum st
 	return result.Uri, nil
 }
 
+func (c *Client) NFTGetBaseUri(asset common.Address, blockNum string) (string, error) {
+	payload, err := c.packNFT(nft.MethodBaseUri)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := c.callNFT(asset, payload, blockNum)
+	if err != nil {
+		return "", err
+	}
+
+	result := new(nft.BaseUriResult)
+	if err := c.unpackNFT(nft.MethodBaseUri, result, data); err != nil {
+		return "", err
+	}
+	return result.Uri, nil
+}
+
+func (c *Client) NFTSetBaseUri(asset common.Address, uri string) (common.Hash, error) {
+	payload, err := c.packNFT(nft.MethodSetBaseUri, uri)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	return c.sendNFT(asset, payload)
+}
+
 func (c *Client) NFTTotalSupply(asset common.Address, blockNum string) (*big.Int, error) {
 	payload, err := c.packNFT(nft.MethodTotalSupply)
 	if err != nil {

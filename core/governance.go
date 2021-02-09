@@ -313,7 +313,7 @@ func Delegate() (succeed bool) {
 	// fans transfer back to admin
 	clients := make(map[string]*sdk.Client)
 	for _, fan := range params.Fans {
-		clients[fan.Address] = sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), config.LoadAccount(fan.Address))
+		clients[fan.Address] = sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), customLoadAccount(fan.Address))
 	}
 
 	// admin batch transfer to fans

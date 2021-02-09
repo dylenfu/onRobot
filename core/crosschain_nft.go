@@ -43,7 +43,7 @@ func NFTLock() (succeed bool) {
 
 	// generate new sender
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
-	privKey := config.LoadAccount(from.Hex())
+	privKey := customLoadAccount(from.Hex())
 	cli := sdk.NewSender(baseUrl, privKey)
 
 	// mint or transfer ownership
@@ -164,7 +164,7 @@ func NFTUnLock() (succeed bool) {
 	invoker := eth.NewEInvoker(
 		config.Conf.CrossChain.EthereumSideChainID,
 		config.Conf.CrossChain.EthereumRPCUrl,
-		config.LoadAccount(from.Hex()),
+		customLoadAccount(from.Hex()),
 	)
 
 	// check ownership

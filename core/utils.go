@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -199,6 +200,25 @@ func prepareAllowance(invoker *eth.EthInvoker, owner, spender common.Address, am
 		return err
 	}
 	log.Infof("(owner, spender) (%s, %s) approve %d success, ethereum tx hash %s", owner.Hex(), spender.Hex(), plt.PrintUPLT(amount), hash.Hex())
+	return nil
+}
+
+func customLoadAccount(addr string) *ecdsa.PrivateKey {
+	acc, err := config.LoadAccount(addr)
+	if err == nil {
+		return acc
+	}
+
+	cmp := strings.ToLower(addr)
+	for _, node := range config.Conf.Nodes {
+		if strings.ToLower(node.NodeAddr().Hex()) == cmp {
+			return node.PrivateKey()
+		}
+		if strings.ToLower(node.StakeAddr().Hex()) == cmp {
+			return node.StakePrivateKey()
+		}
+	}
+
 	return nil
 }
 
