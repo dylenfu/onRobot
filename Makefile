@@ -2,40 +2,22 @@
 GOCMD=GO111MODULE=on go
 GOBUILD=$(GOCMD) build
 GOTEST=$(GOCMD) test
+ENV=$(env)
 
 prepare:
+	make clean
 	mkdir -p build/target
+	cp -r build/env/$(ENV)/keystore build/target
+	cp -r build/env/$(ENV)/poly_keystore build/target
+	cp -r build/env/$(ENV)/eth_keystore build/target
+	cp -r build/env/$(ENV)/setup build/target
+	cp config/$(ENV).json build/target/config.json
 	cp -r scripts/*.sh build/target/
 
 compile:
+	rm -rf build/target/case
+	cp -r build/env/$(ENV)/cases build/target
 	$(GOBUILD) -o build/target/robot cmd/main.go
-
-compile-local:
-	make clean compile
-	cp -r build/env/local/keystore build/target
-	cp -r build/env/local/poly_keystore build/target
-	cp -r build/env/local/eth_keystore build/target
-	cp -r build/env/local/setup build/target
-	cp -r build/env/local/cases build/target
-	cp config/local.json build/target/config.json
-
-compile-dev:
-	make clean compile
-	cp -r build/env/dev/keystore build/target
-	cp -r build/env/dev/poly_keystore build/target
-	cp -r build/env/dev/eth_keystore build/target
-	cp -r build/env/dev/setup build/target
-	cp -r build/env/dev/cases build/target
-	cp config/dev.json build/target/config.json
-
-compile-test:
-	make clean compile
-	cp -r build/env/test/keystore build/target
-	cp -r build/env/test/poly_keystore build/target
-	cp -r build/env/test/eth_keystore build/target
-	cp -r build/env/test/setup build/target
-	cp -r build/env/test/cases build/target
-	cp config/test.json build/target/config.json
 
 compile-linux:
 	GOOS=linux GOARCH=amd64 $(GOBUILD) -o build/target/robot-linux cmd/main.go

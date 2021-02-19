@@ -1,7 +1,7 @@
 #!/bin/bash  
 
 num=100
-make compile-test
+make compile env=test
 
 for((i=1;i<=$num;i++));
 do
