@@ -197,7 +197,7 @@ func NFTUnLock() (succeed bool) {
 
 	// lock
 	logsplit()
-	log.Info("lock token.....")
+	log.Info("unlock token.....")
 	fromBalanceBeforeLockOnEthereum, err := invoker.NFTBalance(asset, from)
 	if err != nil {
 		log.Error(err)
