@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"fmt"
 	"math/big"
@@ -162,7 +163,9 @@ func prepareEth(to common.Address, amount *big.Int) error {
 	if balanceBeforeTransfer.Cmp(amount) >= 0 {
 		return nil
 	}
-
+	if bytes.Equal(ethInvoker.Address().Bytes(), to.Bytes()) {
+		return fmt.Errorf("balance not enough")
+	}
 	hash, err := ethInvoker.TransferETH(to, amount)
 	if err != nil {
 		return err

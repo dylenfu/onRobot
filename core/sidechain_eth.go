@@ -83,7 +83,7 @@ func ETHTransferOwnership() (succeed bool) {
 		log.Infof("transfer eccd ownership to eccm on ethereum success, tx %s", hash.Hex())
 	}
 
-	hash, err = ethInvoker.TransferECCMOwnership(eccm, ccmp)
+	hash, err = ethOwner.TransferECCMOwnership(eccm, ccmp)
 	if err != nil {
 		log.Errorf("transfer eccm ownership to ccmp on ethereum failed, err: %s", err.Error())
 		return
@@ -414,15 +414,7 @@ func ETHSyncGenesis() (succeed bool) {
 }
 
 // 以太坊上从PLT owner 跨链转移资产到palette，作为palette的启动资金，总额是3.4亿
-// 1.准备需要的eth作为gas
-// 2.准备ethereum proxy需要的allowance
-// 3.lock前查询from在以太上的余额
-// 4.lock前查询to在palette上的余额
-// 5.lock锁定
-// 6.循环内查询lock后from在以太上的余额
-// 7.循环内查询lock后to在palette上的余额
-// 8.比较并判断是否成功
-func ETHPLTMint() (succeed bool) {
+func ETHPLTContractMint() (succeed bool) {
 	var params struct {
 		Amount int
 	}
@@ -488,7 +480,7 @@ func ETHPLTMint() (succeed bool) {
 	logsplit()
 	log.Info("check balance on both of palette chain and ethereum chain...")
 	for i := 0; i < 100; i++ {
-		totalSupplyAfterLockOnEthereum, err := ethInvoker.PLTBalanceOf(asset, from)
+		totalSupplyAfterLockOnEthereum, err := invoker.PLTBalanceOf(asset, from)
 		if err != nil {
 			log.Error(err)
 			return
@@ -511,6 +503,108 @@ func ETHPLTMint() (succeed bool) {
 		)
 		subFrom := utils.SafeSub(totalSupplyBeforeLockOnEthereum, totalSupplyAfterLockOnEthereum)
 		subTo := utils.SafeSub(totalSupplyAfterLockOnPalette, totalSupplyBeforeLockOnPalette)
+		zero := big.NewInt(0)
+		if new(big.Int).Sub(subFrom, amount).Cmp(zero) == 0 && new(big.Int).Sub(subTo, amount).Cmp(zero) == 0 {
+			log.Infof("lock tx hash %s success!", hash.Hex())
+			break
+		}
+		logsplit()
+		wait(1)
+	}
+
+	return true
+}
+
+func ETHPLTAdminMint() (succeed bool) {
+	var params struct {
+		Amount int
+	}
+
+	if err := config.LoadParams("ETH-PLT-Admin.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	from := ethOwner.Address()
+	to := common.HexToAddress(native.PLTContractAddress)
+	proxy := config.Conf.CrossChain.EthereumPLTProxy
+	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
+	asset := config.Conf.CrossChain.EthereumPLTAsset
+	amount := plt.MultiPLT(params.Amount)
+
+	invoker := ethOwner
+
+	// prepare ETH for gas fee
+	{
+		logsplit()
+		log.Infof("prepare eth gas fee......")
+		gasLimit := 210000
+		gasFee, err := calculateGasFee(invoker, uint64(gasLimit))
+		if err != nil {
+			log.Errorf("calculate gas fee err %s", err.Error())
+		}
+		amount := utils.SafeMul(gasFee, big.NewInt(2))
+		if err := prepareEth(from, amount); err != nil {
+			log.Errorf("prepare eth as gas failed, err: %s", err.Error())
+			return
+		}
+	}
+
+	// prepare allowance
+	logsplit()
+	log.Infof("prepare from account allowance for proxy......")
+	if err := prepareAllowance(invoker, from, proxy, amount); err != nil {
+		log.Error(err)
+		return
+	}
+
+	// unlock
+	logsplit()
+	log.Infof("lock plt on ethereum......")
+	fromBalanceBeforeLockOnEthereum, err := invoker.PLTBalanceOf(asset, from)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	toBalanceBeforeLockOnPalette, err := admcli.BalanceOf(to, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	hash, err := invoker.PLTLock(proxy, asset, targetSideChainID, to, amount)
+	if err != nil {
+		log.Error(err)
+		return
+	} else {
+		log.Infof("lock plt on ethereum, tx hash %s", hash.Hex())
+	}
+
+	logsplit()
+	log.Info("check balance on both of palette chain and ethereum chain...")
+	for i := 0; i < 100; i++ {
+		fromBalanceAfterLockOnEthereum, err := invoker.PLTBalanceOf(asset, from)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		toBalanceAfterLockOnPalette, err := admcli.BalanceOf(to, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		log.Infof("ethereum %s: balance before lock [%d], balance after lock [%d]",
+			from.Hex(),
+			plt.PrintUPLT(fromBalanceBeforeLockOnEthereum),
+			plt.PrintUPLT(fromBalanceAfterLockOnEthereum),
+		)
+		log.Infof("palette %s: balance before lock [%d], balance after lock [%d]",
+			to.Hex(),
+			plt.PrintUPLT(toBalanceBeforeLockOnPalette),
+			plt.PrintUPLT(toBalanceAfterLockOnPalette),
+		)
+		subFrom := utils.SafeSub(fromBalanceBeforeLockOnEthereum, fromBalanceAfterLockOnEthereum)
+		subTo := utils.SafeSub(toBalanceAfterLockOnPalette, toBalanceBeforeLockOnPalette)
 		zero := big.NewInt(0)
 		if new(big.Int).Sub(subFrom, amount).Cmp(zero) == 0 && new(big.Int).Sub(subTo, amount).Cmp(zero) == 0 {
 			log.Infof("lock tx hash %s success!", hash.Hex())
