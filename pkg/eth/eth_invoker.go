@@ -72,6 +72,15 @@ func NewEInvoker(chainID uint64, url string, privateKey *ecdsa.PrivateKey) *EthI
 	return instance
 }
 
+func (i *EthInvoker) Address() common.Address {
+	publicKey := i.PrivateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		panic("ecdsa public key convert failed")
+	}
+	return crypto.PubkeyToAddress(*publicKeyECDSA)
+}
+
 func (i *EthInvoker) TransferETH(to common.Address, amount *big.Int) (common.Hash, error) {
 	auth, err := i.makeAuth()
 	if err != nil {
@@ -685,13 +694,7 @@ func (i *EthInvoker) SuggestGasPrice() (*big.Int, error) {
 }
 
 func (i *EthInvoker) makeAuth() (*bind.TransactOpts, error) {
-	publicKey := i.PrivateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return nil, fmt.Errorf("makeAuth, cannot assert type: publicKey is not of type *ecdsa.PublicKey")
-	}
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	fromAddress := i.Address()
 	nonce, err := i.backend().PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
 		return nil, fmt.Errorf("makeAuth, addr %s, err %v", fromAddress.Hex(), err)

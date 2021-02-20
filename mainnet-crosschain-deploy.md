@@ -18,12 +18,6 @@ make robot t=eth-deploy-nft-proxy
 make robot t=eth-nft-ccmp
 ```
 
-3. mint plt from `plt asset contract` owner to `plt proxy`
-使用ethereumOwner账户跨链3.4亿到palette链上
-```bash
-make robot t=eth-plt-transfer
-```
-
 ## prepare on palette chain
 1. deploy eccd, eccm, ccmp contracts and record in config.json
 使用palette admin账户在palette链上部署eccd,eccm,ccmp合约
@@ -45,23 +39,23 @@ make robot t=plt-ownership
 make robot t=plt-plt-ccmp
 ```
 
-4. register side chain id to poly chain and approve it with 4 poly validators' wallet file.
-使用poly账户注册palette侧链
-```bash
-make robot t=plt-registerSideChain
-make robot t=plt-approveRegisterSideChain
-```
-
-5. deploy nft proxy
+4. deploy nft proxy
 使用admin账户注册nft的特定proxy合约
 ```bash
 make robot t=plt-deploy-nft-proxy
 ```
 
-6. set nft manager proxy with ccmp
+5. set nft manager proxy with ccmp
 使用admin账户绑定ccmp和nft proxy
 ```bash
 make robot t=plt-nft-ccmp
+```
+
+6. register side chain id to poly chain and approve it with 4 poly validators' wallet file.
+使用poly账户注册palette侧链
+```bash
+make robot t=plt-registerSideChain
+make robot t=plt-approveRegisterSideChain
 ```
 
 7. sync palette header to palette chain and store poly book keepers in the palette chain
@@ -84,6 +78,12 @@ make robot t=eth-bind-plt-asset
 make robot t=plt-bind-plt-proxy
 make robot t=plt-bind-nft-proxy
 make robot t=plt-bind-plt-asset
+```
+
+## mint plt from ethereum to palette
+使用ethereumOwner账户跨链3.4亿到palette链上
+```bash
+make robot t=eth-plt-mint
 ```
 
 ## deploy and bind nft asset on both of palette and ethereum

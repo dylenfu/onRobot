@@ -296,12 +296,12 @@ func SaveConfig(c *Config) error {
 		EthereumPLTAsset      string
 		EthereumPLTProxy      string
 		EthereumNFTProxy      string
-		EthereumNFTMapping    string
 
 		// ethereum node rpc and account
 		EthereumRPCUrl          string
 		EthereumAccountFullPath string
 		EthereumAccountPassword string
+		EthereumOwnerFullPath   string
 	}
 
 	type XConfig struct {
@@ -358,6 +358,7 @@ func SaveConfig(c *Config) error {
 	xc.EthereumRPCUrl = c.CrossChain.EthereumRPCUrl
 	xc.EthereumAccountFullPath = c.CrossChain.EthereumAccountFullPath
 	xc.EthereumAccountPassword = c.CrossChain.EthereumAccountPassword
+	xc.EthereumOwnerFullPath = c.CrossChain.EthereumOwnerFullPath
 	x.CrossChain = xc
 
 	enc, err := json.Marshal(x)
@@ -460,11 +461,13 @@ func (c *CrossChainConfig) LoadPolyAccount(path string) (*polysdk.Account, error
 func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {
 	keyJson, err := ioutil.ReadFile(c.EthereumAccountFullPath)
 	if err != nil {
+		fmt.Println("-------------------1", err.Error())
 		return nil, err
 	}
 
 	key, err := keystore.DecryptKey(keyJson, c.EthereumAccountPassword)
 	if err != nil {
+		fmt.Println("-------------------2", err.Error())
 		return nil, err
 	}
 

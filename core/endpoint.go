@@ -123,10 +123,11 @@ func Endpoint() {
 	frame.Tool.RegMethod("eth-bind-nft-proxy", ETHBindNFTProxy)
 	frame.Tool.RegMethod("eth-bind-nft-asset", ETHBindNFTAsset)
 	frame.Tool.RegMethod("eth-syncGenesis", ETHSyncGenesis)
+	frame.Tool.RegMethod("eth-plt-mint", ETHPLTMint)
 	frame.Tool.RegMethod("eth-plt-total-supply", ETHPLTTotalSupply)
 	frame.Tool.RegMethod("eth-plt-balance", ETHPLTBalance)
 	frame.Tool.RegMethod("eth-plt-transfer", ETHPLTTransfer)
-
+	
 	// plt cross chain
 	frame.Tool.RegMethod("plt-mint", PLTMint)
 	frame.Tool.RegMethod("plt-burn", PLTBurn)

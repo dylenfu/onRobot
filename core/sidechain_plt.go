@@ -26,10 +26,7 @@ import (
 // 3. 进入unlock资金逻辑
 
 func PLTDeployECCD() (succeed bool) {
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-
-	eccd, err := cli.DeployECCD()
+	eccd, err := admcli.DeployECCD()
 	if err != nil {
 		log.Errorf("deploy eccd on palette failed, err: %s", err.Error())
 		return
@@ -46,12 +43,9 @@ func PLTDeployECCD() (succeed bool) {
 }
 
 func PLTDeployECCM() (succeed bool) {
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-
 	eccd := config.Conf.CrossChain.PaletteECCD
 	sideChainID := config.Conf.CrossChain.PaletteSideChainID
-	eccm, err := cli.DeployECCM(eccd, sideChainID)
+	eccm, err := admcli.DeployECCM(eccd, sideChainID)
 	if err != nil {
 		log.Errorf("deploy eccm on palette failed, err: %s", err.Error())
 		return
@@ -68,11 +62,8 @@ func PLTDeployECCM() (succeed bool) {
 }
 
 func PLTDeployCCMP() (succeed bool) {
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-
 	eccm := config.Conf.CrossChain.PaletteECCM
-	ccmp, err := cli.DeployCCMP(eccm)
+	ccmp, err := admcli.DeployCCMP(eccm)
 	if err != nil {
 		log.Errorf("deploy ccmp on palette failed, err: %s", err.Error())
 		return
@@ -89,9 +80,6 @@ func PLTDeployCCMP() (succeed bool) {
 }
 
 func PLTTransferOwnerShip() (succeed bool) {
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-
 	eccd := config.Conf.CrossChain.PaletteECCD
 	eccm := config.Conf.CrossChain.PaletteECCM
 	ccmp := config.Conf.CrossChain.PaletteCCMP
@@ -100,7 +88,7 @@ func PLTTransferOwnerShip() (succeed bool) {
 	{
 		logsplit()
 		log.Info("eccd transferOwnership...")
-		hash, err := cli.ECCDTransferOwnerShip(eccd, eccm)
+		hash, err := admcli.ECCDTransferOwnerShip(eccd, eccm)
 		if err != nil {
 			log.Error(err)
 			return
@@ -112,7 +100,7 @@ func PLTTransferOwnerShip() (succeed bool) {
 	{
 		logsplit()
 		log.Info("eccm transferOwnership...")
-		hash, err := cli.ECCMTransferOwnerShip(eccm, ccmp)
+		hash, err := admcli.ECCMTransferOwnerShip(eccm, ccmp)
 		if err != nil {
 			log.Error(err)
 			return
@@ -265,10 +253,7 @@ func PLTApproveRegisterSideChain() (succeed bool) {
 }
 
 func PLTDeployNFTProxy() (succeed bool) {
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-
-	proxy, err := cli.DeployNFTProxy()
+	proxy, err := admcli.DeployNFTProxy()
 	if err != nil {
 		log.Errorf("deploy NFT proxy on palette failed, err: %s", err.Error())
 		return
@@ -289,10 +274,7 @@ func PLTBindNFTProxy() (succeed bool) {
 	targetLockProxy := config.Conf.CrossChain.EthereumNFTProxy
 	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
 
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-
-	hash, err := cli.BindNFTProxy(localLockproxy, targetLockProxy, targetSideChainID)
+	hash, err := admcli.BindNFTProxy(localLockproxy, targetLockProxy, targetSideChainID)
 	if err != nil {
 		log.Errorf("bind NFT proxy on palette failed, err: %s", err.Error())
 		return
@@ -303,12 +285,9 @@ func PLTBindNFTProxy() (succeed bool) {
 }
 
 func PLTSetNFTCCMP() (succeed bool) {
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-
 	proxy := config.Conf.CrossChain.PaletteNFTProxy
 	ccmp := config.Conf.CrossChain.PaletteCCMP
-	hash, err := cli.SetNFTCCMP(proxy, ccmp)
+	hash, err := admcli.SetNFTCCMP(proxy, ccmp)
 	if err != nil {
 		log.Errorf("set ccmp on palette failed, err: %s", err.Error())
 		return
@@ -340,8 +319,7 @@ func PLTSyncGenesis() (succeed bool) {
 
 	// 2. get palette current block header
 	logsplit()
-	cli := admcli
-	curr, hdr, err := cli.GetCurrentBlockHeader()
+	curr, hdr, err := admcli.GetCurrentBlockHeader()
 	if err != nil {
 		log.Errorf("failed to get block header, err: %s", err)
 		return
@@ -386,7 +364,7 @@ func PLTSyncGenesis() (succeed bool) {
 		headerEnc := gB.Header.ToArray()
 
 		eccm := config.Conf.CrossChain.PaletteECCM
-		txhash, err := cli.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
+		txhash, err := admcli.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
 		if err != nil {
 			log.Errorf("failed to initGenesisBlock, err: %s", err)
 			return
@@ -414,10 +392,7 @@ func PLTBindNFTAsset() (succeed bool) {
 	toAsset := params.EthereumNFTAsset
 	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
 
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-
-	curAddr, _ := cli.GetBoundNFTAsset(proxy, fromAsset, targetSideChainID)
+	curAddr, _ := admcli.GetBoundNFTAsset(proxy, fromAsset, targetSideChainID)
 	if curAddr != utils.EmptyAddress {
 		if curAddr == toAsset {
 			log.Infof("ethereum NFT asset %s bound already", toAsset.Hex())
@@ -427,7 +402,7 @@ func PLTBindNFTAsset() (succeed bool) {
 		}
 	}
 
-	hash, err := cli.BindNFTAsset(
+	hash, err := admcli.BindNFTAsset(
 		proxy,
 		fromAsset,
 		toAsset,
@@ -466,15 +441,11 @@ func PLTUpgradeECCM() (succeed bool) {
 	}
 	log.Infof("new eccm contract %s", eccmAddr.Hex())
 
-	// eccm contract transfer ownership
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
-
 	// eccd contract transfer ownership
 	{
 		logsplit()
 		log.Info("eccd transferOwnership")
-		hash, err := cli.ECCDTransferOwnerShip(eccdAddr, eccmAddr)
+		hash, err := admcli.ECCDTransferOwnerShip(eccdAddr, eccmAddr)
 		if err != nil {
 			log.Error(err)
 			return
@@ -486,7 +457,7 @@ func PLTUpgradeECCM() (succeed bool) {
 	{
 		logsplit()
 		log.Info("eccm transferOwnership")
-		hash, err := cli.ECCMTransferOwnerShip(eccmAddr, ccmpAddr)
+		hash, err := admcli.ECCMTransferOwnerShip(eccmAddr, ccmpAddr)
 		if err != nil {
 			log.Error(err)
 			return
@@ -497,7 +468,7 @@ func PLTUpgradeECCM() (succeed bool) {
 	// pause eccmp
 	{
 		logsplit()
-		hash, err := cli.PauseCCMP(ccmpAddr)
+		hash, err := admcli.PauseCCMP(ccmpAddr)
 		if err != nil {
 			log.Error(err)
 			return
@@ -508,7 +479,7 @@ func PLTUpgradeECCM() (succeed bool) {
 	// upgrade eccm
 	{
 		logsplit()
-		hash, err := cli.UpgradeECCM(eccmAddr, ccmpAddr)
+		hash, err := admcli.UpgradeECCM(eccmAddr, ccmpAddr)
 		if err != nil {
 			log.Error(err)
 			return
@@ -519,7 +490,7 @@ func PLTUpgradeECCM() (succeed bool) {
 	// unpause eccmp
 	{
 		logsplit()
-		hash, err := cli.UnPauseCCMP(ccmpAddr)
+		hash, err := admcli.UnPauseCCMP(ccmpAddr)
 		if err != nil {
 			log.Error(err)
 			return
