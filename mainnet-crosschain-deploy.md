@@ -81,10 +81,15 @@ make robot t=plt-bind-plt-asset
 ```
 
 ## mint plt from ethereum to palette
-使用ethereumOwner账户跨链3.4亿到palette链上
+使用ethereumOwner账户跨链3.4亿到palette governance合约
 ```bash
-make robot t=eth-plt-mint
+make robot t=eth-plt-mint-gov
 ```
+如果是在本地，还需要跨链3亿plt到palette admin账户，用于后续validators等测试
+```bash
+make robot t=eth-plt-mint-admin
+```
+这里注意，上述两个testcase都需要在case对应的json文件指定amount, 以防一次性出错.
 
 ## deploy and bind nft asset on both of palette and ethereum
 跨链流程，使用任意账户在以太坊和palette上部署1对1的nft合约，并在两条链上相互绑定

@@ -20,12 +20,17 @@ make robot t=eth-registerSideChain
 make robot t=eth-approveRegisterSideChain
 ```
 
-4. deploy plt asset
+4. sync genesis header
+```bash
+make robot t=eth-syncGenesis
+```
+
+5. deploy plt asset
 ```bash
 make robot t=eth-deploy-plt
 ```
 
-5. deploy proxy contracts and set manager proxy, and record in config.json
+6. deploy proxy contracts and set manager proxy, and record in config.json
 ```bash
 make robot t=eth-deploy-plt-proxy
 make robot t=eth-plt-ccmp
@@ -34,14 +39,9 @@ make robot t=eth-deploy-nft-proxy
 make robot t=eth-nft-ccmp
 ```
 
-6. mint plt from `plt asset contract` owner to `plt proxy`
+7. mint plt from `plt asset contract` owner to `plt proxy`
 ```bash
 make robot t=eth-plt-transfer
-```
-
-7. sync genesis header
-```bash
-make robot t=eth-syncGenesis
 ```
 
 ## prepare on palette chain

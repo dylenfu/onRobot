@@ -413,19 +413,19 @@ func ETHSyncGenesis() (succeed bool) {
 	return true
 }
 
-// 以太坊上从PLT owner 跨链转移资产到palette，作为palette的启动资金，总额是3.4亿
-func ETHPLTContractMint() (succeed bool) {
+// 以太坊上从PLT owner 跨链转移资产到palette governance合约，作为palette的reward奖励池
+func ETHPLTMintGovernance() (succeed bool) {
 	var params struct {
 		Amount int
 	}
 
-	if err := config.LoadParams("ETH-PLT-Mint.json", &params); err != nil {
+	if err := config.LoadParams("ETH-PLT-Mint-Gov.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
 
 	from := ethOwner.Address()
-	to := common.HexToAddress(native.PLTContractAddress)
+	to := common.HexToAddress(native.GovernanceContractAddress)
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
 	asset := config.Conf.CrossChain.EthereumPLTAsset
@@ -515,18 +515,18 @@ func ETHPLTContractMint() (succeed bool) {
 	return true
 }
 
-func ETHPLTAdminMint() (succeed bool) {
+func ETHPLTMintAdmin() (succeed bool) {
 	var params struct {
 		Amount int
 	}
 
-	if err := config.LoadParams("ETH-PLT-Admin.json", &params); err != nil {
+	if err := config.LoadParams("ETH-PLT-Mint-Admin.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
 
 	from := ethOwner.Address()
-	to := common.HexToAddress(native.PLTContractAddress)
+	to := admcli.Address()
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
 	asset := config.Conf.CrossChain.EthereumPLTAsset
