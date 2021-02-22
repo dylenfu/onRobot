@@ -656,12 +656,12 @@ func ETHPLTMintGovernance() (succeed bool) {
 	logsplit()
 	log.Info("check balance on both of palette chain and ethereum chain...")
 	for i := 0; i < 100; i++ {
-		totalSupplyAfterLockOnEthereum, err := invoker.PLTBalanceOf(asset, from)
+		totalSupplyAfterLockOnEthereum, err := invoker.PLTTotalSupply(asset)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		totalSupplyAfterLockOnPalette, err := admcli.BalanceOf(to, "latest")
+		totalSupplyAfterLockOnPalette, err := admcli.PLTTotalSupply("latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -677,10 +677,10 @@ func ETHPLTMintGovernance() (succeed bool) {
 			plt.PrintUPLT(totalSupplyBeforeLockOnPalette),
 			plt.PrintUPLT(totalSupplyAfterLockOnPalette),
 		)
-		subFrom := utils.SafeSub(totalSupplyBeforeLockOnEthereum, totalSupplyAfterLockOnEthereum)
-		subTo := utils.SafeSub(totalSupplyAfterLockOnPalette, totalSupplyBeforeLockOnPalette)
-		zero := big.NewInt(0)
-		if new(big.Int).Sub(subFrom, amount).Cmp(zero) == 0 && new(big.Int).Sub(subTo, amount).Cmp(zero) == 0 {
+
+		sub1 := new(big.Int).Sub(totalSupplyBeforeLockOnEthereum, totalSupplyAfterLockOnEthereum)
+		sub2 := new(big.Int).Sub(totalSupplyAfterLockOnPalette, totalSupplyBeforeLockOnPalette)
+		if sub1.Cmp(amount) == 0 || sub2.Cmp(amount) == 0 {
 			log.Infof("lock tx hash %s success!", hash.Hex())
 			break
 		}
@@ -779,10 +779,9 @@ func ETHPLTMintAdmin() (succeed bool) {
 			plt.PrintUPLT(toBalanceBeforeLockOnPalette),
 			plt.PrintUPLT(toBalanceAfterLockOnPalette),
 		)
-		subFrom := utils.SafeSub(fromBalanceBeforeLockOnEthereum, fromBalanceAfterLockOnEthereum)
-		subTo := utils.SafeSub(toBalanceAfterLockOnPalette, toBalanceBeforeLockOnPalette)
-		zero := big.NewInt(0)
-		if new(big.Int).Sub(subFrom, amount).Cmp(zero) == 0 && new(big.Int).Sub(subTo, amount).Cmp(zero) == 0 {
+		sub1 := new(big.Int).Sub(fromBalanceBeforeLockOnEthereum, fromBalanceAfterLockOnEthereum)
+		sub2 := new(big.Int).Sub(toBalanceAfterLockOnPalette, toBalanceBeforeLockOnPalette)
+		if sub1.Cmp(amount) == 0 || sub2.Cmp(amount) == 0 {
 			log.Infof("lock tx hash %s success!", hash.Hex())
 			break
 		}

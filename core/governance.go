@@ -28,13 +28,27 @@ func AddValidators() (succeed bool) {
 
 		nodes              = config.Conf.ValidatorNodes()
 		balances           = make([]int, len(nodes))
+		needStakedAmounts  = make([]int, len(nodes))
 		expectNodeAddrList = make([]common.Address, len(nodes))
+		needWait = false
 		err                error
 	)
 
 	if err = config.LoadParams("AddValidators.json", &params); err != nil {
 		log.Error(err)
 		return
+	}
+
+	// check stake amount
+	{
+		logsplit()
+		log.Infof("check validators stake amount at block %d", admcli.GetBlockNumber())
+		for i, node := range nodes {
+			amount := admcli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
+			staked := int(plt.PrintUPLT(amount))
+			needStakedAmounts[i] = params.InitAmount - staked
+			log.Infof("node%d staked %d already", i, staked)
+		}
 	}
 
 	// check balance before stake
@@ -57,8 +71,12 @@ func AddValidators() (succeed bool) {
 		logsplit()
 		log.Infof("prepare stake account balance......")
 		for i, balance := range balances {
-			if balance < params.InitAmount {
-				addAmount := params.InitAmount - balance
+			if needStakedAmounts[i] == 0 {
+				continue
+			}
+			needStkAmt := needStakedAmounts[i]
+			if balance < needStkAmt {
+				addAmount := needStkAmt - balance
 				node := nodes[i]
 				if _, err := admcli.PLTTransfer(node.StakeAddr(), plt.MultiPLT(addAmount)); err != nil {
 					log.Errorf("failed to deposit to node %s, amount %d", node.NodeAddr().Hex(), addAmount)
@@ -74,15 +92,22 @@ func AddValidators() (succeed bool) {
 		log.Infof("validators stake at block %d", admcli.GetBlockNumber())
 		for i, node := range nodes {
 			nodecli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
-			stkAmt := balances[i]
+			stkAmt := needStakedAmounts[i]
+			if stkAmt == 0 {
+				continue
+			}
 			if _, err := nodecli.Stake(node.NodeAddr(), node.StakeAddr(), plt.MultiPLT(stkAmt), false); err != nil {
 				log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), stkAmt)
 				return
 			}
+			needWait = true
+			log.Infof("node%d stake %d PLT", i, stkAmt)
 		}
 	}
 
-	wait(2*config.Conf.RewardEffectivePeriod + 1)
+	if needWait {
+		wait(2*config.Conf.RewardEffectivePeriod + 1)
+	}
 
 	// check balance after stake
 	{
