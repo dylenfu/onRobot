@@ -2,6 +2,8 @@ package core
 
 import (
 	"bytes"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
@@ -10,7 +12,6 @@ import (
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/poly"
 	polyutils "github.com/polynetwork/poly/native/service/utils"
-	"math/big"
 )
 
 ///////////////////////////////////////////////////////
@@ -87,7 +88,7 @@ func ETHTransferECCDOwnership() (succeed bool) {
 		return
 	}
 	if !bytes.Equal(eccm.Bytes(), actual.Bytes()) {
-		log.Infof("transfer eccd ownership failed. expect %s != actual %s", eccm.Hex(), actual.Hex())
+		log.Errorf("transfer eccd ownership failed. expect %s != actual %s", eccm.Hex(), actual.Hex())
 		return
 	}
 
@@ -111,7 +112,7 @@ func ETHTransferECCMOwnership() (succeed bool) {
 		return
 	}
 	if !bytes.Equal(ccmp.Bytes(), actual.Bytes()) {
-		log.Infof("transfer eccm ownership failed. expect %s != actual %s", ccmp.Hex(), actual.Hex())
+		log.Errorf("transfer eccm ownership failed. expect %s != actual %s", ccmp.Hex(), actual.Hex())
 		return
 	}
 
@@ -135,7 +136,7 @@ func ETHTransferCCMPOwnership() (succeed bool) {
 		return
 	}
 	if !bytes.Equal(newOwner.Bytes(), actual.Bytes()) {
-		log.Infof("transfer ccmp ownership failed. expect %s != actual %s", ccmp.Hex(), actual.Hex())
+		log.Errorf("transfer ccmp ownership failed. expect %s != actual %s", ccmp.Hex(), actual.Hex())
 		return
 	}
 
@@ -384,6 +385,78 @@ func ETHBindNFTAsset() (succeed bool) {
 
 	log.Infof("bind NFT proxy on ethereum success, hash %s", hash.Hex())
 
+	return true
+}
+
+func ETHTransferPLTAssetOwnership() (succeed bool) {
+	asset := config.Conf.CrossChain.EthereumPLTAsset
+	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
+
+	hash, err := ethOwner.TransferPLTAssetOwnership(asset, newOwner)
+	if err != nil {
+		log.Errorf("transfer plt asset ownership to eccm on ethereum failed, err: %s", err.Error())
+		return
+	}
+
+	actual, err := ethOwner.PLTAssetOwnership(asset)
+	if err != nil {
+		log.Errorf("get plt asset new owner failed, err :%v", err)
+		return
+	}
+	if !bytes.Equal(newOwner.Bytes(), actual.Bytes()) {
+		log.Errorf("transfer plt asset ownership failed. expect %s != actual %s", newOwner.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("transfer plt asset ownership to eccm on ethereum success, tx %s", hash.Hex())
+	return true
+}
+
+func ETHTransferPLTProxyOwnership() (succeed bool) {
+	proxy := config.Conf.CrossChain.EthereumPLTProxy
+	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
+
+	hash, err := ethOwner.TransferPLTProxyOwnership(proxy, newOwner)
+	if err != nil {
+		log.Errorf("transfer plt proxy ownership to eccm on ethereum failed, err: %s", err.Error())
+		return
+	}
+
+	actual, err := ethOwner.PLTProxyOwnership(proxy)
+	if err != nil {
+		log.Errorf("get plt proxy new owner failed, err :%v", err)
+		return
+	}
+	if !bytes.Equal(newOwner.Bytes(), actual.Bytes()) {
+		log.Errorf("transfer plt proxy ownership failed. expect %s != actual %s", newOwner.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("transfer plt proxy ownership to eccm on ethereum success, tx %s", hash.Hex())
+	return true
+}
+
+func ETHTransferNFTProxyOwnership() (succeed bool) {
+	proxy := config.Conf.CrossChain.EthereumNFTProxy
+	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
+
+	hash, err := ethOwner.TransferNFTProxyOwnership(proxy, newOwner)
+	if err != nil {
+		log.Errorf("transfer nft proxy ownership to eccm on ethereum failed, err: %s", err.Error())
+		return
+	}
+
+	actual, err := ethOwner.NFTProxyOwnership(proxy)
+	if err != nil {
+		log.Errorf("get nft proxy new owner failed, err :%v", err)
+		return
+	}
+	if !bytes.Equal(newOwner.Bytes(), actual.Bytes()) {
+		log.Errorf("transfer nft proxy ownership failed. expect %s != actual %s", newOwner.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("transfer nft proxy ownership to eccm on ethereum success, tx %s", hash.Hex())
 	return true
 }
 
