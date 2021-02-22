@@ -11,7 +11,8 @@ make robot t=eth-deploy-ccmp
 
 2. transfer eccd ownership to eccm, transfer eccm ownship to ccmp
 ```bash
-make robot t=eth-ownership
+make robot t=eth-eccd-ownership
+make robot t=eth-eccm-ownership
 ```
 
 3. register ethereum as an new side chain on poly chain

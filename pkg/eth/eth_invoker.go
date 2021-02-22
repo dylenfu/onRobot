@@ -357,7 +357,7 @@ func (i *EthInvoker) BindNFTProxy(
 }
 
 func (i *EthInvoker) TransferECCDOwnership(eccd, eccm common.Address) (common.Hash, error) {
-	eccdContract, err := eccd_abi.NewEthCrossChainData(eccd, i.Tools.GetEthClient())
+	eccdContract, err := eccd_abi.NewEthCrossChainData(eccd, i.backend())
 	if err != nil {
 		return utils.EmptyHash, fmt.Errorf("TransferECCDOwnership, err: %v", err)
 	}
@@ -374,6 +374,15 @@ func (i *EthInvoker) TransferECCDOwnership(eccd, eccm common.Address) (common.Ha
 		return utils.EmptyHash, err
 	}
 	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) ECCDOwnership(eccdAddr common.Address) (common.Address, error) {
+	eccd, err := eccd_abi.NewEthCrossChainData(eccdAddr, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return eccd.Owner(nil)
 }
 
 func (i *EthInvoker) TransferECCMOwnership(eccm, ccmp common.Address) (common.Hash, error) {
@@ -394,6 +403,44 @@ func (i *EthInvoker) TransferECCMOwnership(eccm, ccmp common.Address) (common.Ha
 		return utils.EmptyHash, err
 	}
 	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) ECCMOwnership(eccmAddr common.Address) (common.Address, error) {
+	eccm, err := eccm_abi.NewEthCrossChainManager(eccmAddr, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return eccm.Owner(nil)
+}
+
+func (i *EthInvoker) TransferCCMPOwnership(ccmpAddr, newOwner common.Address) (common.Hash, error) {
+	ccmp, err := eccmp_abi.NewEthCrossChainManagerProxy(ccmpAddr, i.backend())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	tx, err := ccmp.TransferOwnership(auth, newOwner)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
+	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) CCMPOwnership(ccmpAddr common.Address) (common.Address, error) {
+	ccmp, err := eccmp_abi.NewEthCrossChainManagerProxy(ccmpAddr, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return ccmp.Owner(nil)
 }
 
 func (i *EthInvoker) PLTBalanceOf(asset, user common.Address) (*big.Int, error) {

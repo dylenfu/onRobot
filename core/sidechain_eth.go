@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
@@ -70,27 +71,75 @@ func ETHDeployCCMP() (succeed bool) {
 	return true
 }
 
-func ETHTransferOwnership() (succeed bool) {
+func ETHTransferECCDOwnership() (succeed bool) {
 	eccd := config.Conf.CrossChain.EthereumECCD
 	eccm := config.Conf.CrossChain.EthereumECCM
-	ccmp := config.Conf.CrossChain.EthereumCCMP
 
 	hash, err := ethOwner.TransferECCDOwnership(eccd, eccm)
 	if err != nil {
 		log.Errorf("transfer eccd ownership to eccm on ethereum failed, err: %s", err.Error())
 		return
-	} else {
-		log.Infof("transfer eccd ownership to eccm on ethereum success, tx %s", hash.Hex())
 	}
 
-	hash, err = ethOwner.TransferECCMOwnership(eccm, ccmp)
+	actual, err := ethOwner.ECCDOwnership(eccd)
+	if err != nil {
+		log.Errorf("get eccd new owner failed, err :%v", err)
+		return
+	}
+	if !bytes.Equal(eccm.Bytes(), actual.Bytes()) {
+		log.Infof("transfer eccd ownership failed. expect %s != actual %s", eccm.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("transfer eccd ownership to eccm on ethereum success, tx %s", hash.Hex())
+	return true
+}
+
+func ETHTransferECCMOwnership() (succeed bool) {
+	eccm := config.Conf.CrossChain.EthereumECCM
+	ccmp := config.Conf.CrossChain.EthereumCCMP
+
+	hash, err := ethOwner.TransferECCMOwnership(eccm, ccmp)
 	if err != nil {
 		log.Errorf("transfer eccm ownership to ccmp on ethereum failed, err: %s", err.Error())
 		return
-	} else {
-		log.Infof("transfer eccm ownership to ccmp on ethereum success, tx %s", hash.Hex())
 	}
 
+	actual, err := ethOwner.ECCMOwnership(eccm)
+	if err != nil {
+		log.Errorf("get eccm new owner failed, err :%v", err)
+		return
+	}
+	if !bytes.Equal(ccmp.Bytes(), actual.Bytes()) {
+		log.Infof("transfer eccm ownership failed. expect %s != actual %s", ccmp.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("transfer eccm ownership to ccmp on ethereum success, tx %s", hash.Hex())
+	return true
+}
+
+func ETHTransferCCMPOwnership() (succeed bool) {
+	ccmp := config.Conf.CrossChain.EthereumCCMP
+	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
+
+	hash, err := ethOwner.TransferECCMOwnership(ccmp, newOwner)
+	if err != nil {
+		log.Errorf("transfer ccmp ownership to new owner on ethereum failed, err: %s", err.Error())
+		return
+	}
+
+	actual, err := ethOwner.CCMPOwnership(ccmp)
+	if err != nil {
+		log.Errorf("get ccmp new owner failed, err :%v", err)
+		return
+	}
+	if !bytes.Equal(newOwner.Bytes(), actual.Bytes()) {
+		log.Infof("transfer ccmp ownership failed. expect %s != actual %s", ccmp.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("transfer ccmp ownership to new owner on ethereum success, tx %s", hash.Hex())
 	return true
 }
 
