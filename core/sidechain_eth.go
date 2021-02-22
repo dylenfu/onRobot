@@ -92,7 +92,7 @@ func ETHTransferECCDOwnership() (succeed bool) {
 		return
 	}
 
-	log.Infof("transfer eccd ownership to eccm on ethereum success, tx %s", hash.Hex())
+	log.Infof("transfer eccd %s ownership to eccm %s on ethereum success, tx %s", eccd.Hex(), eccm.Hex(), hash.Hex())
 	return true
 }
 
@@ -116,7 +116,7 @@ func ETHTransferECCMOwnership() (succeed bool) {
 		return
 	}
 
-	log.Infof("transfer eccm ownership to ccmp on ethereum success, tx %s", hash.Hex())
+	log.Infof("transfer eccm %s ownership to ccmp %s on ethereum success, tx %s", eccm.Hex(), ccmp.Hex(), hash.Hex())
 	return true
 }
 
@@ -140,7 +140,7 @@ func ETHTransferCCMPOwnership() (succeed bool) {
 		return
 	}
 
-	log.Infof("transfer ccmp ownership to new owner on ethereum success, tx %s", hash.Hex())
+	log.Infof("transfer ccmp %s ownership to new owner %s on ethereum success, tx %s", ccmp.Hex(), newOwner.Hex(), hash.Hex())
 	return true
 }
 

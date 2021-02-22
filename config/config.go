@@ -32,26 +32,27 @@ const (
 )
 
 var (
-	Conf, BakConf  = new(Config), new(Config)
-	AdminKey       *ecdsa.PrivateKey
-	AdminAddr      common.Address
+	Conf, BakConf                = new(Config), new(Config)
+	AdminKey, CrossChainAdminKey *ecdsa.PrivateKey
+	//AdminAddr      common.Address
 	ConfigFilePath string
 )
 
 type Config struct {
-	Environment           *Env
-	Network               *Network
-	DefaultPassphrase     string
-	AdminAccount          string
-	BaseRewardPool        string
-	Accounts              []string
-	GasLimit              uint64
-	DeployGasLimit        uint64
-	BlockPeriod           encode.Duration
-	RewardEffectivePeriod int // 区块奖励周期/参数生效周期
-	Nodes                 []*Node
-	CrossChain            *CrossChainConfig
-	FinalOwner            *FinalOwner
+	Environment            *Env
+	Network                *Network
+	DefaultPassphrase      string
+	AdminAccount           common.Address
+	CrossChainAdminAccount common.Address
+	BaseRewardPool         string
+	Accounts               []string
+	GasLimit               uint64
+	DeployGasLimit         uint64
+	BlockPeriod            encode.Duration
+	RewardEffectivePeriod  int // 区块奖励周期/参数生效周期
+	Nodes                  []*Node
+	CrossChain             *CrossChainConfig
+	FinalOwner             *FinalOwner
 }
 
 func (c *Config) DeepCopy() *Config {
@@ -268,11 +269,17 @@ func Init(path string) {
 	// load nodes privateKey
 	sdk.Init(Conf.GasLimit, Conf.DeployGasLimit, time.Duration(Conf.BlockPeriod))
 
-	AdminKey, err = LoadAccount(Conf.AdminAccount)
+	AdminKey, err = LoadAccount(Conf.AdminAccount.Hex())
 	if err != nil {
 		panic(err)
 	}
-	AdminAddr = crypto.PubkeyToAddress(AdminKey.PublicKey)
+	//AdminAddr = crypto.PubkeyToAddress(AdminKey.PublicKey)
+
+	CrossChainAdminKey, err = LoadAccount(Conf.CrossChainAdminAccount.Hex())
+	if err != nil {
+		panic(err)
+	}
+
 	BakConf = Conf.DeepCopy()
 }
 
@@ -321,19 +328,20 @@ func SaveConfig(c *Config) error {
 	}
 
 	type XConfig struct {
-		Environment           *Env
-		Network               *Network
-		DefaultPassphrase     string
-		AdminAccount          string
-		BaseRewardPool        string
-		Accounts              []string
-		GasLimit              uint64
-		DeployGasLimit        uint64
-		BlockPeriod           encode.Duration
-		RewardEffectivePeriod int // 区块奖励周期/参数生效周期
-		Nodes                 []*Node
-		CrossChain            *XCrossChainConfig
-		FinalOwner            *FinalOwner
+		Environment            *Env
+		Network                *Network
+		DefaultPassphrase      string
+		AdminAccount           common.Address
+		CrossChainAdminAccount common.Address
+		BaseRewardPool         string
+		Accounts               []string
+		GasLimit               uint64
+		DeployGasLimit         uint64
+		BlockPeriod            encode.Duration
+		RewardEffectivePeriod  int // 区块奖励周期/参数生效周期
+		Nodes                  []*Node
+		CrossChain             *XCrossChainConfig
+		FinalOwner             *FinalOwner
 	}
 
 	x := new(XConfig)
@@ -341,6 +349,7 @@ func SaveConfig(c *Config) error {
 	x.Network = c.Network
 	x.DefaultPassphrase = c.DefaultPassphrase
 	x.AdminAccount = c.AdminAccount
+	x.CrossChainAdminAccount = c.CrossChainAdminAccount
 	x.BaseRewardPool = c.BaseRewardPool
 	x.Accounts = c.Accounts
 	x.GasLimit = c.GasLimit
@@ -418,12 +427,12 @@ type CrossChainConfig struct {
 	PolyRPCAddress               string
 
 	// poly side chain configuration
-	PaletteSideChainID   uint64
-	PaletteSideChainName string
-	PaletteECCD          common.Address
-	PaletteECCM          common.Address
-	PaletteCCMP          common.Address
-	PaletteNFTProxy      common.Address
+	PaletteSideChainID            uint64
+	PaletteSideChainName          string
+	PaletteECCD                   common.Address
+	PaletteECCM                   common.Address
+	PaletteCCMP                   common.Address
+	PaletteNFTProxy               common.Address
 	PaletteCrossChainAdminAccount common.Address
 
 	// ethereum side chain configuration
@@ -477,10 +486,6 @@ func (c *CrossChainConfig) LoadPolyAccount(path string) (*polysdk.Account, error
 		return nil, fmt.Errorf("failed to get poly account, err: %s", err)
 	}
 	return acc, nil
-}
-
-func (c *CrossChainConfig) LoadPaletteCrossChainAdminAccount() (*ecdsa.PrivateKey, error) {
-	return LoadAccount(c.PaletteCrossChainAdminAccount.Hex())
 }
 
 func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {

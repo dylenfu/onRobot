@@ -55,14 +55,15 @@ func Name() (succeed bool) {
 }
 
 func AdminBalance() (succeed bool) {
-	balance, err := admcli.BalanceOf(config.AdminAddr, "latest")
+	addr := config.Conf.AdminAccount
+	balance, err := admcli.BalanceOf(addr, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	actual := plt.PrintUPLT(balance)
-	log.Infof("admin %s balance %d", config.AdminAddr.Hex(), actual)
+	log.Infof("admin %s balance %d", addr.Hex(), actual)
 
 	return true
 }

@@ -32,14 +32,8 @@ var (
 
 func initialize() {
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
-	admkey := config.AdminKey
-	admcli = sdk.NewSender(baseUrl, admkey)
-
-	ccAdmKey, err := config.Conf.CrossChain.LoadPaletteCrossChainAdminAccount()
-	if err != nil {
-		panic(fmt.Sprintf("load palette cross chain admin account failed, err: %v", err))
-	}
-	ccAdmCli = sdk.NewSender(baseUrl, ccAdmKey)
+	admcli = sdk.NewSender(baseUrl, config.AdminKey)
+	ccAdmCli = sdk.NewSender(baseUrl, config.CrossChainAdminKey)
 
 	node := config.Conf.ValidatorNodes()[0]
 	valcli = sdk.NewSender(node.RPCAddr(), node.PrivateKey())

@@ -402,7 +402,7 @@ func Delegate() (succeed bool) {
 	{
 		logsplit()
 		log.Infof("transfer back PLT to admin account")
-		to := config.AdminAddr
+		to := config.Conf.AdminAccount
 		for _, fan := range params.Fans {
 			cli := clients[fan.Address]
 			amt := plt.MultiPLT(fan.Amount)
