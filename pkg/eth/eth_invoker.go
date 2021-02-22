@@ -153,6 +153,15 @@ func (i *EthInvoker) SetPLTCCMP(proxyAddr, ccmpAddr common.Address) (common.Hash
 	return tx.Hash(), nil
 }
 
+func (i *EthInvoker) GetPLTCCMP(proxyAddr common.Address) (common.Address, error) {
+	proxy, err := lock_proxy_abi.NewLockProxy(proxyAddr, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return proxy.ManagerProxyContract(nil)
+}
+
 func (i *EthInvoker) SetNFTCCMP(proxyAddr, ccmpAddr common.Address) (common.Hash, error) {
 	proxy, err := nftlp.NewNFTLockProxy(proxyAddr, i.backend())
 	if err != nil {
@@ -170,6 +179,15 @@ func (i *EthInvoker) SetNFTCCMP(proxyAddr, ccmpAddr common.Address) (common.Hash
 		return utils.EmptyHash, err
 	}
 	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) GetNFTCCMP(proxyAddr common.Address) (common.Address, error) {
+	proxy, err := nftlp.NewNFTLockProxy(proxyAddr, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return proxy.ManagerProxyContract(nil)
 }
 
 func (i *EthInvoker) DeployPLTAsset() (common.Address, error) {
@@ -280,6 +298,25 @@ func (i *EthInvoker) BindPLTAsset(
 	return tx.Hash(), nil
 }
 
+func (i *EthInvoker) GetBoundPLTAsset(
+	localLockProxyAddr,
+	fromAssetHash common.Address,
+	toChainId uint64,
+) (common.Address, error) {
+
+	proxy, err := lock_proxy_abi.NewLockProxy(localLockProxyAddr, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	bz, err := proxy.AssetHashMap(nil, fromAssetHash, toChainId)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return common.BytesToAddress(bz), nil
+}
+
 func (i *EthInvoker) BindPLTProxy(
 	localLockProxy,
 	targetLockProxy common.Address,
@@ -303,6 +340,24 @@ func (i *EthInvoker) BindPLTProxy(
 		return utils.EmptyHash, err
 	}
 	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) GetBoundPLTProxy(
+	localLockProxy common.Address,
+	targetSideChainID uint64,
+) (common.Address, error) {
+
+	proxy, err := lock_proxy_abi.NewLockProxy(localLockProxy, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	bz, err := proxy.ProxyHashMap(nil, targetSideChainID)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return common.BytesToAddress(bz), nil
 }
 
 func (i *EthInvoker) BindNFTAsset(
@@ -330,6 +385,25 @@ func (i *EthInvoker) BindNFTAsset(
 	return tx.Hash(), nil
 }
 
+func (i *EthInvoker) GetBoundNFTAsset(
+	lockProxyAddr,
+	fromAssetHash common.Address,
+	targetSideChainId uint64,
+) (common.Address, error) {
+
+	proxy, err := nftlp.NewNFTLockProxy(lockProxyAddr, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	bz, err := proxy.AssetHashMap(nil, fromAssetHash, targetSideChainId)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return common.BytesToAddress(bz), nil
+}
+
 func (i *EthInvoker) BindNFTProxy(
 	localLockProxy,
 	targetLockProxy common.Address,
@@ -352,6 +426,23 @@ func (i *EthInvoker) BindNFTProxy(
 		return utils.EmptyHash, err
 	}
 	return tx.Hash(), nil
+}
+
+func (i *EthInvoker) GetBoundNFTProxy(
+	localLockProxy common.Address,
+	targetSideChainID uint64,
+) (common.Address, error) {
+	proxy, err := nftlp.NewNFTLockProxy(localLockProxy, i.backend())
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	bz, err := proxy.ProxyHashMap(nil, targetSideChainID)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return common.BytesToAddress(bz), nil
 }
 
 func (i *EthInvoker) TransferECCDOwnership(eccd, eccm common.Address) (common.Hash, error) {

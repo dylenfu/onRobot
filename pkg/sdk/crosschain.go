@@ -383,7 +383,7 @@ func (c *Client) BindNFTProxy(
 func (c *Client) GetBoundNFTProxy(
 	localLockProxy common.Address,
 	targetSideChainID uint64,
-	) (common.Address, error) {
+) (common.Address, error) {
 
 	proxy, err := nftlp.NewNFTLockProxy(localLockProxy, c.backend)
 	if err != nil {

@@ -227,34 +227,23 @@ func PLTBindPLTProxy() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	sideChainID := config.Conf.CrossChain.EthereumSideChainID
 
-	// bind proxy
-	{
-		log.Infof("bind proxy...")
-		tx, err := ccAdmCli.BindPLTProxy(sideChainID, proxy)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof("bind PLT proxy on palette success! hash %s", tx.Hex())
+	hash, err := ccAdmCli.BindPLTProxy(sideChainID, proxy)
+	if err != nil {
+		log.Error(err)
+		return
 	}
 
-	// get and compare proxy
-	{
-		log.Infof("get bind proxy...")
-		actual, err := ccAdmCli.GetBindPLTProxy(sideChainID, "latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		if !bytes.Equal(actual.Bytes(), proxy.Bytes()) {
-			log.Errorf("wrong proxy: expect  %s but get %s", proxy.Hex(), actual.Hex())
-			return
-		} else {
-			log.Infof("bind proxy success %s", proxy.Hex())
-		}
+	actual, err := ccAdmCli.GetBindPLTProxy(sideChainID, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(actual.Bytes(), proxy.Bytes()) {
+		log.Errorf("bind PLT proxy failed, expect  %s != actual %s", proxy.Hex(), actual.Hex())
+		return
 	}
 
+	log.Infof("bind PLT proxy to %s on palette success! hash %s", proxy.Hex(), hash.Hex())
 	return true
 }
 
@@ -263,33 +252,23 @@ func PLTBindPLTAsset() (succeed bool) {
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	sideChainID := config.Conf.CrossChain.EthereumSideChainID
 
-	// bind asset
-	{
-		log.Infof("bind asset...")
-		tx, err := ccAdmCli.BindPLTAsset(sideChainID, asset)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof("bind PLT asset on palette success! hash %s", tx.Hex())
+	hash, err := ccAdmCli.BindPLTAsset(sideChainID, asset)
+	if err != nil {
+		log.Error(err)
+		return
 	}
 
-	// get and compare asset
-	{
-		log.Infof("get bind asset...")
-		actual, err := ccAdmCli.GetBindPLTAsset(sideChainID, "latest")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		if !bytes.Equal(asset.Bytes(), actual.Bytes()) {
-			log.Errorf("asset err, expect %s, actual %s", asset.Hex(), actual.Hex())
-			return
-		} else {
-			log.Infof("get asset %s success", actual.Hex())
-		}
+	actual, err := ccAdmCli.GetBindPLTAsset(sideChainID, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(asset.Bytes(), actual.Bytes()) {
+		log.Errorf("bind PLT asset err, expect %s != actual %s", asset.Hex(), actual.Hex())
+		return
 	}
 
+	log.Infof("bind PLT asset to %s on palette success! hash %s", asset.Hex(), hash.Hex())
 	return true
 }
 
@@ -366,20 +345,14 @@ func PLTBindNFTProxy() (succeed bool) {
 		return
 	}
 
-	// get and compare asset
-	{
-		log.Infof("get bind asset...")
-		actual, err := ccAdmCli.GetBoundNFTProxy(localLockproxy, targetSideChainID)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		if !bytes.Equal(targetLockProxy.Bytes(), actual.Bytes()) {
-			log.Errorf("asset err, expect %s, actual %s", targetLockProxy.Hex(), actual.Hex())
-			return
-		} else {
-			log.Infof("get asset %s success", actual.Hex())
-		}
+	actual, err := ccAdmCli.GetBoundNFTProxy(localLockproxy, targetSideChainID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(targetLockProxy.Bytes(), actual.Bytes()) {
+		log.Errorf("asset err, expect %s != actual %s", targetLockProxy.Hex(), actual.Hex())
+		return
 	}
 
 	log.Infof("bind NFT proxy %s to %s on palette success! hash %s", localLockproxy.Hex(), targetLockProxy.Hex(), hash.Hex())

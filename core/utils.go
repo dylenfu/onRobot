@@ -23,7 +23,7 @@ import (
 
 var (
 	admcli     *sdk.Client
-	ccAdmCli *sdk.Client
+	ccAdmCli   *sdk.Client
 	valcli     *sdk.Client
 	ethInvoker *eth.EthInvoker
 	ethOwner   *eth.EthInvoker

@@ -130,10 +130,10 @@ func NFTSetUri() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		uri, _  = admcli.NFTGetBaseUri(asset, "latest")
+		uri, _ = admcli.NFTGetBaseUri(asset, "latest")
 		log.Infof("hash %s, asset: %s, owner: %s, uri: %s", hash.Hex(), asset.Hex(), owner.Hex(), uri)
 
-		for i:= 0;i<10;i++ {
+		for i := 0; i < 10; i++ {
 			token := big.NewInt(int64(i))
 			if uri, _ := admcli.NFTTokenURI(asset, token, "latest"); uri != "" {
 				log.Infof("token uri %s", uri)

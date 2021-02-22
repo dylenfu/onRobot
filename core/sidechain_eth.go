@@ -245,10 +245,19 @@ func ETHBindPLTProxy() (succeed bool) {
 	if err != nil {
 		log.Errorf("bind PLT proxy on ethereum failed, err: %s", err.Error())
 		return
-	} else {
-		log.Infof("bind PLT proxy on ethereum success, hash %s", hash.Hex())
 	}
 
+	actual, err := ethOwner.GetBoundPLTProxy(localLockProxy, targetSideChainID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(targetLockProxy.Bytes(), actual.Bytes()) {
+		log.Errorf("proxy bind failed, expect %s != actual %s", targetLockProxy.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("bind PLT proxy %s to %s on ethereum success, hash %s", localLockProxy.Hex(), targetLockProxy.Hex(), hash.Hex())
 	return true
 }
 
@@ -260,12 +269,21 @@ func ETHBindPLTAsset() (succeed bool) {
 
 	hash, err := ethOwner.BindPLTAsset(localLockProxy, fromAsset, toAsset, toChainId)
 	if err != nil {
-		log.Errorf("bind PLT proxy on ethereum failed, err: %s", err.Error())
+		log.Errorf("bind PLT asset on ethereum failed, err: %s", err.Error())
 		return
-	} else {
-		log.Infof("bind PLT proxy on ethereum success, hash %s", hash.Hex())
 	}
 
+	actual, err := ethOwner.GetBoundPLTAsset(localLockProxy, fromAsset, toChainId)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(toAsset.Bytes(), actual.Bytes()) {
+		log.Errorf("bind plt asset on ethereum failed, expect %s != actual %s", toAsset.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("bind PLT asset %s to %s on ethereum success, hash %s", fromAsset.Hex(), toAsset.Hex(), hash.Hex())
 	return true
 }
 
@@ -276,10 +294,19 @@ func ETHSetPLTCCMP() (succeed bool) {
 	if err != nil {
 		log.Errorf("register PLT proxy to ccmp on ethereum failed, err: %s", err.Error())
 		return
-	} else {
-		log.Infof("register PLT proxy to ccmp on ethereum success, tx %s", hash.Hex())
 	}
 
+	actual, err := ethOwner.GetPLTCCMP(proxy)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(ccmp.Bytes(), actual.Bytes()) {
+		log.Errorf("set plt ccmp failed, expect %s != actual %s", ccmp.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("register PLT proxy %s to ccmp %s on ethereum success, tx %s", proxy.Hex(), ccmp.Hex(), hash.Hex())
 	return true
 }
 
@@ -335,10 +362,19 @@ func ETHSetNFTCCMP() (succeed bool) {
 	if err != nil {
 		log.Errorf("register NFT proxy to ccmp on ethereum failed, err: %s", err.Error())
 		return
-	} else {
-		log.Infof("register NFT proxy to ccmp on ethereum success, tx %s", hash.Hex())
 	}
 
+	actual, err := ethOwner.GetNFTCCMP(proxy)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(ccmp.Bytes(), actual.Bytes()) {
+		log.Errorf("register NFT proxy to ccmp failed, expect %s != actual %s", ccmp.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("register NFT proxy %s to ccmp %s on ethereum success, tx %s", proxy.Hex(), ccmp.Hex(), hash.Hex())
 	return true
 }
 
@@ -347,14 +383,23 @@ func ETHBindNFTProxy() (succeed bool) {
 	targetLockProxy := config.Conf.CrossChain.PaletteNFTProxy
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
 
-	tx, err := ethOwner.BindNFTProxy(localLockProxy, targetLockProxy, targetSideChainID)
+	hash, err := ethOwner.BindNFTProxy(localLockProxy, targetLockProxy, targetSideChainID)
 	if err != nil {
 		log.Errorf("bind NFT proxy on ethereum failed, err: %s", err.Error())
 		return
-	} else {
-		log.Infof("bind NFT proxy on ethereum success, hash %s", tx.Hex())
 	}
 
+	actual, err := ethOwner.GetBoundNFTProxy(localLockProxy, targetSideChainID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(targetLockProxy.Bytes(), actual.Bytes()) {
+		log.Errorf("bind NFT proxy to ccmp failed, expect %s != actual %s", targetLockProxy.Hex(), actual.Hex())
+		return
+	}
+
+	log.Infof("bind NFT proxy %s to %s on ethereum success, tx %s", localLockProxy.Hex(), targetLockProxy.Hex(), hash.Hex())
 	return true
 }
 
@@ -379,12 +424,21 @@ func ETHBindNFTAsset() (succeed bool) {
 		chainID,
 	)
 	if err != nil {
-		log.Errorf("bind NFT proxy on ethereum failed, err: %s", err.Error())
+		log.Errorf("bind NFT asset on ethereum failed, err: %s", err.Error())
 		return
 	}
 
-	log.Infof("bind NFT proxy on ethereum success, hash %s", hash.Hex())
+	actual, err := ethOwner.GetBoundNFTAsset(proxy, fromAsset, chainID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(toAsset.Bytes(), actual.Bytes()) {
+		log.Errorf("bind NFT asset failed, expect %s != actual %s", toAsset.Hex(), actual.Hex())
+		return
+	}
 
+	log.Infof("bind NFT asset %s to %s on ethereum success, hash %s", fromAsset.Hex(), toAsset.Hex(), hash.Hex())
 	return true
 }
 
