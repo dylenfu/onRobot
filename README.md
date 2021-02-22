@@ -5,6 +5,12 @@ make clean && make compile && make robot t=reset,name,totalSupply,decimal,adminB
 
 palette p2pserver 测试工具
 
+## 使用须知
+使用之前先设置环境变量:local,dev,test,prod 
+```bash
+export ONROBOT=local
+```
+
 ## 使用方式
 下载项目onRobot \
 https://github.com/palette-community/onRobot.git

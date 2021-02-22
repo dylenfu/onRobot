@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/native/governance"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/polynetwork/eth-contracts/go_abi/eccd_abi"
@@ -179,13 +178,13 @@ func (c *Client) CCMPOwnership(ccmpAddr common.Address) (common.Address, error) 
 	return ccmp.Owner(nil)
 }
 
-func (c *Client) AdminTransferOwnership(newOwner common.Address) (common.Hash, error) {
-	payload, err := c.packGovernance(governance.MethodTransferOwnership, newOwner)
+func (c *Client) CrossChainAdminTransferOwnership(newOwner common.Address) (common.Hash, error) {
+	payload, err := c.packPLT(plt.MethodTransferOwnership, newOwner)
 	if err != nil {
 		return utils.EmptyHash, err
 	}
 
-	hash, err := c.SendGovernanceTx(payload)
+	hash, err := c.sendPLTTx(payload)
 	if err != nil {
 		return utils.EmptyHash, err
 	}
@@ -197,19 +196,19 @@ func (c *Client) AdminTransferOwnership(newOwner common.Address) (common.Hash, e
 	return hash, nil
 }
 
-func (c *Client) AdminOwnership(blockNum string) (common.Address, error) {
-	payload, err := c.packGovernance(governance.MethodOwnership)
+func (c *Client) CrossChainAdminOwnership(blockNum string) (common.Address, error) {
+	payload, err := c.packPLT(plt.MethodOwnership)
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
 
-	enc, err := c.CallGovernance(payload, blockNum)
+	enc, err := c.callPLT(payload, blockNum)
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
 
-	output := new(governance.MethodOwnershipOutput)
-	if err := c.unpackGovernance(governance.MethodOwnership, output, enc); err != nil {
+	output := new(plt.MethodOwnershipOutput)
+	if err := c.unpackPLT(plt.MethodOwnership, output, enc); err != nil {
 		return utils.EmptyAddress, err
 	}
 

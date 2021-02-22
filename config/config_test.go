@@ -2,9 +2,11 @@ package config
 
 import (
 	"encoding/hex"
+	"os"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestNodeKey(t *testing.T) {
@@ -17,4 +19,13 @@ func TestNodeKey(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Logf(prikey.X.String())
+}
+
+// test this case on with command of `go test -count=1 -v github.com/palettechain/onRobot/config -run TestEnv`
+func TestEnv(t *testing.T) {
+	data, ok := os.LookupEnv(envName)
+	if !ok {
+		t.Errorf("environment %s not settle", envName)
+	}
+	t.Log(data)
 }

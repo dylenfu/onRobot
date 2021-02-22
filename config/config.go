@@ -28,6 +28,7 @@ const (
 	setupDir        = "setup"
 	polyKeystoreDir = "poly_keystore"
 	ethKeystoreDir  = "eth_keystore"
+	envName         = "ONROBOT"
 )
 
 var (
@@ -176,7 +177,7 @@ func (n *Node) init() {
 	}
 
 	// load node stake account private key
-	file := path.Join(Conf.Environment.LocalWorkspace, keystoreDir, n.StakeAccount)
+	file := path.Join(Conf.Environment.WorkSpace(), keystoreDir, n.StakeAccount)
 	if bz, err = ioutil.ReadFile(file); err != nil {
 		panic(fmt.Sprintf("load keystore err %v", err))
 	}
@@ -190,7 +191,7 @@ func (n *Node) init() {
 func (n *Node) NodeDirPath() string {
 	n.once.Do(n.init)
 	data := fmt.Sprintf("node%d", n.Index)
-	nodedir := path.Join(Conf.Environment.LocalWorkspace, data)
+	nodedir := path.Join(Conf.Environment.WorkSpace(), data)
 	if Conf.Environment.Remote {
 		nodedir = path.Join(Conf.Environment.RemoteWorkspace, data)
 	}
@@ -232,6 +233,18 @@ type Env struct {
 	SSHPort         string
 	RemoteGoPath    string
 	NFTServer       string
+}
+
+var (
+	envOnce sync.Once
+	env     string
+)
+
+func (e *Env) WorkSpace() string {
+	envOnce.Do(func() {
+		env = os.Getenv(envName)
+	})
+	return path.Join(e.LocalWorkspace, env)
 }
 
 type Network struct {
@@ -375,7 +388,7 @@ func SaveConfig(c *Config) error {
 }
 
 func LoadParams(fileName string, data interface{}) error {
-	filePath := files.FullPath(Conf.Environment.LocalWorkspace, testCaseDir, fileName)
+	filePath := files.FullPath(Conf.Environment.WorkSpace(), testCaseDir, fileName)
 	bz, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return err
@@ -385,7 +398,7 @@ func LoadParams(fileName string, data interface{}) error {
 
 func LoadAccount(address string) (*ecdsa.PrivateKey, error) {
 	address = strings.ToLower(address)
-	filepath := files.FullPath(Conf.Environment.LocalWorkspace, keystoreDir, address)
+	filepath := files.FullPath(Conf.Environment.WorkSpace(), keystoreDir, address)
 	keyJson, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: [%v]", err)
@@ -434,7 +447,7 @@ func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {
 
 	list := make([]*polysdk.Account, 0)
 
-	dir := path.Join(Conf.Environment.LocalWorkspace, polyKeystoreDir)
+	dir := path.Join(Conf.Environment.WorkSpace(), polyKeystoreDir)
 
 	fs, _ := ioutil.ReadDir(dir)
 	for _, f := range fs {
@@ -450,7 +463,7 @@ func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {
 }
 
 func (c *CrossChainConfig) LoadPolyTestCaseAccount(filename string) (*polysdk.Account, error) {
-	filePath := files.FullPath(Conf.Environment.LocalWorkspace, testCaseDir, filename)
+	filePath := files.FullPath(Conf.Environment.WorkSpace(), testCaseDir, filename)
 	return c.LoadPolyAccount(filePath)
 }
 
@@ -466,13 +479,13 @@ func (c *CrossChainConfig) LoadPolyAccount(path string) (*polysdk.Account, error
 }
 
 func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {
-	dir := path.Join(Conf.Environment.LocalWorkspace, ethKeystoreDir)
+	dir := path.Join(Conf.Environment.WorkSpace(), ethKeystoreDir)
 	fullPath := path.Join(dir, c.EthereumAccount)
 	return c.LoadAccountWithPathAndPwd(fullPath, c.EthereumAccountPassword)
 }
 
 func (c *CrossChainConfig) LoadETHOwner() (*ecdsa.PrivateKey, error) {
-	dir := path.Join(Conf.Environment.LocalWorkspace, ethKeystoreDir)
+	dir := path.Join(Conf.Environment.WorkSpace(), ethKeystoreDir)
 	fullPath := path.Join(dir, c.EthereumOwner)
 	return c.LoadAccountWithPathAndPwd(fullPath, c.EthereumOwnerPassword)
 }
@@ -568,7 +581,7 @@ func getPolyAccountByPassword(sdk *polysdk.PolySdk, path string, pwd []byte) (
 }
 
 func LoadContract(fileName string, data interface{}) error {
-	filePath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, fileName)
+	filePath := files.FullPath(Conf.Environment.WorkSpace(), setupDir, fileName)
 	keyJson, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return err
@@ -578,11 +591,11 @@ func LoadContract(fileName string, data interface{}) error {
 }
 
 func ShellPath(fileName string) string {
-	return files.FullPath(Conf.Environment.LocalWorkspace, "", fileName)
+	return files.FullPath(Conf.Environment.WorkSpace(), "", fileName)
 }
 
 func GenesisNodeNumber() int {
-	filepath := files.FullPath(Conf.Environment.LocalWorkspace, setupDir, "static-nodes.json")
+	filepath := files.FullPath(Conf.Environment.WorkSpace(), setupDir, "static-nodes.json")
 	keyJson, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		panic(fmt.Errorf("failed to read file: [%v]", err))

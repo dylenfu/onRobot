@@ -273,7 +273,7 @@ func execRemoteSetup() {
 	}
 
 	args := make([]string, 4)
-	args[0] = config.Conf.Environment.LocalWorkspace
+	args[0] = config.Conf.Environment.WorkSpace()
 	args[1] = config.Conf.Environment.RemoteWorkspace
 	iplist := config.Conf.IpList()
 	args[3] = config.Conf.Environment.SSHPort
@@ -307,7 +307,7 @@ func execInitNode(node *config.Node) {
 	args := make([]string, 5)
 	args[0] = fmt.Sprintf("%d", node.Index)
 	args[1] = "false"
-	args[2] = config.Conf.Environment.LocalWorkspace
+	args[2] = config.Conf.Environment.WorkSpace()
 	args[3] = "127.0.0.1"
 	args[4] = config.Conf.Environment.SSHPort
 
@@ -378,7 +378,7 @@ func execClearNode(node *config.Node) {
 	args := make([]string, 5)
 	args[0] = "false"
 	args[1] = fmt.Sprintf("%d", node.Index)
-	args[2] = config.Conf.Environment.LocalWorkspace
+	args[2] = config.Conf.Environment.WorkSpace()
 	args[3] = "127.0.0.1"
 	args[4] = config.Conf.Environment.SSHPort
 
