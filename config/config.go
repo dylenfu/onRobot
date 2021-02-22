@@ -424,6 +424,7 @@ type CrossChainConfig struct {
 	PaletteECCM          common.Address
 	PaletteCCMP          common.Address
 	PaletteNFTProxy      common.Address
+	PaletteCrossChainAdminAccount common.Address
 
 	// ethereum side chain configuration
 	EthereumSideChainID   uint64
@@ -476,6 +477,10 @@ func (c *CrossChainConfig) LoadPolyAccount(path string) (*polysdk.Account, error
 		return nil, fmt.Errorf("failed to get poly account, err: %s", err)
 	}
 	return acc, nil
+}
+
+func (c *CrossChainConfig) LoadPaletteCrossChainAdminAccount() (*ecdsa.PrivateKey, error) {
+	return LoadAccount(c.PaletteCrossChainAdminAccount.Hex())
 }
 
 func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {

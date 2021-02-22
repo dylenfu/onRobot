@@ -55,7 +55,8 @@ make robot t=plt-deploy-ccmp
 
 2. transfer eccd ownership to eccm, transfer eccm ownership to ccmp.
 ```bash
-make robot t=plt-ownership
+make robot t=plt-eccd-ownership
+make robot t=plt-eccm-ownership
 ```
 
 3. set plt manager proxy with ccmp

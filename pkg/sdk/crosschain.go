@@ -178,7 +178,7 @@ func (c *Client) CCMPOwnership(ccmpAddr common.Address) (common.Address, error) 
 	return ccmp.Owner(nil)
 }
 
-func (c *Client) CrossChainAdminTransferOwnership(newOwner common.Address) (common.Hash, error) {
+func (c *Client) TransferCrossChainAdminOwnership(newOwner common.Address) (common.Hash, error) {
 	payload, err := c.packPLT(plt.MethodTransferOwnership, newOwner)
 	if err != nil {
 		return utils.EmptyHash, err
@@ -337,6 +337,15 @@ func (c *Client) SetNFTCCMP(proxyAddr, ccmp common.Address) (common.Hash, error)
 	return tx.Hash(), nil
 }
 
+func (c *Client) GetNFTCCMP(proxyAddr common.Address) (common.Address, error) {
+	proxy, err := nftlp.NewNFTLockProxy(proxyAddr, c.backend)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return proxy.ManagerProxyContract(nil)
+}
+
 func (c *Client) DeployNFTProxy() (common.Address, error) {
 	auth := c.makeDeployAuth()
 	addr, tx, _, err := nftlp.DeployNFTLockProxy(auth, c.backend)
@@ -369,6 +378,49 @@ func (c *Client) BindNFTProxy(
 		return utils.EmptyHash, err
 	}
 	return tx.Hash(), nil
+}
+
+func (c *Client) GetBoundNFTProxy(
+	localLockProxy common.Address,
+	targetSideChainID uint64,
+	) (common.Address, error) {
+
+	proxy, err := nftlp.NewNFTLockProxy(localLockProxy, c.backend)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	bz, err := proxy.ProxyHashMap(nil, targetSideChainID)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return common.BytesToAddress(bz), nil
+}
+
+func (c *Client) TransferNFTProxyOwnership(proxyAddr, newOwner common.Address) (common.Hash, error) {
+	proxy, err := nftlp.NewNFTLockProxy(proxyAddr, c.backend)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	auth := c.makeAuth()
+	tx, err := proxy.TransferOwnership(auth, newOwner)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
+	return tx.Hash(), nil
+}
+
+func (c *Client) NFTProxyOwnership(proxyAddr common.Address) (common.Address, error) {
+	proxy, err := nftlp.NewNFTLockProxy(proxyAddr, c.backend)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	return proxy.Owner(nil)
 }
 
 func (c *Client) BindNFTAsset(

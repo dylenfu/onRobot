@@ -30,7 +30,8 @@ make robot t=plt-deploy-ccmp
 2. transfer eccd ownership to eccm, transfer eccm ownership to ccmp.
 使用palette admin账户转移eccd使用权到eccm, 转移eccm使用权到ccmp
 ```bash
-make robot t=plt-ownership
+make robot t=plt-eccd-ownership
+make robot t=plt-eccm-ownership
 ```
 
 3. set plt manager proxy with ccmp

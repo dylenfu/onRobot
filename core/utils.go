@@ -23,6 +23,7 @@ import (
 
 var (
 	admcli     *sdk.Client
+	ccAdmCli *sdk.Client
 	valcli     *sdk.Client
 	ethInvoker *eth.EthInvoker
 	ethOwner   *eth.EthInvoker
@@ -31,8 +32,14 @@ var (
 
 func initialize() {
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
-	key := config.AdminKey
-	admcli = sdk.NewSender(baseUrl, key)
+	admkey := config.AdminKey
+	admcli = sdk.NewSender(baseUrl, admkey)
+
+	ccAdmKey, err := config.Conf.CrossChain.LoadPaletteCrossChainAdminAccount()
+	if err != nil {
+		panic(fmt.Sprintf("load palette cross chain admin account failed, err: %v", err))
+	}
+	ccAdmCli = sdk.NewSender(baseUrl, ccAdmKey)
 
 	node := config.Conf.ValidatorNodes()[0]
 	valcli = sdk.NewSender(node.RPCAddr(), node.PrivateKey())
