@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/contracts/native/governance"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/polynetwork/eth-contracts/go_abi/eccd_abi"
@@ -120,6 +121,14 @@ func (c *Client) ECCDTransferOwnerShip(eccdAddr, eccmAddr common.Address) (commo
 	return tx.Hash(), nil
 }
 
+func (c *Client) ECCDOwnership(eccdAddr common.Address) (common.Address, error) {
+	eccd, err := eccd_abi.NewEthCrossChainData(eccdAddr, c.backend)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	return eccd.Owner(nil)
+}
+
 func (c *Client) ECCMTransferOwnerShip(eccmAddr, ccmpAddr common.Address) (common.Hash, error) {
 	eccm, err := eccm_abi.NewEthCrossChainManager(eccmAddr, c.backend)
 	if err != nil {
@@ -135,6 +144,76 @@ func (c *Client) ECCMTransferOwnerShip(eccmAddr, ccmpAddr common.Address) (commo
 		return utils.EmptyHash, err
 	}
 	return tx.Hash(), nil
+}
+
+func (c *Client) ECCMOwnership(eccmAddr common.Address) (common.Address, error) {
+	eccm, err := eccm_abi.NewEthCrossChainManager(eccmAddr, c.backend)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	return eccm.Owner(nil)
+}
+
+func (c *Client) CCMPTransferOwnerShip(ccmpAddr, newOwner common.Address) (common.Hash, error) {
+	ccmp, err := eccmp_abi.NewEthCrossChainManagerProxy(ccmpAddr, c.backend)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	auth := c.makeAuth()
+	tx, err := ccmp.TransferOwnership(auth, newOwner)
+	if err != nil {
+		return utils.EmptyHash, fmt.Errorf("call transferOwnerShip err: %s", err)
+	}
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
+	return tx.Hash(), nil
+}
+
+func (c *Client) CCMPOwnership(ccmpAddr common.Address) (common.Address, error) {
+	ccmp, err := eccmp_abi.NewEthCrossChainManagerProxy(ccmpAddr, c.backend)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	return ccmp.Owner(nil)
+}
+
+func (c *Client) AdminTransferOwnership(newOwner common.Address) (common.Hash, error) {
+	payload, err := c.packGovernance(governance.MethodTransferOwnership, newOwner)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	hash, err := c.SendGovernanceTx(payload)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	if err := c.WaitTransaction(hash); err != nil {
+		return utils.EmptyHash, err
+	}
+
+	return hash, nil
+}
+
+func (c *Client) AdminOwnership(blockNum string) (common.Address, error) {
+	payload, err := c.packGovernance(governance.MethodOwnership)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	enc, err := c.CallGovernance(payload, blockNum)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	output := new(governance.MethodOwnershipOutput)
+	if err := c.unpackGovernance(governance.MethodOwnership, output, enc); err != nil {
+		return utils.EmptyAddress, err
+	}
+
+	return output.Owner, nil
 }
 
 func (c *Client) SetPLTCCMP(ccmp common.Address) (common.Hash, error) {

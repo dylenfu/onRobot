@@ -79,35 +79,88 @@ func PLTDeployCCMP() (succeed bool) {
 	return true
 }
 
-func PLTTransferOwnerShip() (succeed bool) {
+func PLTTransferECCDOwnerShip() (succeed bool) {
 	eccd := config.Conf.CrossChain.PaletteECCD
+	eccm := config.Conf.CrossChain.PaletteECCM
+
+	logsplit()
+	log.Info("eccd transferOwnership...")
+	hash, err := admcli.ECCDTransferOwnerShip(eccd, eccm)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	actual, err := admcli.ECCDOwnership(eccd)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if !bytes.Equal(eccm.Bytes(), actual.Bytes()) {
+		log.Error("new owner %s != acutal %s", eccm.Hex(), actual.Hex())
+		return
+	}
+	log.Infof("transfer eccd %s to eccm %s success! hash %s", eccd.Hex(), eccm.Hex(), hash.Hex())
+
+	return true
+}
+
+func PLTTransferECCMOwnerShip() (succeed bool) {
 	eccm := config.Conf.CrossChain.PaletteECCM
 	ccmp := config.Conf.CrossChain.PaletteCCMP
 
-	// eccd contract transfer ownership
-	{
-		logsplit()
-		log.Info("eccd transferOwnership...")
-		hash, err := admcli.ECCDTransferOwnerShip(eccd, eccm)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof("transfer eccd %s to eccm %s success! hash %s", eccd.Hex(), eccm.Hex(), hash.Hex())
+	logsplit()
+	log.Info("eccm transferOwnership...")
+	hash, err := admcli.ECCMTransferOwnerShip(eccm, ccmp)
+	if err != nil {
+		log.Error(err)
+		return
 	}
-
-	// eccm contract transfer ownership
-	{
-		logsplit()
-		log.Info("eccm transferOwnership...")
-		hash, err := admcli.ECCMTransferOwnerShip(eccm, ccmp)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof("transfer eccm %s to ccmp %s success! hash %s", eccm.Hex(), ccmp.Hex(), hash.Hex())
+	actual, err := admcli.ECCMOwnership(eccm)
+	if err != nil {
+		log.Error(err)
+		return
 	}
+	if !bytes.Equal(ccmp.Bytes(), actual.Bytes()) {
+		log.Error("new owner %s != acutal %s", ccmp.Hex(), actual.Hex())
+		return
+	}
+	log.Infof("transfer eccm %s to ccmp %s success! hash %s", eccm.Hex(), ccmp.Hex(), hash.Hex())
 
+	return true
+}
+
+func PLTTransferCCMPOwnerShip() (succeed bool) {
+	ccmp := config.Conf.CrossChain.PaletteCCMP
+	newOwner := config.Conf.FinalOwner.PaletteFinalOwner
+
+	logsplit()
+	log.Info("ccmp transferOwnership...")
+	hash, err := admcli.CCMPTransferOwnerShip(ccmp, newOwner)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	actual, err := admcli.CCMPOwnership(ccmp)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if bytes.Equal(newOwner.Bytes(), actual.Bytes()) {
+		log.Error("new owner %s != acutal %s", newOwner.Hex(), actual.Hex())
+		return
+	}
+	log.Infof("transfer ccmp %s to new owner %s success! hash %s", ccmp.Hex(), actual.Hex(), hash.Hex())
+
+	return true
+}
+
+// todo
+func PLTTransferNFTProxyOwnership() (succeed bool) {
+	return true
+}
+
+// todo
+func PLTTransferAdminOwnership() (succeed bool) {
 	return true
 }
 

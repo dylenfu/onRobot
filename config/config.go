@@ -27,6 +27,7 @@ const (
 	keystoreDir     = "keystore"
 	setupDir        = "setup"
 	polyKeystoreDir = "poly_keystore"
+	ethKeystoreDir  = "eth_keystore"
 )
 
 var (
@@ -49,6 +50,7 @@ type Config struct {
 	RewardEffectivePeriod int // 区块奖励周期/参数生效周期
 	Nodes                 []*Node
 	CrossChain            *CrossChainConfig
+	FinalOwner            *FinalOwner
 }
 
 func (c *Config) DeepCopy() *Config {
@@ -299,9 +301,10 @@ func SaveConfig(c *Config) error {
 
 		// ethereum node rpc and account
 		EthereumRPCUrl          string
-		EthereumAccountFullPath string
+		EthereumAccount         string
 		EthereumAccountPassword string
-		EthereumOwnerFullPath   string
+		EthereumOwner           string
+		EthereumOwnerPassword   string
 	}
 
 	type XConfig struct {
@@ -317,6 +320,7 @@ func SaveConfig(c *Config) error {
 		RewardEffectivePeriod int // 区块奖励周期/参数生效周期
 		Nodes                 []*Node
 		CrossChain            *XCrossChainConfig
+		FinalOwner            *FinalOwner
 	}
 
 	x := new(XConfig)
@@ -331,6 +335,7 @@ func SaveConfig(c *Config) error {
 	x.BlockPeriod = c.BlockPeriod
 	x.RewardEffectivePeriod = c.RewardEffectivePeriod
 	x.Nodes = c.Nodes
+	x.FinalOwner = c.FinalOwner
 
 	xc := new(XCrossChainConfig)
 	xc.PolyAccountDefaultPassphrase = c.CrossChain.PolyAccountDefaultPassphrase
@@ -356,9 +361,10 @@ func SaveConfig(c *Config) error {
 
 	// ethereum node rpc and account
 	xc.EthereumRPCUrl = c.CrossChain.EthereumRPCUrl
-	xc.EthereumAccountFullPath = c.CrossChain.EthereumAccountFullPath
+	xc.EthereumAccount = c.CrossChain.EthereumAccount
 	xc.EthereumAccountPassword = c.CrossChain.EthereumAccountPassword
-	xc.EthereumOwnerFullPath = c.CrossChain.EthereumOwnerFullPath
+	xc.EthereumOwner = c.CrossChain.EthereumOwner
+	xc.EthereumOwnerPassword = c.CrossChain.EthereumOwnerPassword
 	x.CrossChain = xc
 
 	enc, err := json.Marshal(x)
@@ -418,9 +424,10 @@ type CrossChainConfig struct {
 
 	// ethereum node rpc and account
 	EthereumRPCUrl          string
-	EthereumAccountFullPath string
+	EthereumAccount         string
 	EthereumAccountPassword string
-	EthereumOwnerFullPath   string
+	EthereumOwner           string
+	EthereumOwnerPassword   string
 }
 
 func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {
@@ -459,23 +466,19 @@ func (c *CrossChainConfig) LoadPolyAccount(path string) (*polysdk.Account, error
 }
 
 func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {
-	keyJson, err := ioutil.ReadFile(c.EthereumAccountFullPath)
-	if err != nil {
-		fmt.Println("-------------------1", err.Error())
-		return nil, err
-	}
-
-	key, err := keystore.DecryptKey(keyJson, c.EthereumAccountPassword)
-	if err != nil {
-		fmt.Println("-------------------2", err.Error())
-		return nil, err
-	}
-
-	return key.PrivateKey, nil
+	dir := path.Join(Conf.Environment.LocalWorkspace, ethKeystoreDir)
+	fullPath := path.Join(dir, c.EthereumAccount)
+	return c.LoadAccountWithPathAndPwd(fullPath, c.EthereumAccountPassword)
 }
 
 func (c *CrossChainConfig) LoadETHOwner() (*ecdsa.PrivateKey, error) {
-	enc, err := ioutil.ReadFile(c.EthereumOwnerFullPath)
+	dir := path.Join(Conf.Environment.LocalWorkspace, ethKeystoreDir)
+	fullPath := path.Join(dir, c.EthereumOwner)
+	return c.LoadAccountWithPathAndPwd(fullPath, c.EthereumOwnerPassword)
+}
+
+func (c *CrossChainConfig) LoadAccountWithPathAndPwd(path string, pwd string) (*ecdsa.PrivateKey, error) {
+	enc, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -488,7 +491,7 @@ func (c *CrossChainConfig) LoadETHOwner() (*ecdsa.PrivateKey, error) {
 		return crypto.ToECDSA(bz)
 	}
 
-	key, err := keystore.DecryptKey(enc, c.EthereumAccountPassword)
+	key, err := keystore.DecryptKey(enc, pwd)
 	if err != nil {
 		return nil, err
 	}
@@ -544,6 +547,11 @@ func (c *CrossChainConfig) StoreEthereumPLTAsset(addr common.Address) error {
 func (c *CrossChainConfig) StoreEthereumPLTProxy(addr common.Address) error {
 	c.EthereumPLTProxy = addr
 	return SaveConfig(Conf)
+}
+
+type FinalOwner struct {
+	PaletteFinalOwner  common.Address
+	EthereumFinalOwner common.Address
 }
 
 func getPolyAccountByPassword(sdk *polysdk.PolySdk, path string, pwd []byte) (

@@ -275,6 +275,9 @@ func (c *Client) Reward(validators []common.Address, blockNum *big.Int) (common.
 func (c *Client) packGovernance(method string, args ...interface{}) ([]byte, error) {
 	return utils.PackMethod(GovernanceABI, method, args...)
 }
+func (c *Client) unpackGovernance(method string, output interface{}, enc []byte) error {
+	return utils.UnpackOutputs(GovernanceABI, method, output, enc)
+}
 func (c *Client) SendGovernanceTx(payload []byte) (common.Hash, error) {
 	hash, err := c.SendTransaction(GovernanceAddress, payload)
 	if err != nil {
