@@ -76,6 +76,12 @@ func ETHTransferECCDOwnership() (succeed bool) {
 	eccd := config.Conf.CrossChain.EthereumECCD
 	eccm := config.Conf.CrossChain.EthereumECCM
 
+	curOwner, _ := ethOwner.ECCDOwnership(eccd)
+	if bytes.Equal(eccm.Bytes(), curOwner.Bytes()) {
+		log.Infof("eccd %s owner is %s already", eccd.Hex(), eccm.Hex())
+		return true
+	}
+
 	hash, err := ethOwner.TransferECCDOwnership(eccd, eccm)
 	if err != nil {
 		log.Errorf("transfer eccd ownership to eccm on ethereum failed, err: %s", err.Error())
@@ -100,6 +106,12 @@ func ETHTransferECCMOwnership() (succeed bool) {
 	eccm := config.Conf.CrossChain.EthereumECCM
 	ccmp := config.Conf.CrossChain.EthereumCCMP
 
+	curOwner, _ := ethOwner.ECCMOwnership(eccm)
+	if bytes.Equal(ccmp.Bytes(), curOwner.Bytes()) {
+		log.Infof("eccm %s ownership is %s already", eccm.Hex(), ccmp.Hex())
+		return true
+	}
+
 	hash, err := ethOwner.TransferECCMOwnership(eccm, ccmp)
 	if err != nil {
 		log.Errorf("transfer eccm ownership to ccmp on ethereum failed, err: %s", err.Error())
@@ -123,6 +135,12 @@ func ETHTransferECCMOwnership() (succeed bool) {
 func ETHTransferCCMPOwnership() (succeed bool) {
 	ccmp := config.Conf.CrossChain.EthereumCCMP
 	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
+
+	curOwner, _ := ethOwner.CCMPOwnership(ccmp)
+	if bytes.Equal(newOwner.Bytes(), curOwner.Bytes()) {
+		log.Infof("ccmp %s ownership is %s already", ccmp.Hex(), newOwner.Hex())
+		return true
+	}
 
 	hash, err := ethOwner.TransferECCMOwnership(ccmp, newOwner)
 	if err != nil {
@@ -241,6 +259,12 @@ func ETHBindPLTProxy() (succeed bool) {
 	targetLockProxy := common.HexToAddress(native.PLTContractAddress)
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
 
+	cur, _ := ethOwner.GetBoundPLTProxy(localLockProxy, targetSideChainID)
+	if bytes.Equal(cur.Bytes(), targetLockProxy.Bytes()) {
+		log.Infof("PLT proxy %s already bound to %s", localLockProxy.Hex(), targetLockProxy.Hex())
+		return true
+	}
+
 	hash, err := ethOwner.BindPLTProxy(localLockProxy, targetLockProxy, targetSideChainID)
 	if err != nil {
 		log.Errorf("bind PLT proxy on ethereum failed, err: %s", err.Error())
@@ -267,6 +291,12 @@ func ETHBindPLTAsset() (succeed bool) {
 	toAsset := common.HexToAddress(native.PLTContractAddress)
 	toChainId := config.Conf.CrossChain.PaletteSideChainID
 
+	cur, _ := ethOwner.GetBoundPLTAsset(localLockProxy, fromAsset, toChainId)
+	if bytes.Equal(cur.Bytes(), toAsset.Bytes()) {
+		log.Infof("PLT asset %s already bound to %s", fromAsset.Hex(), toAsset.Hex())
+		return true
+	}
+
 	hash, err := ethOwner.BindPLTAsset(localLockProxy, fromAsset, toAsset, toChainId)
 	if err != nil {
 		log.Errorf("bind PLT asset on ethereum failed, err: %s", err.Error())
@@ -290,6 +320,13 @@ func ETHBindPLTAsset() (succeed bool) {
 func ETHSetPLTCCMP() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	ccmp := config.Conf.CrossChain.EthereumCCMP
+
+	cur, _ := ethOwner.GetPLTCCMP(proxy)
+	if bytes.Equal(cur.Bytes(), ccmp.Bytes()) {
+		log.Infof("PLT proxy %s already managed to %s", proxy.Hex(), ccmp.Hex())
+		return true
+	}
+
 	hash, err := ethOwner.SetPLTCCMP(proxy, ccmp)
 	if err != nil {
 		log.Errorf("register PLT proxy to ccmp on ethereum failed, err: %s", err.Error())
@@ -358,6 +395,13 @@ func ETHDeployNFTProxy() (succeed bool) {
 func ETHSetNFTCCMP() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumNFTProxy
 	ccmp := config.Conf.CrossChain.EthereumCCMP
+
+	cur, _ := ethOwner.GetNFTCCMP(proxy)
+	if bytes.Equal(cur.Bytes(), ccmp.Bytes()) {
+		log.Infof("NFT proxy %s already managed to %s", proxy.Hex(), ccmp.Hex())
+		return true
+	}
+
 	hash, err := ethOwner.SetNFTCCMP(proxy, ccmp)
 	if err != nil {
 		log.Errorf("register NFT proxy to ccmp on ethereum failed, err: %s", err.Error())
@@ -382,6 +426,12 @@ func ETHBindNFTProxy() (succeed bool) {
 	localLockProxy := config.Conf.CrossChain.EthereumNFTProxy
 	targetLockProxy := config.Conf.CrossChain.PaletteNFTProxy
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
+
+	cur, _ := ethOwner.GetBoundNFTProxy(localLockProxy, targetSideChainID)
+	if bytes.Equal(cur.Bytes(), targetLockProxy.Bytes()) {
+		log.Infof("NFT proxy %s already bound to %s", localLockProxy.Hex(), targetLockProxy.Hex())
+		return true
+	}
 
 	hash, err := ethOwner.BindNFTProxy(localLockProxy, targetLockProxy, targetSideChainID)
 	if err != nil {
@@ -417,6 +467,13 @@ func ETHBindNFTAsset() (succeed bool) {
 	fromAsset := params.EthereumNFTAsset
 	toAsset := params.PaletteNFTAsset
 	chainID := config.Conf.CrossChain.PaletteSideChainID
+
+	cur, _ := ethOwner.GetBoundNFTAsset(proxy, fromAsset, chainID)
+	if bytes.Equal(cur.Bytes(), toAsset.Bytes()) {
+		log.Infof("NFT asset %s already bound to %s", fromAsset.Hex(), toAsset.Hex())
+		return true
+	}
+
 	hash, err := ethOwner.BindNFTAsset(
 		proxy,
 		fromAsset,
@@ -446,6 +503,12 @@ func ETHTransferPLTAssetOwnership() (succeed bool) {
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
 
+	cur, _ := ethOwner.PLTAssetOwnership(asset)
+	if bytes.Equal(newOwner.Bytes(), cur.Bytes()) {
+		log.Infof("plt asset %s owner is %s already", asset.Hex(), newOwner.Hex())
+		return true
+	}
+
 	hash, err := ethOwner.TransferPLTAssetOwnership(asset, newOwner)
 	if err != nil {
 		log.Errorf("transfer plt asset ownership to eccm on ethereum failed, err: %s", err.Error())
@@ -470,6 +533,12 @@ func ETHTransferPLTProxyOwnership() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
 
+	cur, _ := ethOwner.PLTProxyOwnership(proxy)
+	if bytes.Equal(newOwner.Bytes(), cur.Bytes()) {
+		log.Infof("plt proxy %s owner is %s already", proxy.Hex(), newOwner.Hex())
+		return true
+	}
+
 	hash, err := ethOwner.TransferPLTProxyOwnership(proxy, newOwner)
 	if err != nil {
 		log.Errorf("transfer plt proxy ownership to eccm on ethereum failed, err: %s", err.Error())
@@ -493,6 +562,12 @@ func ETHTransferPLTProxyOwnership() (succeed bool) {
 func ETHTransferNFTProxyOwnership() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumNFTProxy
 	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
+
+	cur, _ := ethOwner.NFTProxyOwnership(proxy)
+	if bytes.Equal(newOwner.Bytes(), cur.Bytes()) {
+		log.Infof("nft proxy %s owner is %s already", proxy.Hex(), newOwner.Hex())
+		return true
+	}
 
 	hash, err := ethOwner.TransferNFTProxyOwnership(proxy, newOwner)
 	if err != nil {

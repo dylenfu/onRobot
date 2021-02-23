@@ -83,8 +83,12 @@ func PLTTransferECCDOwnerShip() (succeed bool) {
 	eccd := config.Conf.CrossChain.PaletteECCD
 	eccm := config.Conf.CrossChain.PaletteECCM
 
-	logsplit()
-	log.Info("eccd transferOwnership...")
+	cur, _ := ccAdmCli.ECCDOwnership(eccd)
+	if bytes.Equal(eccm.Bytes(), cur.Bytes()) {
+		log.Infof("eccd %s owner is %s already", eccd.Hex(), eccm.Hex())
+		return true
+	}
+
 	hash, err := ccAdmCli.ECCDTransferOwnerShip(eccd, eccm)
 	if err != nil {
 		log.Error(err)
@@ -108,8 +112,12 @@ func PLTTransferECCMOwnerShip() (succeed bool) {
 	eccm := config.Conf.CrossChain.PaletteECCM
 	ccmp := config.Conf.CrossChain.PaletteCCMP
 
-	logsplit()
-	log.Info("eccm transferOwnership...")
+	cur, _ := ccAdmCli.ECCMOwnership(eccm)
+	if bytes.Equal(ccmp.Bytes(), cur.Bytes()) {
+		log.Infof("eccm %s owner is %s already", eccm.Hex(), ccmp.Hex())
+		return true
+	}
+
 	hash, err := ccAdmCli.ECCMTransferOwnerShip(eccm, ccmp)
 	if err != nil {
 		log.Error(err)
@@ -133,8 +141,12 @@ func PLTTransferCCMPOwnerShip() (succeed bool) {
 	ccmp := config.Conf.CrossChain.PaletteCCMP
 	newOwner := config.Conf.FinalOwner.PaletteFinalOwner
 
-	logsplit()
-	log.Info("ccmp transferOwnership...")
+	cur, _ := ccAdmCli.CCMPOwnership(ccmp)
+	if bytes.Equal(newOwner.Bytes(), cur.Bytes()) {
+		log.Infof("ccmp %s owner is %s already", ccmp.Hex(), newOwner.Hex())
+		return true
+	}
+
 	hash, err := ccAdmCli.CCMPTransferOwnerShip(ccmp, newOwner)
 	if err != nil {
 		log.Error(err)
@@ -158,6 +170,12 @@ func PLTTransferNFTProxyOwnership() (succeed bool) {
 	proxy := config.Conf.CrossChain.PaletteNFTProxy
 	newOwner := config.Conf.FinalOwner.PaletteFinalOwner
 
+	cur, _ := ccAdmCli.NFTProxyOwnership(proxy)
+	if bytes.Equal(proxy.Bytes(), cur.Bytes()) {
+		log.Infof("nft proxy %s owner is %s already", proxy.Hex(), newOwner.Hex())
+		return true
+	}
+
 	hash, err := ccAdmCli.TransferNFTProxyOwnership(proxy, newOwner)
 	if err != nil {
 		log.Error(err)
@@ -179,12 +197,20 @@ func PLTTransferNFTProxyOwnership() (succeed bool) {
 func PLTTransferCrossChainAdminOwnership() (succeed bool) {
 	oldOwner := config.Conf.CrossChain.PaletteCrossChainAdminAccount
 	newOwner := config.Conf.FinalOwner.PaletteFinalOwner
+
+	cur, _ := ccAdmCli.CrossChainAdminOwnership("latest")
+	if bytes.Equal(newOwner.Bytes(), cur.Bytes()) {
+		log.Infof("cross chain admin %s owner is %s already", oldOwner.Hex(), newOwner.Hex())
+		return true
+	}
+
 	hash, err := ccAdmCli.TransferCrossChainAdminOwnership(newOwner)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	actual, err := ccAdmCli.TransferCrossChainAdminOwnership(newOwner)
+
+	actual, err := ccAdmCli.CrossChainAdminOwnership("latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -193,30 +219,37 @@ func PLTTransferCrossChainAdminOwnership() (succeed bool) {
 		log.Error("new owner %s != acutal %s", newOwner.Hex(), actual.Hex())
 		return
 	}
+
 	log.Infof("transfer cross chain admin %s to new owner %s success! hash %s", oldOwner.Hex(), newOwner.Hex(), hash.Hex())
 	return true
 }
 
 func PLTSetCCMP() (succeed bool) {
 	ccmp := config.Conf.CrossChain.PaletteCCMP
-	log.Infof("ccmp contract addr %s", ccmp.Hex())
+
+	cur, _ := ccAdmCli.GetPLTCCMP("latest")
+	if bytes.Equal(ccmp.Bytes(), cur.Bytes()) {
+		log.Infof("PLT proxy already managed by %s", ccmp.Hex())
+		return true
+	}
 
 	hash, err := ccAdmCli.SetPLTCCMP(ccmp)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	log.Infof("set PLT ccmp success! hash %s", hash.Hex())
 
-	proxy, err := ccAdmCli.GetPLTCCMP("latest")
+	actual, err := ccAdmCli.GetPLTCCMP("latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	if !bytes.Equal(proxy.Bytes(), ccmp.Bytes()) {
-		log.Errorf("wrong ccmp: should be %s but get %s", ccmp.Hex(), proxy.Hex())
+	if !bytes.Equal(actual.Bytes(), ccmp.Bytes()) {
+		log.Errorf("set proxy manager failed, expect %s != actual %s", ccmp.Hex(), actual.Hex())
 		return
 	}
+
+	log.Infof("set PLT ccmp success! hash %s", hash.Hex())
 	return true
 }
 
@@ -226,6 +259,12 @@ func PLTSetCCMP() (succeed bool) {
 func PLTBindPLTProxy() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	sideChainID := config.Conf.CrossChain.EthereumSideChainID
+
+	cur, _ := ccAdmCli.GetBindPLTProxy(sideChainID, "latest")
+	if bytes.Equal(proxy.Bytes(), cur.Bytes()) {
+		log.Infof("PLT proxy already bound to by %s", proxy.Hex())
+		return true
+	}
 
 	hash, err := ccAdmCli.BindPLTProxy(sideChainID, proxy)
 	if err != nil {
@@ -251,6 +290,12 @@ func PLTBindPLTProxy() (succeed bool) {
 func PLTBindPLTAsset() (succeed bool) {
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	sideChainID := config.Conf.CrossChain.EthereumSideChainID
+
+	cur, _ := ccAdmCli.GetBindPLTAsset(sideChainID, "latest")
+	if bytes.Equal(asset.Bytes(), cur.Bytes()) {
+		log.Infof("PLT asset already bound to by %s", asset.Hex())
+		return true
+	}
 
 	hash, err := ccAdmCli.BindPLTAsset(sideChainID, asset)
 	if err != nil {
@@ -339,6 +384,12 @@ func PLTBindNFTProxy() (succeed bool) {
 	targetLockProxy := config.Conf.CrossChain.EthereumNFTProxy
 	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
 
+	cur, _ := ccAdmCli.GetBoundNFTProxy(localLockproxy, targetSideChainID)
+	if bytes.Equal(targetLockProxy.Bytes(), cur.Bytes()) {
+		log.Infof("NFT proxy %s already bound to by %s", localLockproxy.Hex(), targetLockProxy.Hex())
+		return true
+	}
+
 	hash, err := ccAdmCli.BindNFTProxy(localLockproxy, targetLockProxy, targetSideChainID)
 	if err != nil {
 		log.Errorf("bind NFT proxy on palette failed, err: %s", err.Error())
@@ -362,6 +413,13 @@ func PLTBindNFTProxy() (succeed bool) {
 func PLTSetNFTCCMP() (succeed bool) {
 	proxy := config.Conf.CrossChain.PaletteNFTProxy
 	ccmp := config.Conf.CrossChain.PaletteCCMP
+
+	cur, _ := ccAdmCli.GetNFTCCMP(proxy)
+	if bytes.Equal(ccmp.Bytes(), cur.Bytes()) {
+		log.Infof("NFT proxy %s already managed by %s", proxy.Hex(), ccmp.Hex())
+		return true
+	}
+
 	hash, err := ccAdmCli.SetNFTCCMP(proxy, ccmp)
 	if err != nil {
 		log.Errorf("set ccmp on palette failed, err: %s", err.Error())

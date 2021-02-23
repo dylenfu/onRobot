@@ -30,7 +30,7 @@ func AddValidators() (succeed bool) {
 		balances           = make([]int, len(nodes))
 		needStakedAmounts  = make([]int, len(nodes))
 		expectNodeAddrList = make([]common.Address, len(nodes))
-		needWait = false
+		needWait           = false
 		err                error
 	)
 
