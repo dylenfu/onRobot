@@ -113,8 +113,7 @@ func Deposit() (succeed bool) {
 
 	amount := plt.MultiFloatPLT(params.Amount)
 	accounts := config.Conf.Accounts
-	for _, acc := range accounts {
-		to := common.HexToAddress(acc)
+	for _, to := range accounts {
 		if _, err := admcli.PLTTransfer(to, amount.BigInt()); err != nil {
 			log.Errorf("failed to deposit to %s, amount %f, err: %v", to.Hex(), plt.PrintFPLT(amount), err)
 			return

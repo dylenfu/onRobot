@@ -14,11 +14,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/palettechain/onRobot/pkg/dao"
-
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/palettechain/onRobot/pkg/dao"
 	"github.com/palettechain/onRobot/pkg/encode"
 	"github.com/palettechain/onRobot/pkg/files"
 	"github.com/palettechain/onRobot/pkg/log"
@@ -180,7 +179,6 @@ type Node struct {
 }
 
 func (n *Node) init() {
-
 	// load node private key
 	bz, err := hex.DecodeString(n.NodeKey)
 	if err != nil {
@@ -193,11 +191,12 @@ func (n *Node) init() {
 	}
 
 	// load node stake account private key
-	file := path.Join(Conf.Environment.WorkSpace(), keystoreDir, n.StakeAccount)
-	if bz, err = ioutil.ReadFile(file); err != nil {
+	acc := n.StakeAddr()
+	enc, err := readWalletFile(keystoreDir, acc)
+	if err != nil {
 		panic(fmt.Sprintf("load keystore err %v", err))
 	}
-	if ks, err := keystore.DecryptKey(bz, Conf.DefaultPassphrase); err != nil {
+	if ks, err := repeatDecrypt(enc, acc, Conf.DefaultPassphrase, pwdSessionPLT); err != nil {
 		panic(fmt.Sprintf("decrypt key %s err %v", n.StakeAccount, err))
 	} else {
 		n.sapk = ks.PrivateKey
@@ -276,6 +275,10 @@ func Init(filepath string) {
 		panic(err)
 	}
 
+	// init leveldb
+	dir := path.Join(Conf.Environment.WorkSpace(), polyKeystoreDir)
+	dao.NewDao(dir)
+
 	// sort nodes with node index
 	sort.Slice(Conf.Nodes, func(i, j int) bool {
 		return Conf.Nodes[i].Index < Conf.Nodes[j].Index
@@ -295,10 +298,6 @@ func Init(filepath string) {
 	}
 
 	BakConf = Conf.DeepCopy()
-
-	// init leveldb
-	dir := path.Join(Conf.Environment.WorkSpace(), polyKeystoreDir)
-	dao.NewDao(dir)
 }
 
 func LoadConfig(filepath string, ins interface{}) error {
@@ -609,10 +608,14 @@ func getPolyAccountByPassword(sdk *polysdk.PolySdk, path string, pwd []byte) (
 			log.Infof("input error, try it again......")
 			continue
 		}
+		curPwd = strings.Trim(curPwd, " ")
+		curPwd = strings.Trim(curPwd, "\r")
+		curPwd = strings.Trim(curPwd, "\n")
+		log.Infof("your input is %s", curPwd)
 		if acc, err := wallet.GetDefaultAccount([]byte(curPwd)); err == nil {
 			return acc, nil
 		} else {
-			log.Infof("password invalid, try it again......")
+			log.Infof("password invalid, err %s, try it again......", err.Error())
 		}
 	}
 
@@ -658,20 +661,25 @@ func repeatDecrypt(enc []byte, account common.Address, pwd string, typ pwdSessio
 		return
 	}
 
-	reader := bufio.NewReader(os.Stdin)
 	log.Infof("please input password for ethereum account %s", account.Hex())
 
+	reader := bufio.NewReader(os.Stdin)
+	var curPwd string
 	for i := 0; i < 10; i++ {
-		pwd, err = reader.ReadString('\n')
+		curPwd, err = reader.ReadString('\n')
 		if err != nil {
 			log.Infof("input error, try it again......")
 			continue
 		}
-		if key, err = keystore.DecryptKey(enc, pwd); err == nil {
-			_ = setPwdSession(account, pwd, typ)
+		curPwd = strings.Trim(curPwd, " ")
+		curPwd = strings.Trim(curPwd, "\r")
+		curPwd = strings.Trim(curPwd, "\n")
+		log.Infof("your input is %s", curPwd)
+		if key, err = keystore.DecryptKey(enc, curPwd); err == nil {
+			_ = setPwdSession(account, curPwd, typ)
 			return
 		} else {
-			log.Infof("password invalid, try it again......")
+			log.Infof("password invalid, err %s, try it again......", err.Error())
 		}
 	}
 	return

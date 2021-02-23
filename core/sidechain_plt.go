@@ -195,7 +195,7 @@ func PLTTransferNFTProxyOwnership() (succeed bool) {
 }
 
 func PLTTransferCrossChainAdminOwnership() (succeed bool) {
-	oldOwner := config.Conf.CrossChain.PaletteCrossChainAdminAccount
+	oldOwner := config.Conf.CrossChainAdminAccount
 	newOwner := config.Conf.FinalOwner.PaletteFinalOwner
 
 	cur, _ := ccAdmCli.CrossChainAdminOwnership("latest")
