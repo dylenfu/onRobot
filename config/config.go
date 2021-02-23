@@ -191,7 +191,7 @@ func (n *Node) init() {
 	}
 
 	// load node stake account private key
-	acc := n.StakeAddr()
+	acc := common.HexToAddress(n.StakeAccount)
 	enc, err := readWalletFile(keystoreDir, acc)
 	if err != nil {
 		panic(fmt.Sprintf("load keystore err %v", err))
@@ -611,7 +611,6 @@ func getPolyAccountByPassword(sdk *polysdk.PolySdk, path string, pwd []byte) (
 		curPwd = strings.Trim(curPwd, " ")
 		curPwd = strings.Trim(curPwd, "\r")
 		curPwd = strings.Trim(curPwd, "\n")
-		log.Infof("your input is %s", curPwd)
 		if acc, err := wallet.GetDefaultAccount([]byte(curPwd)); err == nil {
 			return acc, nil
 		} else {
@@ -674,7 +673,6 @@ func repeatDecrypt(enc []byte, account common.Address, pwd string, typ pwdSessio
 		curPwd = strings.Trim(curPwd, " ")
 		curPwd = strings.Trim(curPwd, "\r")
 		curPwd = strings.Trim(curPwd, "\n")
-		log.Infof("your input is %s", curPwd)
 		if key, err = keystore.DecryptKey(enc, curPwd); err == nil {
 			_ = setPwdSession(account, curPwd, typ)
 			return

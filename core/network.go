@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/palettechain/onRobot/config"
+	"github.com/palettechain/onRobot/pkg/log"
 	"time"
 )
 
@@ -190,7 +191,7 @@ func StopAllNetwork() (succeed bool) {
 
 func ClearAllNetwork() (succeed bool) {
 	nodes := config.Conf.AllNodes()
-	for _, node := range nodes {
+	for i, node := range nodes {
 		execClearNode(node)
 	}
 
