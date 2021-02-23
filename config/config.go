@@ -276,7 +276,7 @@ func Init(filepath string) {
 	}
 
 	// init leveldb
-	dir := path.Join(Conf.Environment.WorkSpace(), polyKeystoreDir)
+	dir := path.Join(Conf.Environment.WorkSpace(), dataDir)
 	dao.NewDao(dir)
 
 	// sort nodes with node index
