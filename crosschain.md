@@ -23,7 +23,8 @@ make robot t=eth-approveRegisterSideChain
 
 4. sync genesis header
 ```bash
-make robot t=eth-syncGenesis
+make robot t=eth-sync-eth-genesis
+make robot t=eth-sync-poly-genesis
 ```
 
 5. deploy plt asset
@@ -82,7 +83,8 @@ make robot t=plt-nft-ccmp
 
 7. sync palette header to palette chain and store poly book keepers in the palette chain
 ```bash
-make robot t=plt-syncGenesis
+make robot t=plt-sync-plt-genesis
+make robot t=plt-sync-poly-genesis
 ```
 
 ## bind proxies and PLT asset on ethereum chain

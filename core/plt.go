@@ -84,7 +84,7 @@ func GovernanceBalance() (succeed bool) {
 
 func BalanceOf() (succeed bool) {
 	var params struct {
-		Owner    string
+		Owner    common.Address
 		BlockNum string
 	}
 
@@ -93,7 +93,7 @@ func BalanceOf() (succeed bool) {
 		return
 	}
 
-	owner := common.HexToAddress(params.Owner)
+	owner := params.Owner
 	balance, err := admcli.BalanceOf(owner, params.BlockNum)
 	if err != nil {
 		log.Error(err)
@@ -106,8 +106,8 @@ func BalanceOf() (succeed bool) {
 
 func Transfer() (succeed bool) {
 	var params struct {
-		From   string
-		To     string
+		From   common.Address
+		To     common.Address
 		Amount int64
 	}
 
@@ -117,7 +117,7 @@ func Transfer() (succeed bool) {
 	}
 
 	key := customLoadAccount(params.From)
-	to := common.HexToAddress(params.To)
+	to := params.To
 	amount := utils.SafeMul(big.NewInt(params.Amount), plt.OnePLT)
 
 	// balance before transfer
@@ -177,8 +177,8 @@ func Transfer() (succeed bool) {
 
 func Approve() (succeed bool) {
 	var params struct {
-		Owner   string
-		Spender string
+		Owner   common.Address
+		Spender common.Address
 		Amount  int
 	}
 
@@ -192,7 +192,7 @@ func Approve() (succeed bool) {
 	cli := sdk.NewSender(baseUrl, key)
 
 	owner := PrivKey2Addr(key)
-	spender := common.HexToAddress(params.Spender)
+	spender := params.Spender
 	amount := plt.MultiPLT(params.Amount)
 
 	// allowance before approve

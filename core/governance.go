@@ -192,7 +192,7 @@ func Reward() (succeed bool) {
 			ExpectRewardAmountPerValidator float64
 		}
 
-		rewardPool = common.HexToAddress(config.Conf.BaseRewardPool)
+		rewardPool = config.Conf.BaseRewardPool
 		nodes      = config.Conf.ValidatorNodes()
 		addrs      = append(nodes.StakeAccounts(), rewardPool)
 
@@ -296,7 +296,7 @@ func FakeReward() (succeed bool) {
 func Delegate() (succeed bool) {
 	var params struct {
 		Fans []struct {
-			Address   string
+			Address   common.Address
 			Amount    int
 			NodeIndex int
 		}
@@ -312,7 +312,7 @@ func Delegate() (succeed bool) {
 		res := make(map[common.Address]float64)
 		log.Infof("check balance %s", mark)
 		for _, fan := range params.Fans {
-			addr := common.HexToAddress(fan.Address)
+			addr := fan.Address
 			data, err := admcli.BalanceOf(addr, "latest")
 			if err != nil {
 				log.Errorf("%s check balance err: %v", fan.Address, err)
@@ -328,7 +328,7 @@ func Delegate() (succeed bool) {
 	checkStkAmt := func(mark string) {
 		for _, fan := range params.Fans {
 			node := config.Conf.Nodes[fan.NodeIndex]
-			stkAcc := common.HexToAddress(fan.Address)
+			stkAcc := fan.Address
 			value := admcli.GetStakeAmount(node.NodeAddr(), stkAcc, "latest")
 			stkAmt := plt.PrintFPLT(utils.DecimalFromBigInt(value))
 			log.Infof("%s stake amount %s %f", fan.Address, mark, stkAmt)
@@ -338,7 +338,7 @@ func Delegate() (succeed bool) {
 	// fans transfer back to admin
 	clients := make(map[string]*sdk.Client)
 	for _, fan := range params.Fans {
-		clients[fan.Address] = sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), customLoadAccount(fan.Address))
+		clients[fan.Address.Hex()] = sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), customLoadAccount(fan.Address))
 	}
 
 	// admin batch transfer to fans
@@ -346,7 +346,7 @@ func Delegate() (succeed bool) {
 		balanceBeforeDeposit := checkBalance("before deposit")
 		log.Infof("admin deposit to fans")
 		for _, fan := range params.Fans {
-			to := common.HexToAddress(fan.Address)
+			to := fan.Address
 			curAmt := balanceBeforeDeposit[to]
 			if curAmt > float64(fan.Amount) {
 				continue
@@ -365,7 +365,7 @@ func Delegate() (succeed bool) {
 		logsplit()
 		log.Infof("fans delegate......")
 		for _, fan := range params.Fans {
-			cli := clients[fan.Address]
+			cli := clients[fan.Address.Hex()]
 			node := config.Conf.Nodes[fan.NodeIndex]
 			amt := plt.MultiPLT(fan.Amount)
 			if _, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), amt, false); err != nil {
@@ -395,7 +395,7 @@ func Delegate() (succeed bool) {
 		logsplit()
 		log.Infof("revoke delegate")
 		for _, fan := range params.Fans {
-			cli := clients[fan.Address]
+			cli := clients[fan.Address.Hex()]
 			node := config.Conf.Nodes[fan.NodeIndex]
 			amt := plt.MultiPLT(fan.Amount)
 			if _, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), amt, true); err != nil {
@@ -429,7 +429,7 @@ func Delegate() (succeed bool) {
 		log.Infof("transfer back PLT to admin account")
 		to := config.Conf.AdminAccount
 		for _, fan := range params.Fans {
-			cli := clients[fan.Address]
+			cli := clients[fan.Address.Hex()]
 			amt := plt.MultiPLT(fan.Amount)
 			if _, err := cli.PLTTransfer(to, amt); err != nil {
 				log.Errorf("admin transfer to %s failed, err: %v", to.Hex(), err)

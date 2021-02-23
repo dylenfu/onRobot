@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btcutil v1.0.2
+	github.com/btcsuite/goleveldb v1.0.0
 	github.com/ethereum/go-ethereum v1.9.15
 	github.com/jinzhu/gorm v1.9.12
 	github.com/ontio/ontology-crypto v1.0.9

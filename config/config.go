@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bufio"
 	"crypto/ecdsa"
 	"encoding/hex"
 	"encoding/json"
@@ -13,11 +14,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/palettechain/onRobot/pkg/dao"
+
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/palettechain/onRobot/pkg/encode"
 	"github.com/palettechain/onRobot/pkg/files"
+	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
 	polysdk "github.com/polynetwork/poly-go-sdk"
 )
@@ -28,14 +32,25 @@ const (
 	setupDir        = "setup"
 	polyKeystoreDir = "poly_keystore"
 	ethKeystoreDir  = "eth_keystore"
+	dataDir         = "leveldb"
 	envName         = "ONROBOT"
+)
+
+type pwdSessionType byte
+
+const (
+	pwdSessionUnknown pwdSessionType = iota
+	pwdSessionETH
+	pwdSessionPLT
+	pwdSessionPoly
 )
 
 var (
 	Conf, BakConf                = new(Config), new(Config)
 	AdminKey, CrossChainAdminKey *ecdsa.PrivateKey
-	//AdminAddr      common.Address
-	ConfigFilePath string
+	ConfigFilePath               string
+	ethPwdSession                = make(map[common.Address]string)
+	pltPwdSession                = make(map[common.Address]string)
 )
 
 type Config struct {
@@ -44,8 +59,8 @@ type Config struct {
 	DefaultPassphrase      string
 	AdminAccount           common.Address
 	CrossChainAdminAccount common.Address
-	BaseRewardPool         string
-	Accounts               []string
+	BaseRewardPool         common.Address
+	Accounts               []common.Address
 	GasLimit               uint64
 	DeployGasLimit         uint64
 	BlockPeriod            encode.Duration
@@ -254,8 +269,8 @@ type Network struct {
 	ValidatorsNumber  int
 }
 
-func Init(path string) {
-	ConfigFilePath = path
+func Init(filepath string) {
+	ConfigFilePath = filepath
 	err := LoadConfig(ConfigFilePath, Conf)
 	if err != nil {
 		panic(err)
@@ -269,18 +284,21 @@ func Init(path string) {
 	// load nodes privateKey
 	sdk.Init(Conf.GasLimit, Conf.DeployGasLimit, time.Duration(Conf.BlockPeriod))
 
-	AdminKey, err = LoadAccount(Conf.AdminAccount.Hex())
+	AdminKey, err = LoadPaletteAccount(Conf.AdminAccount)
 	if err != nil {
 		panic(err)
 	}
-	//AdminAddr = crypto.PubkeyToAddress(AdminKey.PublicKey)
 
-	CrossChainAdminKey, err = LoadAccount(Conf.CrossChainAdminAccount.Hex())
+	CrossChainAdminKey, err = LoadPaletteAccount(Conf.CrossChainAdminAccount)
 	if err != nil {
 		panic(err)
 	}
 
 	BakConf = Conf.DeepCopy()
+
+	// init leveldb
+	dir := path.Join(Conf.Environment.WorkSpace(), polyKeystoreDir)
+	dao.NewDao(dir)
 }
 
 func LoadConfig(filepath string, ins interface{}) error {
@@ -304,26 +322,26 @@ func SaveConfig(c *Config) error {
 		// poly side chain configuration
 		PaletteSideChainID   uint64
 		PaletteSideChainName string
-		PaletteECCD          string
-		PaletteECCM          string
-		PaletteCCMP          string
-		PaletteNFTProxy      string
+		PaletteECCD          common.Address
+		PaletteECCM          common.Address
+		PaletteCCMP          common.Address
+		PaletteNFTProxy      common.Address
 
 		// ethereum side chain configuration
 		EthereumSideChainID   uint64
 		EthereumSideChainName string
-		EthereumECCD          string
-		EthereumECCM          string
-		EthereumCCMP          string
-		EthereumPLTAsset      string
-		EthereumPLTProxy      string
-		EthereumNFTProxy      string
+		EthereumECCD          common.Address
+		EthereumECCM          common.Address
+		EthereumCCMP          common.Address
+		EthereumPLTAsset      common.Address
+		EthereumPLTProxy      common.Address
+		EthereumNFTProxy      common.Address
 
 		// ethereum node rpc and account
 		EthereumRPCUrl          string
-		EthereumAccount         string
+		EthereumAccount         common.Address
 		EthereumAccountPassword string
-		EthereumOwner           string
+		EthereumOwner           common.Address
 		EthereumOwnerPassword   string
 	}
 
@@ -333,8 +351,8 @@ func SaveConfig(c *Config) error {
 		DefaultPassphrase      string
 		AdminAccount           common.Address
 		CrossChainAdminAccount common.Address
-		BaseRewardPool         string
-		Accounts               []string
+		BaseRewardPool         common.Address
+		Accounts               []common.Address
 		GasLimit               uint64
 		DeployGasLimit         uint64
 		BlockPeriod            encode.Duration
@@ -351,13 +369,16 @@ func SaveConfig(c *Config) error {
 	x.AdminAccount = c.AdminAccount
 	x.CrossChainAdminAccount = c.CrossChainAdminAccount
 	x.BaseRewardPool = c.BaseRewardPool
-	x.Accounts = c.Accounts
 	x.GasLimit = c.GasLimit
 	x.DeployGasLimit = c.DeployGasLimit
 	x.BlockPeriod = c.BlockPeriod
 	x.RewardEffectivePeriod = c.RewardEffectivePeriod
 	x.Nodes = c.Nodes
 	x.FinalOwner = c.FinalOwner
+	x.Accounts = make([]common.Address, 0)
+	for _, acc := range c.Accounts {
+		x.Accounts = append(x.Accounts, acc)
+	}
 
 	xc := new(XCrossChainConfig)
 	xc.PolyAccountDefaultPassphrase = c.CrossChain.PolyAccountDefaultPassphrase
@@ -366,20 +387,20 @@ func SaveConfig(c *Config) error {
 	// poly side chain configuration
 	xc.PaletteSideChainID = c.CrossChain.PaletteSideChainID
 	xc.PaletteSideChainName = c.CrossChain.PaletteSideChainName
-	xc.PaletteECCD = c.CrossChain.PaletteECCD.Hex()
-	xc.PaletteECCM = c.CrossChain.PaletteECCM.Hex()
-	xc.PaletteCCMP = c.CrossChain.PaletteCCMP.Hex()
-	xc.PaletteNFTProxy = c.CrossChain.PaletteNFTProxy.Hex()
+	xc.PaletteECCD = c.CrossChain.PaletteECCD
+	xc.PaletteECCM = c.CrossChain.PaletteECCM
+	xc.PaletteCCMP = c.CrossChain.PaletteCCMP
+	xc.PaletteNFTProxy = c.CrossChain.PaletteNFTProxy
 
 	// ethereum side chain configuration
 	xc.EthereumSideChainID = c.CrossChain.EthereumSideChainID
 	xc.EthereumSideChainName = c.CrossChain.EthereumSideChainName
-	xc.EthereumECCD = c.CrossChain.EthereumECCD.Hex()
-	xc.EthereumECCM = c.CrossChain.EthereumECCM.Hex()
-	xc.EthereumCCMP = c.CrossChain.EthereumCCMP.Hex()
-	xc.EthereumPLTAsset = c.CrossChain.EthereumPLTAsset.Hex()
-	xc.EthereumPLTProxy = c.CrossChain.EthereumPLTProxy.Hex()
-	xc.EthereumNFTProxy = c.CrossChain.EthereumNFTProxy.Hex()
+	xc.EthereumECCD = c.CrossChain.EthereumECCD
+	xc.EthereumECCM = c.CrossChain.EthereumECCM
+	xc.EthereumCCMP = c.CrossChain.EthereumCCMP
+	xc.EthereumPLTAsset = c.CrossChain.EthereumPLTAsset
+	xc.EthereumPLTProxy = c.CrossChain.EthereumPLTProxy
+	xc.EthereumNFTProxy = c.CrossChain.EthereumNFTProxy
 
 	// ethereum node rpc and account
 	xc.EthereumRPCUrl = c.CrossChain.EthereumRPCUrl
@@ -405,15 +426,13 @@ func LoadParams(fileName string, data interface{}) error {
 	return json.Unmarshal(bz, data)
 }
 
-func LoadAccount(address string) (*ecdsa.PrivateKey, error) {
-	address = strings.ToLower(address)
-	filepath := files.FullPath(Conf.Environment.WorkSpace(), keystoreDir, address)
-	keyJson, err := ioutil.ReadFile(filepath)
+func LoadPaletteAccount(address common.Address) (*ecdsa.PrivateKey, error) {
+	enc, err := readWalletFile(keystoreDir, address)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: [%v]", err)
+		return nil, err
 	}
 
-	key, err := keystore.DecryptKey(keyJson, Conf.DefaultPassphrase)
+	key, err := repeatDecrypt(enc, address, Conf.DefaultPassphrase, pwdSessionPLT)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt keyjson: [%v]", err)
 	}
@@ -427,13 +446,12 @@ type CrossChainConfig struct {
 	PolyRPCAddress               string
 
 	// poly side chain configuration
-	PaletteSideChainID            uint64
-	PaletteSideChainName          string
-	PaletteECCD                   common.Address
-	PaletteECCM                   common.Address
-	PaletteCCMP                   common.Address
-	PaletteNFTProxy               common.Address
-	PaletteCrossChainAdminAccount common.Address
+	PaletteSideChainID   uint64
+	PaletteSideChainName string
+	PaletteECCD          common.Address
+	PaletteECCM          common.Address
+	PaletteCCMP          common.Address
+	PaletteNFTProxy      common.Address
 
 	// ethereum side chain configuration
 	EthereumSideChainID   uint64
@@ -447,9 +465,9 @@ type CrossChainConfig struct {
 
 	// ethereum node rpc and account
 	EthereumRPCUrl          string
-	EthereumAccount         string
+	EthereumAccount         common.Address
 	EthereumAccountPassword string
-	EthereumOwner           string
+	EthereumOwner           common.Address
 	EthereumOwnerPassword   string
 }
 
@@ -458,7 +476,6 @@ func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {
 	list := make([]*polysdk.Account, 0)
 
 	dir := path.Join(Conf.Environment.WorkSpace(), polyKeystoreDir)
-
 	fs, _ := ioutil.ReadDir(dir)
 	for _, f := range fs {
 		fullPath := path.Join(dir, f.Name())
@@ -489,19 +506,15 @@ func (c *CrossChainConfig) LoadPolyAccount(path string) (*polysdk.Account, error
 }
 
 func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {
-	dir := path.Join(Conf.Environment.WorkSpace(), ethKeystoreDir)
-	fullPath := path.Join(dir, c.EthereumAccount)
-	return c.LoadAccountWithPathAndPwd(fullPath, c.EthereumAccountPassword)
+	return c.customLoadEthAccount(c.EthereumAccount, c.EthereumAccountPassword)
 }
 
 func (c *CrossChainConfig) LoadETHOwner() (*ecdsa.PrivateKey, error) {
-	dir := path.Join(Conf.Environment.WorkSpace(), ethKeystoreDir)
-	fullPath := path.Join(dir, c.EthereumOwner)
-	return c.LoadAccountWithPathAndPwd(fullPath, c.EthereumOwnerPassword)
+	return c.customLoadEthAccount(c.EthereumOwner, c.EthereumOwnerPassword)
 }
 
-func (c *CrossChainConfig) LoadAccountWithPathAndPwd(path string, pwd string) (*ecdsa.PrivateKey, error) {
-	enc, err := ioutil.ReadFile(path)
+func (c *CrossChainConfig) customLoadEthAccount(acc common.Address, pwd string) (*ecdsa.PrivateKey, error) {
+	enc, err := readWalletFile(ethKeystoreDir, acc)
 	if err != nil {
 		return nil, err
 	}
@@ -514,7 +527,7 @@ func (c *CrossChainConfig) LoadAccountWithPathAndPwd(path string, pwd string) (*
 		return crypto.ToECDSA(bz)
 	}
 
-	key, err := keystore.DecryptKey(enc, pwd)
+	key, err := repeatDecrypt(enc, acc, pwd, pwdSessionETH)
 	if err != nil {
 		return nil, err
 	}
@@ -583,10 +596,26 @@ func getPolyAccountByPassword(sdk *polysdk.PolySdk, path string, pwd []byte) (
 	if err != nil {
 		return nil, fmt.Errorf("open wallet error: %v", err)
 	}
+
 	acc, err := wallet.GetDefaultAccount(pwd)
-	if err != nil {
-		return nil, fmt.Errorf("getDefaultAccount error: %v", err)
+	if err == nil {
+		return acc, nil
 	}
+
+	reader := bufio.NewReader(os.Stdin)
+	for i := 0; i < 10; i++ {
+		curPwd, err := reader.ReadString('\n')
+		if err != nil {
+			log.Infof("input error, try it again......")
+			continue
+		}
+		if acc, err := wallet.GetDefaultAccount([]byte(curPwd)); err == nil {
+			return acc, nil
+		} else {
+			log.Infof("password invalid, try it again......")
+		}
+	}
+
 	return acc, nil
 }
 
@@ -617,4 +646,57 @@ func GenesisNodeNumber() int {
 	}
 
 	return len(nodes)
+}
+
+func repeatDecrypt(enc []byte, account common.Address, pwd string, typ pwdSessionType) (key *keystore.Key, err error) {
+	if existPwd, err := getPwdSession(account, typ); err == nil {
+		return keystore.DecryptKey(enc, existPwd)
+	}
+
+	if key, err = keystore.DecryptKey(enc, pwd); err == nil {
+		_ = setPwdSession(account, pwd, typ)
+		return
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	log.Infof("please input password for ethereum account %s", account.Hex())
+
+	for i := 0; i < 10; i++ {
+		pwd, err = reader.ReadString('\n')
+		if err != nil {
+			log.Infof("input error, try it again......")
+			continue
+		}
+		if key, err = keystore.DecryptKey(enc, pwd); err == nil {
+			_ = setPwdSession(account, pwd, typ)
+			return
+		} else {
+			log.Infof("password invalid, try it again......")
+		}
+	}
+	return
+}
+
+func readWalletFile(storeDir string, acc common.Address) (enc []byte, err error) {
+	dir := path.Join(Conf.Environment.WorkSpace(), storeDir)
+	normalAddr := path.Join(dir, acc.Hex())
+	lowerAddr := path.Join(dir, strings.ToLower(acc.Hex()))
+	if enc, err = ioutil.ReadFile(normalAddr); err != nil {
+		if enc, err = ioutil.ReadFile(lowerAddr); err != nil {
+			return nil, fmt.Errorf("failed to read file: [%v]", err)
+		}
+	}
+	return
+}
+
+func setPwdSession(acc common.Address, pwd string, typ pwdSessionType) error {
+	return dao.SavePwd(byte(typ), acc.Bytes(), []byte(pwd))
+}
+
+func getPwdSession(acc common.Address, typ pwdSessionType) (string, error) {
+	bz, err := dao.GetPwd(byte(typ), acc.Bytes())
+	if err != nil {
+		return "", err
+	}
+	return string(bz), nil
 }

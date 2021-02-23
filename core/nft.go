@@ -121,7 +121,7 @@ func NFTSetUri() (succeed bool) {
 			continue
 		}
 
-		cli := sdk.NewSender(rpc, customLoadAccount(owner.Hex()))
+		cli := sdk.NewSender(rpc, customLoadAccount(owner))
 
 		suffix := getSuffix(asset)
 		uri := params.Storage + suffix
@@ -214,7 +214,7 @@ func NFTTokenOwner() (succeed bool) {
 
 func nftTransferBack(asset common.Address, tokenID *big.Int, from common.Address) (succeed bool) {
 	url := valcli.Url()
-	cli := sdk.NewSender(url, customLoadAccount(from.Hex()))
+	cli := sdk.NewSender(url, customLoadAccount(from))
 	to := valcli.Address()
 
 	if _, err := cli.NFTTransferFrom(asset, from, to, tokenID); err != nil {

@@ -589,11 +589,12 @@ func ETHTransferNFTProxyOwnership() (succeed bool) {
 	return true
 }
 
-// sync eth genesis
-func ETHSyncGenesis() (succeed bool) {
-	// 1. prepare
+// 同步以太坊区块头到poly
+func ETHSyncEthGenesis() (succeed bool) {
 	polyRPC := config.Conf.CrossChain.PolyRPCAddress
 	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
+	crossChainID := config.Conf.CrossChain.EthereumSideChainID
+
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
@@ -602,63 +603,66 @@ func ETHSyncGenesis() (succeed bool) {
 		log.Infof("generate poly client success!")
 	}
 
-	// 2. get ethereum current height&header and sync ethereum header to poly
-	{
-		logsplit()
-		crossChainID := config.Conf.CrossChain.EthereumSideChainID
-
-		curr, err := ethOwner.GetCurrentHeight()
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		hdr, err := ethOwner.GetHeader(curr)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		hdrEnc, err := hdr.MarshalJSON()
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		if err := polyCli.SyncGenesisBlock(crossChainID, hdrEnc); err != nil {
-			log.Errorf("SyncEthGenesisHeader, cross chainID %d, failed: %v", crossChainID, err)
-			return
-		}
-		log.Infof("successful to sync eth genesis header: txhash %s, block number %d",
-			hdr.Hash().Hex(), hdr.Number.Uint64())
+	curr, err := ethOwner.GetCurrentHeight()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	hdr, err := ethOwner.GetHeader(curr)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	hdrEnc, err := hdr.MarshalJSON()
+	if err != nil {
+		log.Error(err)
+		return
 	}
 
-	// 3. get poly block and assemble book keepers to header
-	{
-		logsplit()
+	if err := polyCli.SyncGenesisBlock(crossChainID, hdrEnc); err != nil {
+		log.Errorf("SyncEthGenesisHeader, cross chainID %d, failed: %v", crossChainID, err)
+		return
+	}
+	log.Infof("successful to sync eth genesis header: txhash %s, block number %d",
+		hdr.Hash().Hex(), hdr.Number.Uint64())
 
-		// `epoch` related with the poly validators changing,
-		// we can set it as 0 if poly validators never changed on develop environment.
-		var hasValidatorsBlockNumber uint32 = 0
-		gB, err := polyCli.GetBlockByHeight(hasValidatorsBlockNumber)
-		if err != nil {
-			log.Errorf("failed to get block, err: %s", err)
-			return
-		}
-		bookeepers, err := poly.GetBookeeper(gB)
-		if err != nil {
-			log.Errorf("failed to get bookeepers, err: %s", err)
-			return
-		}
-		bookeepersEnc := poly.AssembleNoCompressBookeeper(bookeepers)
-		headerEnc := gB.Header.ToArray()
+	return true
+}
 
-		eccm := config.Conf.CrossChain.EthereumECCM
-		txhash, err := ethOwner.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
-		if err != nil {
-			log.Errorf("failed to initGenesisBlock, err: %s", err)
-			return
-		} else {
-			log.Infof("sync genesis header success, txhash %s", txhash.Hex())
-		}
+// 同步poly区块头到以太坊
+func ETHSyncPolyGenesis() (succeed bool) {
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyCli, err := poly.NewPolyClient(polyRPC, nil)
+	if err != nil {
+		log.Errorf("failed to generate poly client, err: %s", err)
+		return
+	} else {
+		log.Infof("generate poly client success!")
+	}
+
+	// `epoch` related with the poly validators changing,
+	// we can set it as 0 if poly validators never changed on develop environment.
+	var hasValidatorsBlockNumber uint32 = 0
+	gB, err := polyCli.GetBlockByHeight(hasValidatorsBlockNumber)
+	if err != nil {
+		log.Errorf("failed to get block, err: %s", err)
+		return
+	}
+	bookeepers, err := poly.GetBookeeper(gB)
+	if err != nil {
+		log.Errorf("failed to get bookeepers, err: %s", err)
+		return
+	}
+	bookeepersEnc := poly.AssembleNoCompressBookeeper(bookeepers)
+	headerEnc := gB.Header.ToArray()
+
+	eccm := config.Conf.CrossChain.EthereumECCM
+	txhash, err := ethOwner.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
+	if err != nil {
+		log.Errorf("failed to initGenesisBlock, err: %s", err)
+		return
+	} else {
+		log.Infof("sync genesis header success, txhash %s", txhash.Hex())
 	}
 
 	return true

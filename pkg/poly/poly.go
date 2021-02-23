@@ -273,9 +273,6 @@ func GetBookeeper(block *polytype.Block) ([]keypair.PublicKey, error) {
 		return nil, fmt.Errorf("failed to unmarshal consensus payload, err: %s", err)
 	}
 
-	if info == nil {
-		return nil, fmt.Errorf("info is nil")
-	}
 	if info.NewChainConfig == nil {
 		return nil, fmt.Errorf("new chain config is nil")
 	}

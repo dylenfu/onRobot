@@ -8,8 +8,7 @@ import (
 
 func PolyHeight() (succeed bool) {
 	rpc := config.Conf.CrossChain.PolyRPCAddress
-	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
-	polyCli, err := poly.NewPolyClient(rpc, polyValidators)
+	polyCli, err := poly.NewPolyClient(rpc, nil)
 	if err != nil {
 		log.Errorf("failed to generate poly client, err: %s", err)
 		return

@@ -10,4 +10,5 @@ make robot t=eth-eccm-ownership
 make robot t=eth-registerSideChain
 make robot t=eth-approveRegisterSideChain
 
-make robot t=eth-syncGenesis
+make robot t=eth-sync-eth-genesis
+make robot t=eth-sync-poly-genesis

@@ -13,4 +13,6 @@ make robot t=plt-nft-ccmp
 
 make robot t=plt-registerSideChain
 make robot t=plt-approveRegisterSideChain
-make robot t=plt-syncGenesis
+
+make robot t=plt-sync-plt-genesis
+make robot t=plt-sync-poly-genesis

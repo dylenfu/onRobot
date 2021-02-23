@@ -10,8 +10,7 @@ func TestPolyClient_GetCurrentBlockHeight(t *testing.T) {
 	rpc := "http://106.75.226.11:40436"
 	configpath := "/Users/dylen/software/onRobot/build/target/config.json"
 	config.Init(configpath)
-	accArr := config.Conf.Poly.LoadPolyAccountList()
-	cli, err := NewPolyClient(rpc, accArr)
+	cli, err := NewPolyClient(rpc, nil)
 	assert.NoError(t, err)
 
 	height, err := cli.GetCurrentBlockHeight()

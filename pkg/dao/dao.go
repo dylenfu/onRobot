@@ -2,70 +2,46 @@ package dao
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+
+	"github.com/btcsuite/goleveldb/leveldb"
 )
 
-var db *gorm.DB
+var instance *DaoImpl
 
-type Config struct {
-	Ip   string
-	Port uint16
-	User string
-	Pwd  string
-	Db   string
+type DaoImpl struct {
+	db   *leveldb.DB
+	name string
 }
 
-func NewDao(c *Config) {
-	if db != nil {
-		return
+func NewDao(dir string) {
+	d := &DaoImpl{}
+	d.name = dir
+	db, err := leveldb.OpenFile(dir, nil)
+	if err != nil {
+		panic(err)
 	}
-
-	var err error
-
-	url := fmt.Sprintf("%s:%s@(%s:%d)/%s?", c.User, c.Pwd, c.Ip, c.Port, c.Db)
-	if db, err = gorm.Open("mysql", url); err != nil {
-		panic("failed to connect database")
-	}
-
-	var initTable = func(tb interface{}) {
-		// db.DropTableIfExists(tb)
-		// db.CreateTable(tb)
-		db.AutoMigrate(tb)
-	}
-
-	initTable(&Stat{})
-	initTable(&Subnet{})
+	fmt.Printf("open leveldb %s\r\n", dir)
+	d.db = db
+	instance = d
 }
 
-type Stat struct {
-	Ip   string
-	Port uint16
-	Hash string
-	Send uint64
-	Recv uint64
+func (d *DaoImpl) Name() string {
+	return d.name
 }
 
-func InsertStat(ip string, port uint16, hash string, send, recv uint64) error {
-	return db.Create(&Stat{Ip: ip, Port: port, Hash: hash, Send: send, Recv: recv}).Error
+func SavePwd(typ byte, k, v []byte) error {
+	key := formatKey(typ, k)
+	return instance.db.Put(key, v, nil)
 }
 
-type Subnet struct {
-	Pubkey string
+func GetPwd(typ byte, k []byte) ([]byte, error) {
+	key := formatKey(typ, k)
+	return instance.db.Get(key, nil)
 }
 
-func CheckSubnet(id string) bool {
-	data := new(Subnet)
-	affected := db.Where("pubkey = ?", id).First(data).RowsAffected
-	return affected > 0
-}
-
-func GetAllSubnet() []string {
-	list := []string{}
-	ids := []*Subnet{}
-	db.Find(&ids)
-	for _, v := range ids {
-		list = append(list, v.Pubkey)
-	}
-	return list
+func formatKey(typ byte, k []byte) []byte {
+	key := make([]byte, 0)
+	key = append(key, typ)
+	key = append(key, k...)
+	return key
 }

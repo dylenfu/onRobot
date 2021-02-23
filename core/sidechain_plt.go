@@ -446,8 +446,7 @@ func PLTSetNFTCCMP() (succeed bool) {
 //	  这笔交易发出后等待poly当前块高超过交易块高, 作为落账的判断条件
 // 4. 获取poly当前块高作为写入palette管理合约的genesis块高，获取对应的block，将block header及block book keeper
 //    序列化，提交到palette管理合约
-func PLTSyncGenesis() (succeed bool) {
-
+func PLTSyncPLTGenesis() (succeed bool) {
 	// 1. prepare
 	polyRPC := config.Conf.CrossChain.PolyRPCAddress
 	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
@@ -473,48 +472,54 @@ func PLTSyncGenesis() (succeed bool) {
 	}
 	log.Infof("get palette block header with current height %d, header %s", curr, hexutil.Encode(pltHeaderEnc))
 
-	// 3. sync palette header to poly
-	{
-		logsplit()
-		crossChainID := config.Conf.CrossChain.PaletteSideChainID
-		if err := polyCli.SyncGenesisBlock(crossChainID, pltHeaderEnc); err != nil {
-			log.Errorf("SyncEthGenesisHeader failed: %v", err)
-			return
-		}
-		log.Infof("sync palette genesis header to poly success, txhash %s, block number %d",
-			hdr.Hash().Hex(), hdr.Number.Uint64())
+	logsplit()
+	crossChainID := config.Conf.CrossChain.PaletteSideChainID
+	if err := polyCli.SyncGenesisBlock(crossChainID, pltHeaderEnc); err != nil {
+		log.Errorf("SyncEthGenesisHeader failed: %v", err)
+		return
+	}
+	log.Infof("sync palette genesis header to poly success, txhash %s, block number %d",
+		hdr.Hash().Hex(), hdr.Number.Uint64())
+
+	return true
+}
+
+// 同步poly区块头到palette
+func PLTSyncPolyGenesis() (succeed bool) {
+	polyRPC := config.Conf.CrossChain.PolyRPCAddress
+	polyCli, err := poly.NewPolyClient(polyRPC, nil)
+	if err != nil {
+		log.Errorf("failed to generate poly client, err: %s", err)
+		return
+	} else {
+		log.Infof("generate poly client success!")
 	}
 
-	// 4. get poly block and assemble book keepers to header
-	{
-		logsplit()
-
-		// `epoch` related with the poly validators changing,
-		// we can set it as 0 if poly validators never changed on develop environment.
-		var hasValidatorsBlockNumber uint32 = 0
-		gB, err := polyCli.GetBlockByHeight(hasValidatorsBlockNumber)
-		if err != nil {
-			log.Errorf("failed to get block, err: %s", err)
-			return
-		}
-		bookeepers, err := poly.GetBookeeper(gB)
-		if err != nil {
-			log.Errorf("failed to get bookeepers, err: %s", err)
-			return
-		}
-		bookeepersEnc := poly.AssembleNoCompressBookeeper(bookeepers)
-		headerEnc := gB.Header.ToArray()
-
-		eccm := config.Conf.CrossChain.PaletteECCM
-		txhash, err := ccAdmCli.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
-		if err != nil {
-			log.Errorf("failed to initGenesisBlock, err: %s", err)
-			return
-		} else {
-			log.Infof("sync poly genesis header to palette success, txhash %s, block number %d",
-				txhash.Hex(), gB.Header.Height)
-		}
+	// `epoch` related with the poly validators changing,
+	// we can set it as 0 if poly validators never changed on develop environment.
+	var hasValidatorsBlockNumber uint32 = 0
+	gB, err := polyCli.GetBlockByHeight(hasValidatorsBlockNumber)
+	if err != nil {
+		log.Errorf("failed to get block, err: %s", err)
+		return
 	}
+	bookeepers, err := poly.GetBookeeper(gB)
+	if err != nil {
+		log.Errorf("failed to get bookeepers, err: %s", err)
+		return
+	}
+	bookeepersEnc := poly.AssembleNoCompressBookeeper(bookeepers)
+	headerEnc := gB.Header.ToArray()
+
+	eccm := config.Conf.CrossChain.PaletteECCM
+	txhash, err := ccAdmCli.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
+	if err != nil {
+		log.Errorf("failed to initGenesisBlock, err: %s", err)
+		return
+	}
+
+	log.Infof("sync poly genesis header to palette success, txhash %s, block number %d",
+		txhash.Hex(), gB.Header.Height)
 
 	return true
 }
