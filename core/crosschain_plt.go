@@ -208,21 +208,7 @@ func PLTUnlock() (succeed bool) {
 		customLoadAccount(from),
 	)
 
-	// prepare ETH for gas fee
-	{
-		logsplit()
-		log.Infof("prepare eth gas fee......")
-		gasLimit := 210000
-		gasFee, err := calculateGasFee(invoker, uint64(gasLimit))
-		if err != nil {
-			log.Errorf("calculate gas fee err %s", err.Error())
-		}
-		amount := utils.SafeMul(gasFee, big.NewInt(2))
-		if err := prepareEth(from, amount); err != nil {
-			log.Errorf("prepare eth as gas failed, err: %s", err.Error())
-			return
-		}
-	}
+	// please make sure that eth account's balance is enough for gas fee.
 
 	// prepare allowance
 	logsplit()

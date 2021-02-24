@@ -3,11 +3,11 @@ package core
 import (
 	"bytes"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
-	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/poly"
@@ -687,21 +687,7 @@ func ETHPLTMintGovernance() (succeed bool) {
 	amount := plt.MultiPLT(params.Amount)
 	invoker := ethOwner
 
-	// prepare ETH for gas fee
-	{
-		logsplit()
-		log.Infof("prepare eth gas fee......")
-		gasLimit := 210000
-		gasFee, err := calculateGasFee(invoker, uint64(gasLimit))
-		if err != nil {
-			log.Errorf("calculate gas fee err %s", err.Error())
-		}
-		amount := utils.SafeMul(gasFee, big.NewInt(2))
-		if err := prepareEth(from, amount); err != nil {
-			log.Errorf("prepare eth as gas failed, err: %s", err.Error())
-			return
-		}
-	}
+	// please make sure that eth account's balance is enough for gas fee.
 
 	// prepare allowance
 	logsplit()
@@ -732,6 +718,7 @@ func ETHPLTMintGovernance() (succeed bool) {
 		log.Infof("lock plt on ethereum, tx hash %s", hash.Hex())
 	}
 
+	time.Sleep(25 * time.Second)
 	logsplit()
 	log.Info("check balance on both of palette chain and ethereum chain...")
 	for i := 0; i < 100; i++ {
@@ -757,9 +744,8 @@ func ETHPLTMintGovernance() (succeed bool) {
 			plt.PrintUPLT(totalSupplyAfterLockOnPalette),
 		)
 
-		sub1 := new(big.Int).Sub(totalSupplyBeforeLockOnEthereum, totalSupplyAfterLockOnEthereum)
-		sub2 := new(big.Int).Sub(totalSupplyAfterLockOnPalette, totalSupplyBeforeLockOnPalette)
-		if sub1.Cmp(amount) == 0 || sub2.Cmp(amount) == 0 {
+		sub := new(big.Int).Sub(totalSupplyAfterLockOnPalette, totalSupplyBeforeLockOnPalette)
+		if sub.Cmp(amount) == 0 {
 			log.Infof("lock tx hash %s success!", hash.Hex())
 			break
 		}
@@ -789,21 +775,22 @@ func ETHPLTMintAdmin() (succeed bool) {
 
 	invoker := ethOwner
 
+	// please make sure that eth account's balance is enough for gas fee.
 	// prepare ETH for gas fee
-	{
-		logsplit()
-		log.Infof("prepare eth gas fee......")
-		gasLimit := 210000
-		gasFee, err := calculateGasFee(invoker, uint64(gasLimit))
-		if err != nil {
-			log.Errorf("calculate gas fee err %s", err.Error())
-		}
-		amount := utils.SafeMul(gasFee, big.NewInt(2))
-		if err := prepareEth(from, amount); err != nil {
-			log.Errorf("prepare eth as gas failed, err: %s", err.Error())
-			return
-		}
-	}
+	//{
+	//	logsplit()
+	//	log.Infof("prepare eth gas fee......")
+	//	gasLimit := 210000
+	//	gasFee, err := calculateGasFee(invoker, uint64(gasLimit))
+	//	if err != nil {
+	//		log.Errorf("calculate gas fee err %s", err.Error())
+	//	}
+	//	amount := utils.SafeMul(gasFee, big.NewInt(2))
+	//	if err := prepareEth(from, amount); err != nil {
+	//		log.Errorf("prepare eth as gas failed, err: %s", err.Error())
+	//		return
+	//	}
+	//}
 
 	// prepare allowance
 	logsplit()
@@ -834,6 +821,7 @@ func ETHPLTMintAdmin() (succeed bool) {
 		log.Infof("lock plt on ethereum, tx hash %s", hash.Hex())
 	}
 
+	time.Sleep(25 * time.Second)
 	logsplit()
 	log.Info("check balance on both of palette chain and ethereum chain...")
 	for i := 0; i < 100; i++ {
@@ -858,9 +846,8 @@ func ETHPLTMintAdmin() (succeed bool) {
 			plt.PrintUPLT(toBalanceBeforeLockOnPalette),
 			plt.PrintUPLT(toBalanceAfterLockOnPalette),
 		)
-		sub1 := new(big.Int).Sub(fromBalanceBeforeLockOnEthereum, fromBalanceAfterLockOnEthereum)
-		sub2 := new(big.Int).Sub(toBalanceAfterLockOnPalette, toBalanceBeforeLockOnPalette)
-		if sub1.Cmp(amount) == 0 || sub2.Cmp(amount) == 0 {
+		sub := new(big.Int).Sub(toBalanceAfterLockOnPalette, toBalanceBeforeLockOnPalette)
+		if sub.Cmp(amount) == 0 {
 			log.Infof("lock tx hash %s success!", hash.Hex())
 			break
 		}
