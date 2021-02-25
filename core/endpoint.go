@@ -139,6 +139,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("eth-plt-total-supply", ETHPLTTotalSupply)
 	frame.Tool.RegMethod("eth-plt-balance", ETHPLTBalance)
 	frame.Tool.RegMethod("eth-plt-transfer", ETHPLTTransfer)
+	frame.Tool.RegMethod("eth-eth-transfer", ETHETHTransfer)
 
 	// plt cross chain
 	frame.Tool.RegMethod("plt-mint", PLTMint)

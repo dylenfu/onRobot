@@ -940,3 +940,58 @@ func ETHPLTTransfer() (succeed bool) {
 
 	return true
 }
+
+// transfer from eth owner
+func ETHETHTransfer() (succeed bool) {
+	var params struct {
+		To     common.Address
+		Amount int
+	}
+	if err := config.LoadParams("ETH-ETH-Transfer.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+	from := ethOwner.Address()
+	amount := plt.MultiPLT(params.Amount)
+	invoker := ethOwner
+	fromBalanceBeforeTransfer, err := invoker.ETHBalance(from)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	toBalanceBeforeTransfer, err := invoker.ETHBalance(params.To)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	hash, err := invoker.TransferETH(params.To, amount)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	fromBalanceAfterTransfer, err := invoker.ETHBalance(params.To)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	toBalanceAfterTransfer, err := invoker.ETHBalance(params.To)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Infof("tx hash %s \r\n"+
+		"from %s, balance before transfer %d, balance after transfer %d \r\n"+
+		"to %s, balance before transfer %d, balance after transfer %d",
+		hash.Hex(),
+		from.Hex(),
+		plt.PrintUPLT(fromBalanceBeforeTransfer),
+		plt.PrintUPLT(fromBalanceAfterTransfer),
+		params.To.Hex(),
+		plt.PrintUPLT(toBalanceBeforeTransfer),
+		plt.PrintUPLT(toBalanceAfterTransfer),
+	)
+
+	return true
+}
