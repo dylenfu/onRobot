@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"fmt"
+	"github.com/ethereum/go-ethereum/core/types"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -855,9 +856,28 @@ func PLTChangeBookKeepers() (succeed bool) {
 		}
 		return nil
 	}
+	getHeaderExtraSize := func() int {
+		_, header, err := admcli.GetCurrentBlockHeader()
+		if err != nil {
+			log.Errorf("get current block header failed: %s", err)
+			return 0
+		}
+		extra, err := types.ExtractIstanbulExtra(header)
+		if err != nil {
+			log.Errorf("extra header failed: %s", err)
+			return 0
+		}
+		return len(extra.Validators)
+	}
+
+	var (
+		extraSizeBeforeTest,
+		extraSizeAfterTest int
+	)
 
 	// 1.deposit and dump event log
 	{
+		extraSizeBeforeTest = getHeaderExtraSize()
 		log.Infof("admin deposit to validator")
 		for _, node := range nodes {
 			balance := checkBalance(node, "before deposit")
@@ -897,8 +917,6 @@ func PLTChangeBookKeepers() (succeed bool) {
 		PLTLock()
 		wait(1)
 		PLTLock()
-		wait(config.Conf.RewardEffectivePeriod + 2)
-		PLTLock()
 		if err := checkValidators(false); err != nil {
 			log.Error(err)
 			return
@@ -914,14 +932,12 @@ func PLTChangeBookKeepers() (succeed bool) {
 			return
 		}
 		PLTLock()
-		wait(1)
-		PLTLock()
 		wait(config.Conf.RewardEffectivePeriod + 2)
-		PLTLock()
 		if err := checkValidators(true); err != nil {
 			log.Error(err)
 			return
 		}
+		PLTLock()
 	}
 
 	// 5.revoke stake
@@ -943,14 +959,19 @@ func PLTChangeBookKeepers() (succeed bool) {
 	}
 
 	// 7. stop and clear nodes
-	{
-
-		wait(config.Conf.RewardEffectivePeriod + 2)
-		for _, node := range nodes {
-			execStopNode(node)
-		}
-		for _, node := range nodes {
-			execClearNode(node)
+	for {
+		extraSizeAfterTest = getHeaderExtraSize()
+		if extraSizeAfterTest != extraSizeBeforeTest {
+			log.Infof("extra size before del vals %d, extra size after del vals %d")
+			wait(1)
+		} else {
+			for _, node := range nodes {
+				execStopNode(node)
+			}
+			for _, node := range nodes {
+				execClearNode(node)
+			}
+			break
 		}
 	}
 
