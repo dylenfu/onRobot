@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -797,7 +798,7 @@ func PLTChangeBookKeepers() (succeed bool) {
 		return int(balance)
 	}
 
-	stakeAndDumpEvent := func(revoke bool) {
+	stakeAndDumpEvent := func(revoke bool) error {
 		for _, node := range nodes {
 			cli := sdk.NewSender(node.RPCAddr(), node.StakePrivateKey())
 			stkAmt := plt.MultiPLT(params.InitAmount)
@@ -807,11 +808,11 @@ func PLTChangeBookKeepers() (succeed bool) {
 
 			hash, err := cli.Stake(node.NodeAddr(), node.StakeAddr(), stkAmt, revoke)
 			if err != nil {
-				log.Error("failed to stake for validator %s stake account %s amount %d", node.NodeAddr().Hex(), node.StakeAddr().Hex(), stkAmt)
-				return
+				return err
 			}
 			log.Infof("stake for validator, hash %s", hash.Hex())
 		}
+		return nil
 	}
 
 	checkStakeAmt := func(mark string) {
@@ -822,15 +823,37 @@ func PLTChangeBookKeepers() (succeed bool) {
 		}
 	}
 
-	adminAddValidator := func(revoke bool) {
+	adminAddValidator := func(revoke bool) error {
 		for _, node := range nodes {
 			hash, err := admcli.AddValidator(node.NodeAddr(), node.StakeAddr(), revoke)
 			if err != nil {
-				log.Errorf("failed to add validator %s, err: %s", node.NodeAddr().Hex(), err)
-				return
+				return err
 			}
 			log.Infof("admin add validator %s success, tx hash %s", node.NodeAddr().Hex(), hash.Hex())
 		}
+		return nil
+	}
+
+	inList := func(addr common.Address, list []common.Address) bool {
+		for _, v := range list {
+			if bytes.Equal(addr.Bytes(), v.Bytes()) {
+				return true
+			}
+		}
+		return false
+	}
+	checkValidators := func(revoke bool) error {
+		list := admcli.GetAllValidators("latest")
+		for _, node := range nodes {
+			exist := inList(node.NodeAddr(), list)
+			if !revoke && !exist {
+				return fmt.Errorf("node%d not in validators list", node.Index)
+			}
+			if revoke && exist {
+				return fmt.Errorf("node%d still in validators list", node.Index)
+			}
+		}
+		return nil
 	}
 
 	// 1.deposit and dump event log
@@ -856,7 +879,10 @@ func PLTChangeBookKeepers() (succeed bool) {
 	{
 		logsplit()
 		log.Infof("validators stake at block %d", admcli.GetBlockNumber())
-		stakeAndDumpEvent(false)
+		if err := stakeAndDumpEvent(false); err != nil {
+			log.Error(err)
+			return
+		}
 		wait(2 * config.Conf.RewardEffectivePeriod)
 		checkStakeAmt("after stake")
 	}
@@ -864,38 +890,62 @@ func PLTChangeBookKeepers() (succeed bool) {
 	// 3.admin add validator
 	{
 		log.Infof("admin add validator at block %d", admcli.GetBlockNumber())
-		adminAddValidator(false)
+		if err := adminAddValidator(false); err != nil {
+			log.Error(err)
+			return
+		}
+		PLTLock()
+		wait(1)
+		PLTLock()
 		wait(config.Conf.RewardEffectivePeriod + 2)
+		PLTLock()
+		if err := checkValidators(false); err != nil {
+			log.Error(err)
+			return
+		}
 	}
 
-	// 4. lock
-	PLTLock()
-
-	// 5.admin del validator
+	// 4.admin del validator
 	{
 		logsplit()
 		log.Infof("admin del validator at block %d", admcli.GetBlockNumber())
-		adminAddValidator(true)
+		if err := adminAddValidator(true); err != nil {
+			log.Error(err)
+			return
+		}
+		PLTLock()
+		wait(1)
+		PLTLock()
 		wait(config.Conf.RewardEffectivePeriod + 2)
+		PLTLock()
+		if err := checkValidators(true); err != nil {
+			log.Error(err)
+			return
+		}
 	}
 
-	// 6.revoke stake
+	// 5.revoke stake
 	{
 		log.Infof("revoking stake......")
-		stakeAndDumpEvent(true)
+		if err := stakeAndDumpEvent(true); err != nil {
+			log.Error(err)
+			return
+		}
 		wait(config.Conf.RewardEffectivePeriod)
 		checkStakeAmt("after revoke stake")
 	}
 
-	// 7.check balance after revoke stake
+	// 6.check balance after revoke stake
 	{
 		for _, node := range nodes {
 			checkBalance(node, "after revoke stake")
 		}
 	}
 
-	// 8. stop and clear nodes
+	// 7. stop and clear nodes
 	{
+
+		wait(config.Conf.RewardEffectivePeriod + 2)
 		for _, node := range nodes {
 			execStopNode(node)
 		}
@@ -903,9 +953,6 @@ func PLTChangeBookKeepers() (succeed bool) {
 			execClearNode(node)
 		}
 	}
-
-	// 9. lock
-	PLTLock()
 
 	return true
 }
