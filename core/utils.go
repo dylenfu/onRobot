@@ -35,7 +35,12 @@ func getPaletteCli(typ cliType) (cli *sdk.Client) {
 	url := config.Conf.Rpc
 	switch typ {
 	case pltCTypeCustomer:
-		cli = sdk.NewSender(url, nil)
+		addr := config.Conf.Accounts[0]
+		key, err := config.LoadPaletteAccount(addr)
+		if err != nil {
+			panic(fmt.Sprintf("load palette account err: %s", err.Error()))
+		}
+		cli = sdk.NewSender(url, key)
 	case pltCTypeInvoker:
 		node := config.Conf.ValidatorNodes()[0]
 		cli = sdk.NewSender(url, node.PrivateKey())
