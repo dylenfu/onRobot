@@ -14,11 +14,12 @@ import (
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
-func Simple() bool {
-	if err := config.SaveConfig(config.Conf); err != nil {
-		log.Error(err)
-		return false
-	}
+func Demo() bool {
+	//if err := config.SaveConfig(config.Conf); err != nil {
+	//	log.Error(err)
+	//	return false
+	//}
+	log.Info("it is a demo")
 	return true
 }
 

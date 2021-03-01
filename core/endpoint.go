@@ -12,9 +12,9 @@ func Endpoint() {
 
 	// gc function
 	frame.Tool.RegGCFunc(gc)
+	frame.Tool.RegMethod("demo", Demo)
 
 	// remote construct
-	frame.Tool.RegMethod("simple", Simple)
 	frame.Tool.RegMethod("remoteBuild", RemoteBuild)
 	frame.Tool.RegMethod("remoteSetup", RemoteSetup)
 
