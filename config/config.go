@@ -55,6 +55,7 @@ var (
 type Config struct {
 	Environment            *Env
 	Network                *Network
+	Rpc                    string
 	DefaultPassphrase      string
 	AdminAccount           common.Address
 	CrossChainAdminAccount common.Address
@@ -348,6 +349,7 @@ func SaveConfig(c *Config) error {
 		Environment            *Env
 		Network                *Network
 		DefaultPassphrase      string
+		Rpc                    string
 		AdminAccount           common.Address
 		CrossChainAdminAccount common.Address
 		BaseRewardPool         common.Address
@@ -365,6 +367,7 @@ func SaveConfig(c *Config) error {
 	x.Environment = c.Environment
 	x.Network = c.Network
 	x.DefaultPassphrase = c.DefaultPassphrase
+	x.Rpc = c.Rpc
 	x.AdminAccount = c.AdminAccount
 	x.CrossChainAdminAccount = c.CrossChainAdminAccount
 	x.BaseRewardPool = c.BaseRewardPool

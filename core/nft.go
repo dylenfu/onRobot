@@ -24,6 +24,7 @@ func NFTDeploy() (succeed bool) {
 		return
 	}
 
+	valcli := getPaletteCli(pltCTypeInvoker)
 	_, addr, err := valcli.NFTDeploy(params.Name, params.Symbol)
 	if err != nil {
 		log.Error(err)
@@ -46,6 +47,7 @@ func NFTMint() (succeed bool) {
 		return
 	}
 
+	valcli := getPaletteCli(pltCTypeInvoker)
 	owner := valcli.Address()
 	token := new(big.Int).SetUint64(params.TokenID)
 	balanceBeforeMint, err := valcli.NFTBalance(params.Asset, owner, "latest")
@@ -86,6 +88,7 @@ func NFTBurn() (succeed bool) {
 		return
 	}
 
+	valcli := getPaletteCli(pltCTypeInvoker)
 	token := new(big.Int).SetUint64(params.TokenID)
 	if _, err := valcli.NFTBurn(params.Asset, token); err != nil {
 		log.Error(err)
@@ -114,15 +117,15 @@ func NFTSetUri() (succeed bool) {
 		return fmt.Sprintf("%x/", num)
 	}
 
-	rpc := admcli.Url()
+	rpc := config.Conf.Rpc
+	baseCli := getPaletteCli(pltCTypeCustomer)
 	for _, asset := range params.List {
-		owner, _ := admcli.NFTAssetOwner(asset, "latest")
+		owner, _ := baseCli.NFTAssetOwner(asset, "latest")
 		if owner == utils.EmptyAddress {
 			continue
 		}
 
 		cli := sdk.NewSender(rpc, customLoadAccount(owner))
-
 		suffix := getSuffix(asset)
 		uri := params.Storage + suffix
 		hash, err := cli.NFTSetBaseUri(asset, uri)
@@ -130,12 +133,12 @@ func NFTSetUri() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		uri, _ = admcli.NFTGetBaseUri(asset, "latest")
+		uri, _ = baseCli.NFTGetBaseUri(asset, "latest")
 		log.Infof("hash %s, asset: %s, owner: %s, uri: %s", hash.Hex(), asset.Hex(), owner.Hex(), uri)
 
 		for i := 0; i < 10; i++ {
 			token := big.NewInt(int64(i))
-			if uri, _ := admcli.NFTTokenURI(asset, token, "latest"); uri != "" {
+			if uri, _ := baseCli.NFTTokenURI(asset, token, "latest"); uri != "" {
 				log.Infof("token uri %s", uri)
 			}
 		}
@@ -158,15 +161,26 @@ func NFTTransfer() (succeed bool) {
 	// validator transfer to someone
 	asset := params.Asset
 	token := new(big.Int).SetUint64(params.TokenID)
+	valcli := getPaletteCli(pltCTypeInvoker)
 	owner := valcli.Address()
 	if _, err := valcli.NFTTransferFrom(asset, owner, params.To, token); err != nil {
 		log.Error(err)
 		return
 	}
 
-	//return true
 	// transfer back to validator
-	return nftTransferBack(asset, token, params.To)
+	{
+		url := valcli.Url()
+		from := params.To
+		to := valcli.Address()
+		cli := sdk.NewSender(url, customLoadAccount(from))
+
+		if _, err := cli.NFTTransferFrom(asset, from, to, token); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+	return true
 }
 
 func NFTBalance() (succeed bool) {
@@ -180,6 +194,7 @@ func NFTBalance() (succeed bool) {
 		return
 	}
 
+	valcli := getPaletteCli(pltCTypeInvoker)
 	num, err := valcli.NFTBalance(params.Asset, params.User, "latest")
 	if err != nil {
 		log.Error(err)
@@ -202,6 +217,7 @@ func NFTTokenOwner() (succeed bool) {
 	}
 
 	tokenID := new(big.Int).SetUint64(params.TokenID)
+	valcli := getPaletteCli(pltCTypeInvoker)
 	owner, err := valcli.NFTTokenOwner(params.Asset, tokenID, "latest")
 	if err != nil {
 		log.Error(err)
@@ -212,19 +228,15 @@ func NFTTokenOwner() (succeed bool) {
 	return true
 }
 
-func nftTransferBack(asset common.Address, tokenID *big.Int, from common.Address) (succeed bool) {
-	url := valcli.Url()
-	cli := sdk.NewSender(url, customLoadAccount(from))
-	to := valcli.Address()
-
-	if _, err := cli.NFTTransferFrom(asset, from, to, tokenID); err != nil {
-		log.Error(err)
-		return
-	}
-
-	return true
-}
-
-func nftBalance(asset, user common.Address) (*big.Int, error) {
-	return valcli.NFTBalance(asset, user, "latest")
-}
+//func nftTransferBack(asset common.Address, tokenID *big.Int, from common.Address) (succeed bool) {
+//	url := valcli.Url()
+//	cli := sdk.NewSender(url, customLoadAccount(from))
+//	to := valcli.Address()
+//
+//	if _, err := cli.NFTTransferFrom(asset, from, to, tokenID); err != nil {
+//		log.Error(err)
+//		return
+//	}
+//
+//	return true
+//}

@@ -28,6 +28,7 @@ import (
 // 3. 进入unlock资金逻辑
 
 func PLTDeployECCD() (succeed bool) {
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 	eccd, err := ccAdmCli.DeployECCD()
 	if err != nil {
 		log.Errorf("deploy eccd on palette failed, err: %s", err.Error())
@@ -47,6 +48,7 @@ func PLTDeployECCD() (succeed bool) {
 func PLTDeployECCM() (succeed bool) {
 	eccd := config.Conf.CrossChain.PaletteECCD
 	sideChainID := config.Conf.CrossChain.PaletteSideChainID
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 	eccm, err := ccAdmCli.DeployECCM(eccd, sideChainID)
 	if err != nil {
 		log.Errorf("deploy eccm on palette failed, err: %s", err.Error())
@@ -65,6 +67,7 @@ func PLTDeployECCM() (succeed bool) {
 
 func PLTDeployCCMP() (succeed bool) {
 	eccm := config.Conf.CrossChain.PaletteECCM
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 	ccmp, err := ccAdmCli.DeployCCMP(eccm)
 	if err != nil {
 		log.Errorf("deploy ccmp on palette failed, err: %s", err.Error())
@@ -84,6 +87,7 @@ func PLTDeployCCMP() (succeed bool) {
 func PLTTransferECCDOwnerShip() (succeed bool) {
 	eccd := config.Conf.CrossChain.PaletteECCD
 	eccm := config.Conf.CrossChain.PaletteECCM
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.ECCDOwnership(eccd)
 	if bytes.Equal(eccm.Bytes(), cur.Bytes()) {
@@ -113,6 +117,7 @@ func PLTTransferECCDOwnerShip() (succeed bool) {
 func PLTTransferECCMOwnerShip() (succeed bool) {
 	eccm := config.Conf.CrossChain.PaletteECCM
 	ccmp := config.Conf.CrossChain.PaletteCCMP
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.ECCMOwnership(eccm)
 	if bytes.Equal(ccmp.Bytes(), cur.Bytes()) {
@@ -142,6 +147,7 @@ func PLTTransferECCMOwnerShip() (succeed bool) {
 func PLTTransferCCMPOwnerShip() (succeed bool) {
 	ccmp := config.Conf.CrossChain.PaletteCCMP
 	newOwner := config.Conf.FinalOwner.PaletteFinalOwner
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.CCMPOwnership(ccmp)
 	if bytes.Equal(newOwner.Bytes(), cur.Bytes()) {
@@ -171,6 +177,7 @@ func PLTTransferCCMPOwnerShip() (succeed bool) {
 func PLTTransferNFTProxyOwnership() (succeed bool) {
 	proxy := config.Conf.CrossChain.PaletteNFTProxy
 	newOwner := config.Conf.FinalOwner.PaletteFinalOwner
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.NFTProxyOwnership(proxy)
 	if bytes.Equal(proxy.Bytes(), cur.Bytes()) {
@@ -199,6 +206,7 @@ func PLTTransferNFTProxyOwnership() (succeed bool) {
 func PLTTransferCrossChainAdminOwnership() (succeed bool) {
 	oldOwner := config.Conf.CrossChainAdminAccount
 	newOwner := config.Conf.FinalOwner.PaletteFinalOwner
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.CrossChainAdminOwnership("latest")
 	if bytes.Equal(newOwner.Bytes(), cur.Bytes()) {
@@ -228,6 +236,7 @@ func PLTTransferCrossChainAdminOwnership() (succeed bool) {
 
 func PLTSetCCMP() (succeed bool) {
 	ccmp := config.Conf.CrossChain.PaletteCCMP
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.GetPLTCCMP("latest")
 	if bytes.Equal(ccmp.Bytes(), cur.Bytes()) {
@@ -261,6 +270,7 @@ func PLTSetCCMP() (succeed bool) {
 func PLTBindPLTProxy() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	sideChainID := config.Conf.CrossChain.EthereumSideChainID
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.GetBindPLTProxy(sideChainID, "latest")
 	if bytes.Equal(proxy.Bytes(), cur.Bytes()) {
@@ -292,6 +302,7 @@ func PLTBindPLTProxy() (succeed bool) {
 func PLTBindPLTAsset() (succeed bool) {
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	sideChainID := config.Conf.CrossChain.EthereumSideChainID
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.GetBindPLTAsset(sideChainID, "latest")
 	if bytes.Equal(asset.Bytes(), cur.Bytes()) {
@@ -365,6 +376,7 @@ func PLTApproveRegisterSideChain() (succeed bool) {
 }
 
 func PLTDeployNFTProxy() (succeed bool) {
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 	proxy, err := ccAdmCli.DeployNFTProxy()
 	if err != nil {
 		log.Errorf("deploy NFT proxy on palette failed, err: %s", err.Error())
@@ -385,6 +397,7 @@ func PLTBindNFTProxy() (succeed bool) {
 	localLockproxy := config.Conf.CrossChain.PaletteNFTProxy
 	targetLockProxy := config.Conf.CrossChain.EthereumNFTProxy
 	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.GetBoundNFTProxy(localLockproxy, targetSideChainID)
 	if bytes.Equal(targetLockProxy.Bytes(), cur.Bytes()) {
@@ -415,6 +428,7 @@ func PLTBindNFTProxy() (succeed bool) {
 func PLTSetNFTCCMP() (succeed bool) {
 	proxy := config.Conf.CrossChain.PaletteNFTProxy
 	ccmp := config.Conf.CrossChain.PaletteCCMP
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.GetNFTCCMP(proxy)
 	if bytes.Equal(ccmp.Bytes(), cur.Bytes()) {
@@ -462,6 +476,7 @@ func PLTSyncPLTGenesis() (succeed bool) {
 
 	// 2. get palette current block header
 	logsplit()
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 	curr, hdr, err := ccAdmCli.GetCurrentBlockHeader()
 	if err != nil {
 		log.Errorf("failed to get block header, err: %s", err)
@@ -514,6 +529,7 @@ func PLTSyncPolyGenesis() (succeed bool) {
 	headerEnc := gB.Header.ToArray()
 
 	eccm := config.Conf.CrossChain.PaletteECCM
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 	txhash, err := ccAdmCli.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
 	if err != nil {
 		log.Errorf("failed to initGenesisBlock, err: %s", err)
@@ -540,6 +556,7 @@ func PLTBindNFTAsset() (succeed bool) {
 	fromAsset := params.PaletteNFTAsset
 	toAsset := params.EthereumNFTAsset
 	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	curAddr, _ := ccAdmCli.GetBoundNFTAsset(proxy, fromAsset, targetSideChainID)
 	if curAddr != utils.EmptyAddress {
@@ -586,6 +603,7 @@ func PLTUpgradeECCM() (succeed bool) {
 	params := new(DeployContractParams)
 	eccdAddr := config.Conf.CrossChain.PaletteECCD
 	ccmpAddr := config.Conf.CrossChain.PaletteCCMP
+	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	chainID := uint64(config.Conf.Environment.NetworkID)
 	if err := config.LoadParams("UpdateEccm.json", params); err != nil {
@@ -770,6 +788,7 @@ func PLTChangeBookKeepers() (succeed bool) {
 		return
 	}
 	nodes := config.Conf.SpareNodes()[0:params.NodeNumber]
+	admcli := getPaletteCli(pltCTypeAdmin)
 
 	// init nodes
 	{
@@ -1060,8 +1079,9 @@ func PLTDumpContractCode() (succeed bool) {
 		log.Error(err)
 		return
 	}
+	cli := getPaletteCli(pltCTypeCustomer)
 	for _, addr := range param.List {
-		if err := admcli.DumpContractCode(addr); err != nil {
+		if err := cli.DumpContractCode(addr); err != nil {
 			log.Errorf("dum contract %s code err: %s", addr.Hex(), err)
 		}
 	}

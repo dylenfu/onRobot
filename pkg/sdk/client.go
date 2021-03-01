@@ -33,12 +33,16 @@ func (c *Client) Url() string {
 }
 
 func (c *Client) Address() common.Address {
-	return crypto.PubkeyToAddress(c.Key.PublicKey)
+	return PubKey2Address(c.Key.PublicKey)
 }
 
 func (c *Client) Reset(key *ecdsa.PrivateKey) *Client {
 	c.Key = key
 	return c
+}
+
+func PubKey2Address(pub ecdsa.PublicKey) common.Address {
+	return crypto.PubkeyToAddress(pub)
 }
 
 func dialNode(url string) *rpc.Client {

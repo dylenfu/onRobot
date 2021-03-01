@@ -20,6 +20,7 @@ import (
 //
 ///////////////////////////////////////////////////////
 func ETHDeployECCD() (succeed bool) {
+	ethOwner := getEthereumCli(ethCTypeOwner)
 	eccd, err := ethOwner.DeployECCDContract()
 	if err != nil {
 		log.Errorf("deploy eccd on ethereum failed, err: %s", err.Error())
@@ -38,6 +39,7 @@ func ETHDeployECCD() (succeed bool) {
 
 func ETHDeployECCM() (succeed bool) {
 	eccd := config.Conf.CrossChain.EthereumECCD
+	ethOwner := getEthereumCli(ethCTypeOwner)
 	eccm, err := ethOwner.DeployECCMContract(eccd)
 	if err != nil {
 		log.Errorf("deploy eccm on ethereum failed, err: %s", err.Error())
@@ -56,6 +58,7 @@ func ETHDeployECCM() (succeed bool) {
 
 func ETHDeployCCMP() (succeed bool) {
 	eccm := config.Conf.CrossChain.EthereumECCM
+	ethOwner := getEthereumCli(ethCTypeOwner)
 	ccmp, err := ethOwner.DeployCCMPContract(eccm)
 	if err != nil {
 		log.Errorf("deploy ccmp on ethereum failed, err: %s", err.Error())
@@ -75,6 +78,7 @@ func ETHDeployCCMP() (succeed bool) {
 func ETHTransferECCDOwnership() (succeed bool) {
 	eccd := config.Conf.CrossChain.EthereumECCD
 	eccm := config.Conf.CrossChain.EthereumECCM
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	curOwner, _ := ethOwner.ECCDOwnership(eccd)
 	if bytes.Equal(eccm.Bytes(), curOwner.Bytes()) {
@@ -105,6 +109,7 @@ func ETHTransferECCDOwnership() (succeed bool) {
 func ETHTransferECCMOwnership() (succeed bool) {
 	eccm := config.Conf.CrossChain.EthereumECCM
 	ccmp := config.Conf.CrossChain.EthereumCCMP
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	curOwner, _ := ethOwner.ECCMOwnership(eccm)
 	if bytes.Equal(ccmp.Bytes(), curOwner.Bytes()) {
@@ -135,6 +140,7 @@ func ETHTransferECCMOwnership() (succeed bool) {
 func ETHTransferCCMPOwnership() (succeed bool) {
 	ccmp := config.Conf.CrossChain.EthereumCCMP
 	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	curOwner, _ := ethOwner.CCMPOwnership(ccmp)
 	if bytes.Equal(newOwner.Bytes(), curOwner.Bytes()) {
@@ -222,6 +228,7 @@ func ETHApproveRegisterSideChain() (succeed bool) {
 ///////////////////////////////////////////////////////
 
 func ETHDeployPLTAsset() (succeed bool) {
+	ethOwner := getEthereumCli(ethCTypeOwner)
 	pltAsset, err := ethOwner.DeployPLTAsset()
 	if err != nil {
 		log.Errorf("deploy PLT asset on ethereum failed, err: %s", err)
@@ -238,6 +245,7 @@ func ETHDeployPLTAsset() (succeed bool) {
 }
 
 func ETHDeployPLTProxy() (succeed bool) {
+	ethOwner := getEthereumCli(ethCTypeOwner)
 	proxy, err := ethOwner.DeployPLTLockProxy()
 	if err != nil {
 		log.Errorf("deploy PLT proxy on ethereum failed, err: %s", err)
@@ -258,6 +266,7 @@ func ETHBindPLTProxy() (succeed bool) {
 	localLockProxy := config.Conf.CrossChain.EthereumPLTProxy
 	targetLockProxy := common.HexToAddress(native.PLTContractAddress)
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.GetBoundPLTProxy(localLockProxy, targetSideChainID)
 	if bytes.Equal(cur.Bytes(), targetLockProxy.Bytes()) {
@@ -290,6 +299,7 @@ func ETHBindPLTAsset() (succeed bool) {
 	fromAsset := config.Conf.CrossChain.EthereumPLTAsset
 	toAsset := common.HexToAddress(native.PLTContractAddress)
 	toChainId := config.Conf.CrossChain.PaletteSideChainID
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.GetBoundPLTAsset(localLockProxy, fromAsset, toChainId)
 	if bytes.Equal(cur.Bytes(), toAsset.Bytes()) {
@@ -320,6 +330,7 @@ func ETHBindPLTAsset() (succeed bool) {
 func ETHSetPLTCCMP() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	ccmp := config.Conf.CrossChain.EthereumCCMP
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.GetPLTCCMP(proxy)
 	if bytes.Equal(cur.Bytes(), ccmp.Bytes()) {
@@ -365,6 +376,7 @@ func ETHDeployNFTAsset() (succeed bool) {
 		return
 	}
 	proxy := config.Conf.CrossChain.EthereumNFTProxy
+	ethOwner := getEthereumCli(ethCTypeOwner)
 	contract, err := ethOwner.DeployNFT(proxy, params.Name, params.Symbol)
 	if err != nil {
 		log.Errorf("deploy new NFT contract on ethereum failed, err: %s", err.Error())
@@ -377,6 +389,7 @@ func ETHDeployNFTAsset() (succeed bool) {
 }
 
 func ETHDeployNFTProxy() (succeed bool) {
+	ethOwner := getEthereumCli(ethCTypeOwner)
 	proxy, err := ethOwner.DeployNFTLockProxy()
 	if err != nil {
 		log.Errorf("deploy nft lock proxy on ethereum failed, err: %s", err.Error())
@@ -395,6 +408,7 @@ func ETHDeployNFTProxy() (succeed bool) {
 func ETHSetNFTCCMP() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumNFTProxy
 	ccmp := config.Conf.CrossChain.EthereumCCMP
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.GetNFTCCMP(proxy)
 	if bytes.Equal(cur.Bytes(), ccmp.Bytes()) {
@@ -426,6 +440,7 @@ func ETHBindNFTProxy() (succeed bool) {
 	localLockProxy := config.Conf.CrossChain.EthereumNFTProxy
 	targetLockProxy := config.Conf.CrossChain.PaletteNFTProxy
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.GetBoundNFTProxy(localLockProxy, targetSideChainID)
 	if bytes.Equal(cur.Bytes(), targetLockProxy.Bytes()) {
@@ -467,6 +482,7 @@ func ETHBindNFTAsset() (succeed bool) {
 	fromAsset := params.EthereumNFTAsset
 	toAsset := params.PaletteNFTAsset
 	chainID := config.Conf.CrossChain.PaletteSideChainID
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.GetBoundNFTAsset(proxy, fromAsset, chainID)
 	if bytes.Equal(cur.Bytes(), toAsset.Bytes()) {
@@ -502,6 +518,7 @@ func ETHBindNFTAsset() (succeed bool) {
 func ETHTransferPLTAssetOwnership() (succeed bool) {
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.PLTAssetOwnership(asset)
 	if bytes.Equal(newOwner.Bytes(), cur.Bytes()) {
@@ -532,6 +549,7 @@ func ETHTransferPLTAssetOwnership() (succeed bool) {
 func ETHTransferPLTProxyOwnership() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.PLTProxyOwnership(proxy)
 	if bytes.Equal(newOwner.Bytes(), cur.Bytes()) {
@@ -562,6 +580,7 @@ func ETHTransferPLTProxyOwnership() (succeed bool) {
 func ETHTransferNFTProxyOwnership() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumNFTProxy
 	newOwner := config.Conf.FinalOwner.EthereumFinalOwner
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.NFTProxyOwnership(proxy)
 	if bytes.Equal(newOwner.Bytes(), cur.Bytes()) {
@@ -594,6 +613,7 @@ func ETHSyncEthGenesis() (succeed bool) {
 	polyRPC := config.Conf.CrossChain.PolyRPCAddress
 	polyValidators := config.Conf.CrossChain.LoadPolyAccountList()
 	crossChainID := config.Conf.CrossChain.EthereumSideChainID
+	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	polyCli, err := poly.NewPolyClient(polyRPC, polyValidators)
 	if err != nil {
@@ -657,6 +677,7 @@ func ETHSyncPolyGenesis() (succeed bool) {
 	headerEnc := gB.Header.ToArray()
 
 	eccm := config.Conf.CrossChain.EthereumECCM
+	ethOwner := getEthereumCli(ethCTypeOwner)
 	txhash, err := ethOwner.InitGenesisBlock(eccm, headerEnc, bookeepersEnc)
 	if err != nil {
 		log.Errorf("failed to initGenesisBlock, err: %s", err)
@@ -679,13 +700,14 @@ func ETHPLTMintGovernance() (succeed bool) {
 		return
 	}
 
-	from := ethOwner.Address()
+	invoker := getEthereumCli(ethCTypeOwner)
+	from := invoker.Address()
 	to := common.HexToAddress(native.GovernanceContractAddress)
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	amount := plt.MultiPLT(params.Amount)
-	invoker := ethOwner
+	cli := getPaletteCli(pltCTypeCustomer)
 
 	// please make sure that eth account's balance is enough for gas fee.
 
@@ -705,7 +727,7 @@ func ETHPLTMintGovernance() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	totalSupplyBeforeLockOnPalette, err := admcli.PLTTotalSupply("latest")
+	totalSupplyBeforeLockOnPalette, err := cli.PLTTotalSupply("latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -727,7 +749,7 @@ func ETHPLTMintGovernance() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		totalSupplyAfterLockOnPalette, err := admcli.PLTTotalSupply("latest")
+		totalSupplyAfterLockOnPalette, err := cli.PLTTotalSupply("latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -766,14 +788,14 @@ func ETHPLTMintAdmin() (succeed bool) {
 		return
 	}
 
-	from := ethOwner.Address()
-	to := admcli.Address()
+	invoker := getEthereumCli(ethCTypeOwner)
+	from := invoker.Address()
+	to := config.Conf.AdminAccount
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	amount := plt.MultiPLT(params.Amount)
-
-	invoker := ethOwner
+	cli := getPaletteCli(pltCTypeCustomer)
 
 	// please make sure that eth account's balance is enough for gas fee.
 	// prepare ETH for gas fee
@@ -808,7 +830,7 @@ func ETHPLTMintAdmin() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	toBalanceBeforeLockOnPalette, err := admcli.BalanceOf(to, "latest")
+	toBalanceBeforeLockOnPalette, err := cli.BalanceOf(to, "latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -830,7 +852,7 @@ func ETHPLTMintAdmin() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		toBalanceAfterLockOnPalette, err := admcli.BalanceOf(to, "latest")
+		toBalanceAfterLockOnPalette, err := cli.BalanceOf(to, "latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -866,6 +888,7 @@ func ETHPLTBalance() (succeed bool) {
 		log.Error(err)
 		return
 	}
+	ethInvoker := getEthereumCli(ethCTypeInvoker)
 	data, err := ethInvoker.PLTBalanceOf(config.Conf.CrossChain.EthereumPLTAsset, params.Owner)
 	if err != nil {
 		log.Error(err)
@@ -877,6 +900,7 @@ func ETHPLTBalance() (succeed bool) {
 }
 
 func ETHPLTTotalSupply() (succeed bool) {
+	ethInvoker := getEthereumCli(ethCTypeInvoker)
 	data, err := ethInvoker.PLTTotalSupply(config.Conf.CrossChain.EthereumPLTAsset)
 	if err != nil {
 		log.Error(err)
@@ -899,6 +923,8 @@ func ETHPLTTransfer() (succeed bool) {
 	}
 	amount := plt.MultiPLT(params.Amount)
 	asset := config.Conf.CrossChain.EthereumPLTAsset
+	ethInvoker := getEthereumCli(ethCTypeInvoker)
+
 	fromBalanceBeforeTransfer, err := ethInvoker.PLTBalanceOf(asset, params.From)
 	if err != nil {
 		log.Error(err)
@@ -951,9 +977,10 @@ func ETHETHTransfer() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	from := ethOwner.Address()
+
+	invoker := getEthereumCli(ethCTypeOwner)
+	from := invoker.Address()
 	amount := plt.MultiPLT(params.Amount)
-	invoker := ethOwner
 	fromBalanceBeforeTransfer, err := invoker.ETHBalance(from)
 	if err != nil {
 		log.Error(err)

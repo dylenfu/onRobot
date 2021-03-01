@@ -32,6 +32,7 @@ func NFTLock() (succeed bool) {
 	}
 
 	// cross chain params
+	valcli := getPaletteCli(pltCTypeInvoker)
 	owner := valcli.Address()
 	asset := params.PLTNFTAsset
 	from := params.From
@@ -45,6 +46,7 @@ func NFTLock() (succeed bool) {
 	baseUrl := config.Conf.Nodes[0].RPCAddr()
 	privKey := customLoadAccount(from)
 	cli := sdk.NewSender(baseUrl, privKey)
+	ethInvoker := getEthereumCli(ethCTypeInvoker)
 
 	// mint or transfer ownership
 	{
@@ -160,6 +162,7 @@ func NFTUnLock() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumNFTProxy
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
 	amount := big.NewInt(1)
+	cli := getPaletteCli(pltCTypeCustomer)
 
 	invoker := eth.NewEInvoker(
 		config.Conf.CrossChain.EthereumSideChainID,
@@ -189,7 +192,7 @@ func NFTUnLock() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	toBalanceBeforeLockOnPalette, err := admcli.NFTBalance(targetAsset, to, "latest")
+	toBalanceBeforeLockOnPalette, err := cli.NFTBalance(targetAsset, to, "latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -207,7 +210,7 @@ func NFTUnLock() (succeed bool) {
 			log.Error(err)
 			return
 		}
-		toBalanceAfterLockOnPalette, err := admcli.NFTBalance(targetAsset, to, "latest")
+		toBalanceAfterLockOnPalette, err := cli.NFTBalance(targetAsset, to, "latest")
 		if err != nil {
 			log.Error(err)
 			return

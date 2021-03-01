@@ -38,6 +38,7 @@ func AddValidators() (succeed bool) {
 		log.Error(err)
 		return
 	}
+	admcli := getPaletteCli(pltCTypeAdmin)
 
 	// check stake amount
 	{
@@ -170,9 +171,8 @@ func AddValidators() (succeed bool) {
 }
 
 func GetValidators() bool {
-	baseUrl := config.Conf.Nodes[0].RPCAddr()
-	admcli = sdk.NewSender(baseUrl, config.AdminKey)
-	effectiveValidators := admcli.GetEffectiveValidators("latest")
+	cli := getPaletteCli(pltCTypeCustomer)
+	effectiveValidators := cli.GetEffectiveValidators("latest")
 	for _, v := range effectiveValidators {
 		log.Infof("validator %s", v.Hex())
 	}
@@ -206,12 +206,13 @@ func Reward() (succeed bool) {
 		log.Error(err)
 		return
 	}
+	cli := getPaletteCli(pltCTypeCustomer)
 
 	// check balance before reward
 	{
-		blkBeforeCheckReward = admcli.GetBlockNumber()
+		blkBeforeCheckReward = cli.GetBlockNumber()
 		log.Infof("check balance before testing reward at block %d", blkBeforeCheckReward)
-		if balancesBeforeCheckReward, err = getBalances(addrs, BlockNumber2Hex(blkBeforeCheckReward)); err != nil {
+		if balancesBeforeCheckReward, err = getBalances(cli, addrs, BlockNumber2Hex(blkBeforeCheckReward)); err != nil {
 			log.Error("failed to check balance before testing, err: %v", err)
 			return
 		}
@@ -224,7 +225,7 @@ func Reward() (succeed bool) {
 	{
 		blkAfterCheckReward = blkBeforeCheckReward + uint64(params.RewardBlocks)
 		log.Infof("check balance after testing reward at block %d", blkAfterCheckReward)
-		if balancesAfterCheckReward, err = getBalances(addrs, BlockNumber2Hex(blkAfterCheckReward)); err != nil {
+		if balancesAfterCheckReward, err = getBalances(cli, addrs, BlockNumber2Hex(blkAfterCheckReward)); err != nil {
 			log.Error("failed to check balance after testing, err: %v", err)
 			return
 		}
@@ -261,10 +262,11 @@ func Reward() (succeed bool) {
 // 构造一笔reward交易，选择任意一个validator发送交易，交易内容包含一个不正确的blockNum，观察交易后
 // 的blockNum是否正确
 func FakeReward() (succeed bool) {
-	curBlkNo := admcli.GetBlockNumber()
+	cli := getPaletteCli(pltCTypeCustomer)
+	curBlkNo := cli.GetBlockNumber()
 	blockNum := new(big.Int).SetUint64(curBlkNo + 100)
 	validators := config.Conf.ValidatorNodes().Validators()
-	cli := admcli.Reset(config.Conf.ValidatorNodes()[0].PrivateKey())
+	cli = cli.Reset(config.Conf.ValidatorNodes()[0].PrivateKey())
 
 	if hash, err := cli.Reward(validators, blockNum); err != nil {
 		log.Error(err)
@@ -280,7 +282,7 @@ func FakeReward() (succeed bool) {
 			return
 		}
 
-		log.Infof("current block number %d, latest record block %d", admcli.GetBlockNumber(), latestBlk)
+		log.Infof("current block number %d, latest record block %d", cli.GetBlockNumber(), latestBlk)
 		wait(1)
 	}
 	return true
@@ -307,6 +309,7 @@ func Delegate() (succeed bool) {
 		log.Error(err)
 		return
 	}
+	admcli := getPaletteCli(pltCTypeAdmin)
 
 	checkBalance := func(mark string) map[common.Address]float64 {
 		res := make(map[common.Address]float64)
@@ -452,11 +455,12 @@ func ShowDelegateAmount() (succeed bool) {
 		log.Error(err)
 		return
 	}
+	cli := getPaletteCli(pltCTypeCustomer)
 
 	for _, fan := range params {
 		owner := common.HexToAddress(fan.Address)
 		validator := config.Conf.AllNodes()[fan.NodeIndex].NodeAddr()
-		data := admcli.GetStakeAmount(owner, validator, "latest")
+		data := cli.GetStakeAmount(owner, validator, "latest")
 		value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
 		log.Infof("fan %s stake to %s %f PLT", owner.Hex(), validator.Hex(), value)
 	}
@@ -492,6 +496,7 @@ func DelValidators() (succeed bool) {
 		log.Error(err)
 		return
 	}
+	admcli := getPaletteCli(pltCTypeAdmin)
 
 	// spare node
 	if params.NodeNumber > len(config.Conf.SpareNodes()) {
@@ -677,6 +682,7 @@ func Proposal() (succeed bool) {
 		err error
 	)
 
+	cli := getPaletteCli(pltCTypeCustomer)
 	{
 		log.Infof("check proposal params......")
 		if err = config.LoadParams("Proposal.json", &params); err != nil {
@@ -700,7 +706,7 @@ func Proposal() (succeed bool) {
 	// get and check validators
 	{
 		log.Infof("get and check validator authority......")
-		nodes, err := getAndCheckValidator(append(params.VoteNodeIndexList, params.ProposerNodeIndex))
+		nodes, err := getAndCheckValidator(cli, append(params.VoteNodeIndexList, params.ProposerNodeIndex))
 		if err != nil {
 			log.Error(err)
 			return
@@ -721,7 +727,7 @@ func Proposal() (succeed bool) {
 		}
 		wait(2)
 
-		if proposalID, proposal, err = admcli.GetProposalFromReceipt(hash); err != nil {
+		if proposalID, proposal, err = cli.GetProposalFromReceipt(hash); err != nil {
 			log.Error(err)
 			return
 		} else {
@@ -747,7 +753,7 @@ func Proposal() (succeed bool) {
 
 	// check proposal status
 	{
-		if proposal, err = admcli.GetProposal(proposalID, "latest"); err != nil {
+		if proposal, err = cli.GetProposal(proposalID, "latest"); err != nil {
 			log.Errorf("failed to get proposal, err %v", err)
 			return
 		}
@@ -759,7 +765,7 @@ func Proposal() (succeed bool) {
 
 	// check global params
 	{
-		data, err := admcli.GetGlobalParams(params.ProposalType, "latest")
+		data, err := cli.GetGlobalParams(params.ProposalType, "latest")
 		if err != nil {
 			log.Error("failed to get global params, err %v", err)
 			return
@@ -793,6 +799,7 @@ func RewardPeriod() (succeed bool) {
 		log.Error(err)
 		return
 	}
+	cli := getPaletteCli(pltCTypeCustomer)
 
 	// proposer send proposal
 	var proposalID common.Address
@@ -807,7 +814,7 @@ func RewardPeriod() (succeed bool) {
 		}
 		wait(2)
 
-		if id, proposal, err := admcli.GetProposalFromReceipt(hash); err != nil {
+		if id, proposal, err := cli.GetProposalFromReceipt(hash); err != nil {
 			log.Error(err)
 			return
 		} else {
@@ -836,7 +843,7 @@ func RewardPeriod() (succeed bool) {
 	// check proposal status
 	{
 		log.Infof("checking proposal status......")
-		if proposal, err := admcli.GetProposal(proposalID, "latest"); err != nil {
+		if proposal, err := cli.GetProposal(proposalID, "latest"); err != nil {
 			log.Errorf("failed to get proposal, err %v", err)
 			return
 		} else if proposal.Passed != true {
@@ -849,7 +856,7 @@ func RewardPeriod() (succeed bool) {
 	{
 		logsplit()
 		log.Infof("checking reward period......")
-		data, err := admcli.GetGlobalParams(ptyp, "latest")
+		data, err := cli.GetGlobalParams(ptyp, "latest")
 		if err != nil {
 			log.Error("failed to get global params, err %v", err)
 			return
@@ -865,7 +872,7 @@ func RewardPeriod() (succeed bool) {
 
 	{
 		var rdBlk1, rdBlk2 uint64 = 0, 0
-		data, err := admcli.GetLastRewardBlock("latest")
+		data, err := cli.GetLastRewardBlock("latest")
 		if err != nil {
 			log.Error(err)
 			return
@@ -873,7 +880,7 @@ func RewardPeriod() (succeed bool) {
 		rdBlk1 = data.Uint64()
 		wait(int(params.RewardPeriod))
 
-		if data, err = admcli.GetLastRewardBlock("latest"); err != nil {
+		if data, err = cli.GetLastRewardBlock("latest"); err != nil {
 			log.Error(err)
 			return
 		} else {
@@ -895,6 +902,7 @@ func GlobalParams() (succeed bool) {
 		log.Error(err)
 		return
 	}
+	cli := getPaletteCli(pltCTypeCustomer)
 
 	log.Infof("check proposal type......")
 	if params.ProposalType == 0 || params.ProposalType > 3 {
@@ -902,7 +910,7 @@ func GlobalParams() (succeed bool) {
 		return
 	}
 
-	value, err := admcli.GetGlobalParams(params.ProposalType, "latest")
+	value, err := cli.GetGlobalParams(params.ProposalType, "latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -914,12 +922,13 @@ func GlobalParams() (succeed bool) {
 
 func StakeAmount() (succeed bool) {
 	nodes := config.Conf.ValidatorNodes()
+	cli := getPaletteCli(pltCTypeCustomer)
 	for i := 0; i < 100000; i++ {
 		for _, node := range nodes {
 			validator := node.NodeAddr()
 			stakeAddr := node.StakeAddr()
-			valStake := admcli.GetStakeAmount(validator, stakeAddr, "latest")
-			totalStake := admcli.GetValidatorTotalStakeAmount(validator, "latest")
+			valStake := cli.GetStakeAmount(validator, stakeAddr, "latest")
+			totalStake := cli.GetValidatorTotalStakeAmount(validator, "latest")
 
 			dValStk := utils.DecimalFromBigInt(valStake)
 			dTotStk := utils.DecimalFromBigInt(totalStake)

@@ -13,7 +13,8 @@ import (
 )
 
 func TotalSupply() (succeed bool) {
-	totalSupply, err := admcli.PLTTotalSupply("latest")
+	cli := getPaletteCli(pltCTypeCustomer)
+	totalSupply, err := cli.PLTTotalSupply("latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -25,7 +26,8 @@ func TotalSupply() (succeed bool) {
 }
 
 func Decimal() (succeed bool) {
-	data, err := admcli.PLTDecimals()
+	cli := getPaletteCli(pltCTypeCustomer)
+	data, err := cli.PLTDecimals()
 	if err != nil {
 		log.Error(err)
 		return
@@ -37,7 +39,8 @@ func Decimal() (succeed bool) {
 }
 
 func Name() (succeed bool) {
-	actual, err := admcli.PLTName()
+	cli := getPaletteCli(pltCTypeCustomer)
+	actual, err := cli.PLTName()
 	if err != nil {
 		log.Error(err)
 		return
@@ -56,7 +59,8 @@ func Name() (succeed bool) {
 
 func AdminBalance() (succeed bool) {
 	addr := config.Conf.AdminAccount
-	balance, err := admcli.BalanceOf(addr, "latest")
+	cli := getPaletteCli(pltCTypeCustomer)
+	balance, err := cli.BalanceOf(addr, "latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -70,7 +74,8 @@ func AdminBalance() (succeed bool) {
 
 func GovernanceBalance() (succeed bool) {
 	owner := common.HexToAddress(native.GovernanceContractAddress)
-	balance, err := admcli.BalanceOf(owner, "latest")
+	cli := getPaletteCli(pltCTypeCustomer)
+	balance, err := cli.BalanceOf(owner, "latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -94,7 +99,8 @@ func BalanceOf() (succeed bool) {
 	}
 
 	owner := params.Owner
-	balance, err := admcli.BalanceOf(owner, params.BlockNum)
+	cli := getPaletteCli(pltCTypeCustomer)
+	balance, err := cli.BalanceOf(owner, params.BlockNum)
 	if err != nil {
 		log.Error(err)
 		return
@@ -119,6 +125,7 @@ func Transfer() (succeed bool) {
 	key := customLoadAccount(params.From)
 	to := params.To
 	amount := utils.SafeMul(big.NewInt(params.Amount), plt.OnePLT)
+	admcli := getPaletteCli(pltCTypeAdmin)
 
 	// balance before transfer
 	fromBalanceBeforeTrans, err := admcli.BalanceOf(PrivKey2Addr(key), "latest")
@@ -187,7 +194,7 @@ func Approve() (succeed bool) {
 		return
 	}
 
-	baseUrl := config.Conf.Nodes[0].RPCAddr()
+	baseUrl := config.Conf.Rpc
 	key := customLoadAccount(params.Owner)
 	cli := sdk.NewSender(baseUrl, key)
 

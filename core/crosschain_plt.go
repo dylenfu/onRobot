@@ -23,6 +23,7 @@ func PLTMint() (succeed bool) {
 		return
 	}
 	amount := plt.MultiPLT(params.Value)
+	admcli := getPaletteCli(pltCTypeAdmin)
 
 	toBalanceBeforeTrans, err := admcli.BalanceOf(params.To, "latest")
 	if err != nil {
@@ -57,6 +58,7 @@ func PLTBurn() (succeed bool) {
 		return
 	}
 	amount := plt.MultiPLT(p.Value)
+	admcli := getPaletteCli(pltCTypeAdmin)
 
 	toBalanceBeforeTrans, err := admcli.BalanceOf(admcli.Address(), "latest")
 	if err != nil {
@@ -106,6 +108,8 @@ func PLTLock() (succeed bool) {
 	amount := plt.MultiPLT(params.Amount)
 	targetSideChainID := config.Conf.CrossChain.EthereumSideChainID
 	ethAsset := config.Conf.CrossChain.EthereumPLTAsset
+	admcli := getPaletteCli(pltCTypeAdmin)
+	ethInvoker := getEthereumCli(ethCTypeInvoker)
 
 	fromBalanceBeforeLockOnPalette, err := cli.BalanceOf(userAddr, "latest")
 	if err != nil {
@@ -201,7 +205,7 @@ func PLTUnlock() (succeed bool) {
 	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	amount := plt.MultiPLT(params.Amount)
-
+	cli := getPaletteCli(pltCTypeCustomer)
 	invoker := eth.NewEInvoker(
 		config.Conf.CrossChain.EthereumSideChainID,
 		config.Conf.CrossChain.EthereumRPCUrl,
@@ -226,7 +230,7 @@ func PLTUnlock() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	toBalanceBeforeLockOnPalette, err := admcli.BalanceOf(to, "latest")
+	toBalanceBeforeLockOnPalette, err := cli.BalanceOf(to, "latest")
 	if err != nil {
 		log.Error(err)
 		return
@@ -242,12 +246,12 @@ func PLTUnlock() (succeed bool) {
 	logsplit()
 	log.Info("check balance on both of palette chain and ethereum chain...")
 	for i := 0; i < 100; i++ {
-		fromBalanceAfterLockOnEthereum, err := ethInvoker.PLTBalanceOf(asset, from)
+		fromBalanceAfterLockOnEthereum, err := invoker.PLTBalanceOf(asset, from)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		toBalanceAfterLockOnPalette, err := admcli.BalanceOf(to, "latest")
+		toBalanceAfterLockOnPalette, err := cli.BalanceOf(to, "latest")
 		if err != nil {
 			log.Error(err)
 			return

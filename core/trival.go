@@ -23,7 +23,8 @@ func Simple() bool {
 }
 
 func BlockNumber() bool {
-	blockNumber := admcli.GetBlockNumber()
+	cli := getPaletteCli(pltCTypeCustomer)
+	blockNumber := cli.GetBlockNumber()
 	log.Infof("current block number %d", blockNumber)
 	return true
 }
@@ -37,7 +38,8 @@ func Nonce() (succeed bool) {
 		return
 	}
 
-	nonce := admcli.GetNonce(params.Address)
+	cli := getPaletteCli(pltCTypeCustomer)
+	nonce := cli.GetNonce(params.Address)
 	log.Infof("%s nonce is %d", params.Address, nonce)
 	return true
 }
@@ -113,6 +115,7 @@ func Deposit() (succeed bool) {
 
 	amount := plt.MultiFloatPLT(params.Amount)
 	accounts := config.Conf.Accounts
+	admcli := getPaletteCli(pltCTypeAdmin)
 	for _, to := range accounts {
 		if _, err := admcli.PLTTransfer(to, amount.BigInt()); err != nil {
 			log.Errorf("failed to deposit to %s, amount %f, err: %v", to.Hex(), plt.PrintFPLT(amount), err)
@@ -167,6 +170,7 @@ func TestEVM1() (succeed bool) {
 	to := common.HexToAddress("0xecce5f1346afee82990cccc52fe521005bd54ff0")
 	contract := common.HexToAddress(params.Address)
 	amount := plt.MultiPLT(1)
+	admcli := getPaletteCli(pltCTypeAdmin)
 
 	// transfer plt to contract
 	{
@@ -257,6 +261,7 @@ func TestEVM2() (succeed bool) {
 		return
 	}
 
+	admcli := getPaletteCli(pltCTypeAdmin)
 	hash, err := admcli.SendTransaction(contract, enc)
 	if err != nil {
 		log.Errorf("failed to send transaction to new deployed contract, err: %v", err)
@@ -277,8 +282,9 @@ func DumpBlock() (succeed bool) {
 		return
 	}
 
+	cli := getPaletteCli(pltCTypeCustomer)
 	for _, block := range params.Blocks {
-		_ = admcli.DumpBlock(block)
+		_ = cli.DumpBlock(block)
 	}
 	return true
 }

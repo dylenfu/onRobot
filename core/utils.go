@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"math/big"
 	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/palettechain/onRobot/config"
@@ -21,41 +21,54 @@ import (
 )
 
 var (
-	admcli     *sdk.Client
-	ccAdmCli   *sdk.Client
-	valcli     *sdk.Client
-	ethInvoker *eth.EthInvoker
-	ethOwner   *eth.EthInvoker
-	OneETH     = utils.Pow10toBigInt(int32(18))
+	OneETH = utils.Pow10toBigInt(int32(18))
 )
 
-func initialize() {
-	baseUrl := config.Conf.Nodes[0].RPCAddr()
-	admcli = sdk.NewSender(baseUrl, config.AdminKey)
-	ccAdmCli = sdk.NewSender(baseUrl, config.CrossChainAdminKey)
+type cliType uint8
 
-	node := config.Conf.ValidatorNodes()[0]
-	valcli = sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+const (
+	pltCTypeCustomer cliType = iota
+	pltCTypeInvoker
+	pltCTypeAdmin
+	pltCTypeCrossChainAdmin
+	ethCTypeInvoker
+	ethCTypeOwner
+)
 
-	if ethPrivateKey, err := config.Conf.CrossChain.LoadETHAccount(); err == nil {
-		ethInvoker = eth.NewEInvoker(
-			config.Conf.CrossChain.EthereumSideChainID,
-			config.Conf.CrossChain.EthereumRPCUrl,
-			ethPrivateKey,
-		)
-	} else {
-		log.Infof("load eth account err: %s", err.Error())
+func getPaletteCli(typ cliType) (cli *sdk.Client) {
+	url := config.Conf.Rpc
+	switch typ {
+	case pltCTypeCustomer:
+		cli = sdk.NewSender(url, nil)
+	case pltCTypeInvoker:
+		node := config.Conf.ValidatorNodes()[0]
+		cli = sdk.NewSender(url, node.PrivateKey())
+	case pltCTypeAdmin:
+		cli = sdk.NewSender(url, config.AdminKey)
+	case pltCTypeCrossChainAdmin:
+		cli = sdk.NewSender(url, config.CrossChainAdminKey)
 	}
+	return
+}
 
-	if ethPrivateKey, err := config.Conf.CrossChain.LoadETHOwner(); err == nil {
-		ethOwner = eth.NewEInvoker(
-			config.Conf.CrossChain.EthereumSideChainID,
-			config.Conf.CrossChain.EthereumRPCUrl,
-			ethPrivateKey,
-		)
-	} else {
-		log.Infof("load eth owner err: %s", err.Error())
+func getEthereumCli(typ cliType) (cli *eth.EthInvoker) {
+	chainID := config.Conf.CrossChain.EthereumSideChainID
+	url := config.Conf.CrossChain.EthereumRPCUrl
+	switch typ {
+	case ethCTypeInvoker:
+		if priv, err := config.Conf.CrossChain.LoadETHAccount(); err == nil {
+			cli = eth.NewEInvoker(chainID, url, priv)
+		} else {
+			panic(fmt.Sprintf("load eth account err: %s", err.Error()))
+		}
+	case ethCTypeOwner:
+		if priv, err := config.Conf.CrossChain.LoadETHOwner(); err == nil {
+			cli = eth.NewEInvoker(chainID, url, priv)
+		} else {
+			panic(fmt.Sprintf("load eth owner err: %s", err.Error()))
+		}
 	}
+	return
 }
 
 func gc() {
@@ -106,10 +119,10 @@ func HasAddrs(src, dst []common.Address) bool {
 	return true
 }
 
-func getBalances(list []common.Address, curBlkNoHex string) (map[common.Address]float64, error) {
+func getBalances(cli *sdk.Client, list []common.Address, curBlkNoHex string) (map[common.Address]float64, error) {
 	balancesMap := make(map[common.Address]float64)
 	for _, addr := range list {
-		data, err := admcli.BalanceOf(addr, curBlkNoHex)
+		data, err := cli.BalanceOf(addr, curBlkNoHex)
 		if err != nil {
 			return nil, err
 		}
@@ -132,14 +145,14 @@ func subBalanceMap(m1, m2 map[common.Address]float64) (map[common.Address]float6
 	return res, nil
 }
 
-func getAndCheckValidator(nodeIndexList []int) (config.Nodes, error) {
+func getAndCheckValidator(cli *sdk.Client, nodeIndexList []int) (config.Nodes, error) {
 	nodes := make(config.Nodes, 0)
 	for _, nodeIndex := range nodeIndexList {
 		node := config.Conf.GetNodeByIndex(nodeIndex)
 		if node == nil {
 			return nil, fmt.Errorf("failed to get validator node %d", nodeIndex)
 		}
-		if !admcli.CheckValidator(node.NodeAddr(), "latest") {
+		if !cli.CheckValidator(node.NodeAddr(), "latest") {
 			return nil, fmt.Errorf("%s is not valid validator", node.NodeAddr().Hex())
 		}
 		nodes = append(nodes, node)
@@ -155,22 +168,22 @@ func calculateGasFee(invoker *eth.EthInvoker, gasLimit uint64) (*big.Int, error)
 	return utils.SafeMul(gasPrice, new(big.Int).SetUint64(gasLimit)), nil
 }
 
-func prepareEth(to common.Address, amount *big.Int) error {
-	balanceBeforeTransfer, err := ethInvoker.ETHBalance(to)
+func prepareEth(invoker *eth.EthInvoker, to common.Address, amount *big.Int) error {
+	balanceBeforeTransfer, err := invoker.ETHBalance(to)
 	if err != nil {
 		return err
 	}
 	if balanceBeforeTransfer.Cmp(amount) >= 0 {
 		return nil
 	}
-	if bytes.Equal(ethInvoker.Address().Bytes(), to.Bytes()) {
+	if bytes.Equal(invoker.Address().Bytes(), to.Bytes()) {
 		return fmt.Errorf("balance not enough")
 	}
-	hash, err := ethInvoker.TransferETH(to, amount)
+	hash, err := invoker.TransferETH(to, amount)
 	if err != nil {
 		return err
 	}
-	balanceAfterTransfer, err := ethInvoker.ETHBalance(to)
+	balanceAfterTransfer, err := invoker.ETHBalance(to)
 	if err != nil {
 		return err
 	}
