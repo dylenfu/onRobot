@@ -106,7 +106,7 @@ func BalanceOf() (succeed bool) {
 		return
 	}
 
-	log.Infof("balance %s", balance.String())
+	log.Infof("%s balance %s", owner.Hex(), balance.String())
 	return true
 }
 
