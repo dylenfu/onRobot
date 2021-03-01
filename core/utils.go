@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"math/big"
 	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/palettechain/onRobot/config"
@@ -18,10 +18,6 @@ import (
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
 	"github.com/palettechain/onRobot/pkg/shell"
-)
-
-var (
-	OneETH = utils.Pow10toBigInt(int32(18))
 )
 
 type cliType uint8

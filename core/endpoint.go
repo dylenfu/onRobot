@@ -9,7 +9,6 @@ import (
 
 func Endpoint() {
 	rand.Seed(time.Now().UnixNano())
-	initialize()
 
 	// gc function
 	frame.Tool.RegGCFunc(gc)
