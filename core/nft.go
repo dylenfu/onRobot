@@ -208,23 +208,23 @@ func NFTTokenOwner() (succeed bool) {
 	var params struct {
 		Asset   common.Address
 		TokenID uint64
-		Proxy   common.Address
 	}
 
-	if err := config.LoadParams("NFT-Lock.json", &params); err != nil {
+	if err := config.LoadParams("NFT-Owner.json", &params); err != nil {
 		log.Error(err)
 		return
 	}
 
+	asset := params.Asset
 	tokenID := new(big.Int).SetUint64(params.TokenID)
 	valcli := getPaletteCli(pltCTypeInvoker)
-	owner, err := valcli.NFTTokenOwner(params.Asset, tokenID, "latest")
+	owner, err := valcli.NFTTokenOwner(asset, tokenID, "latest")
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	log.Infof("asset %s, token %d, owner %s", params.Asset.Hex(), tokenID.Uint64(), owner.Hex())
+	log.Infof("asset %s, token %d, owner %s", asset.Hex(), tokenID.Uint64(), owner.Hex())
 	return true
 }
 

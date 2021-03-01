@@ -7,7 +7,7 @@ palette测试工具, 包含:
  * 远程部署工具型测试
  * 跨链测试
  
-#### 环境设置:
+## 环境设置:
  * local: palette&ethereum&poly等链及relayer都在本地
  * test: 测试环境
  * prod: 主网环境
@@ -16,7 +16,7 @@ export ONROBOT=local
 make prepare
 ```
 
-#### 使用方式
+## 使用方式
 下载项目onRobot \
 https://github.com/palettechain/onRobot.git
 
@@ -106,7 +106,7 @@ make robot t=demo
 make robot t=name,totalSupply
 ```
 
-#### 测试用例
+## 测试用例
 ```dtd
 demo                                
 
@@ -148,7 +148,7 @@ governanceBalance                                   // 查询palette上治理合
 balanceOf                                           // 查询palette上某个账户地址PLT余额
 transfer                                            // 在palette上转账PLT
 approve                                             // 在palette上授权PLT给某个账户
-deposit                                             // palette管理员账户给某个地址充值PLT
+deposit                                             // palette管理员账户给所有palette测试账户地址充值PLT
 
 # 治理部分	
 addValidators                                       // 在palette上添加多个validators(质押&管理员添加节点)
@@ -229,7 +229,7 @@ nft-lock                                            // NFT从palette跨链到以
 nft-unlock                                          // NFT从以太上跨链到palette
 ```
 
-#### 配置文件及测试参数
+## 配置文件及测试参数
 ```dtd
 {
   "Environment":{
@@ -314,3 +314,247 @@ nft-unlock                                          // NFT从以太上跨链到p
   }
 }
 ```
+
+##测试参数
+一部分测试(非部署/管理节点或合约相关)需要用到单的测试参数，具体如下:
+
+1. `nonce`: GetNonce.json
+```dtd
+{
+  "Address": "0x6a**7c"
+}
+``` 
+需要填充地址
+
+2. `deposit`: Deposit.json
+ ```dtd
+{
+  "Amount": 1000.0
+}
+```
+浮点数，单位为PLT(在所有的测试中，均无需处理decimal，代码会整理成包含精度的bigInt)
+
+3.`balanceOf`: PLT-Balance.json
+```dtd
+{
+  "Owner": "0x0000000000000000000000000000000000000103",
+  "BlockNum": "latest"
+}
+```
+BlockNum为查询的块高度，hex表示或者为latest
+
+4.`transfer`: PLT-Transfer.json
+```dtd
+{
+  "From": "0xf3**5f",
+  "To": "0x5c**44",
+  "Amount": 100
+}
+```
+
+5.`approve`: PLT-Approve.json
+```dtd
+{
+  "Owner": "0x2cd**f7",
+  "Spender": "0x2f**7d",
+  "Amount": 120
+}
+```
+spender为授权对象.
+
+6.`addValidators`: AddValidators.json
+```dtd
+{
+  "InitAmount": 50000000
+}
+```
+InitAmount为质押量，测试过程中，如果账户余额不足，会从admin账户转账到多个validators(config.json中配置)，质押并等待，直到成功添加。
+
+7.`reward`: Reward.json
+```dtd
+{
+  "RewardBlocks": 12,
+  "ExpectRewardPoolAmount": 24.0,
+  "ExpectRewardAmountPerValidator": 32.0
+}
+```
+分润测试，rewardBlocks为等待区块数，`ExpectRewardPoolAmount`为奖励池所得到的基础奖励，`ExpectRewardAmountPerValidator`为每个validator得到的奖励，该测试一般在addValidators后测试。
+
+8.`delegate`: Delegate.json
+```dtd
+{
+  "Fans": [
+    {
+      "Address": "0x4c**f5",
+      "Amount": 1000,
+      "NodeIndex": 5
+    },
+    {
+      "Address": "0x2c**f7",
+      "Amount": 500,
+      "NodeIndex": 5
+    }
+  ],
+  "WaitBlock": 12
+}
+```
+`Address`为fans地址，`NodeIndex`为代理质押的节点下标，比如说，网络中8个节点，5个位genesis节点，3个为validators节点，node5则是第一个validator节点。<br>
+如果用户余额不足，程序会从admin账户中转账到该测试地址.
+
+9.`showDelegate`: ShowDelegate.json
+```dtd
+[
+  {
+    "Address": "0xDC**83",
+    "NodeIndex": 5
+  }
+]
+```
+批量查询fans代理质押数量
+
+10.`proposal`: Proposal.json
+```dtd
+{
+  "ProposerNodeIndex": 5,
+  "ProposalType": 2,
+  "ProposalValue": 0,
+  "VoteNodeIndexList": [
+    6,
+    7
+  ]
+}
+```
+`proposerNodeIndex`为提案节点下标，`proposalType`为提案类型: 1为mint nft手续费，2为部署NFT合约gas fee, 2位分润周期(该测试只测前两种类型).<br>
+`proposalValue`为参数值，假设提案手续费费率为21.72%,则该值为2172, 系统传入参数后会* 10000. `voteNodeIndexList`为投票节点index列表
+
+11.`globalParams`: GlobalParams.json
+```dtd
+{
+  "ProposalType": 2
+}
+``` 
+根据全局参数类型，查询全局参数.
+
+12.`plt-deploy-nft-asset`: NFT-Deploy.json
+```dtd
+{
+  "Name":"JpDigitalCat01",
+  "Symbol":"JDC-01"
+}
+```
+在palette上部署NFT合约，参数分别为NFT的名称和symbol
+
+13.`eth-deploy-nft-asset`: 在以太上部署NFT合约，参数同上
+
+14.`plt-bind-nft-asset`: BindNFTAsset.json
+{
+  "EthereumNFTAsset": "0x60**6b",
+  "PaletteNFTAsset": "0x0000000000000000000000000000000000001002"
+}
+绑定nft资产合约到palette，`ethereumNFTAsset`为NFT在ethereum上的合约地址，`paletteNFTAsset`为NFT在palette上地址
+
+15.`eth-bind-nft-asset`, 绑定nft资产合约到以太坊，参数同上
+
+16.`eth-plt-mint-gov`: ETH-PLT-Mint-Gov.json
+```dtd
+{
+  "Amount": 340000000
+}
+```
+从以太上mint一定数量的PLT到palette治理合约
+
+17.`eth-plt-mint-admin`: ETH-PLT-Mint-Admin.json
+```dtd
+{
+  "Amount": 500000000
+}
+``` 
+从以太上mint一定数量的PLT到palette的admin账户
+
+18.`nft-transfer`: NFT-Transfer
+```dtd
+{
+  "Asset": "0x0000000000000000000000000000000000001001",
+  "TokenID": 3,
+  "To": "0x2c**f7"
+}
+```
+palette上的NFT转账, asset为NFT资产地址，tokenID为NFT id, `to`为目标地址
+
+19.`nft-balance`: NFT-Balance.json
+```dtd
+{
+  "Asset": "0x0000000000000000000000000000000000001001",
+  "User": "0x6a**27c"
+}
+```
+查询palette上某NFT资产上，某用户的资产余额
+
+20.`nft-token-owner`: NFT-Owner.json
+```dtd
+{
+  "Asset": "0x0000000000000000000000000000000000001002",
+  "TokenID": 1
+}
+```
+查询palette上NFT token所有者
+
+21.`nft-set-uri`: SetAssetUri.json
+```dtd
+{
+  "List": [
+    "0x0000000000000000000000000000000000001001",
+    "0x0000000000000000000000000000000000001002",
+    "0x0000000000000000000000000000000000001003",
+    "0x0000000000000000000000000000000000001004",
+    "0x0000000000000000000000000000000000001005"
+  ],
+  "Storage": "http://127.0.0.1:10060/minio/"
+}
+```
+批量设置NFT资产合约地址uri，format: http://127.0.0.1:10060/minio/1001(去除前面的0x00000...).
+
+22.`plt-lock`: PLT-Lock.json
+```dtd
+{
+  "From": "0x2c**f7",
+  "To": "0x4c**f5",
+  "Amount": 1
+}
+```
+palette上`from`账户跨链一定量PLT资产到ethereum上`to`地址
+
+23.`plt-unlock`: PLT-UnLock.json
+```dtd
+{
+  "From": "0x4c**f5",
+  "To": "0x2c**f7",
+  "Amount": 1
+}
+```
+以太上`from`账户跨链一定量PLT资产到palette上`to`地址
+
+24.`nft-lock`: NFT-Lock.json
+```dtd
+{
+  "From": "0x2c**f7",
+  "To": "0x4c**f5",
+  "PLTNFTAsset": "0x0000000000000000000000000000000000001002",
+  "ETHNFTAsset": "0x60**6b",
+  "TokenID": 1,
+  "Uri": "cat1.jpeg"
+}
+```
+palette上`from`账户跨链一定量NFT资产到ethereum上`to`地址, 如果token不存在，则在palette上mint该token, 过程中如果没有授权，程序会授权给proxy。
+
+25.`nft-unlock`: NFT-UnLock.json
+```dtd
+{
+  "From": "0x4c**f5",
+  "To": "0x2c**f7",
+  "PLTNFTAsset": "0x0000000000000000000000000000000000001002",
+  "ETHNFTAsset": "0x6**6b",
+  "TokenID": 1
+}
+```
+以太上`from`账户跨链一定量PLT资产到palette上`to`地址
