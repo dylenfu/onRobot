@@ -16,7 +16,7 @@ export ONROBOT=local
 make prepare
 ```
 
-## 使用方式
+#### 使用方式
 下载项目onRobot \
 https://github.com/palettechain/onRobot.git
 
@@ -64,30 +64,16 @@ build/local/
 │   ├── evm2.json
 │   ├── evm2.sol
 │   └── newpolynode.dat
-├── clear_node.sh
-├── config.json
 ├── eth_keystore
 │   └── 0x83***0f
-├── grep.sh
-├── init_node.sh
 ├── keystore
 │   ├── 0x11***fb
 │   ├── ......
 │   └── 0xf7***82
-├── leveldb
-│   ├── 000136.ldb
-│   ├── ......
-│   └── MANIFEST-000406
-├── node0
-├── ......
-├── node7
 ├── poly_keystore
 │   ├── wallet1.dat
 │   ├── ......
 │   └── wallet4.dat
-├── remote_build.sh
-├── remote_setup.sh
-├── robot
 ├── setup
 │   ├── genesis.json
 │   ├── node0
@@ -99,7 +85,13 @@ build/local/
 ├── start_node.sh
 └── stop_node.sh
 ```
-其中，config.json是配置文件，`make prepare`会将config/local.json文件拷贝到build/local对应的工作目录下，cases目录下包含具体测试需要的参数
+其中:
+ * cases目录下包含具体测试需要的参数
+ * eth_keystore包含测试需要的以太账户地址，这里统一规范keystore文件为0x开头
+ * keystore包含测试需要的palette账户地址
+ * poly_keystore包含测试需要的poly账户地址，用于侧链注册/授权
+ * `make prepare`会将config/local.json以及所有scripts下的shell文件拷贝到build/local对应的工作目录下
+ * `make compile`会将项目编译到该工作目录
 
 构建
 ```bash
@@ -114,13 +106,15 @@ make robot t=demo
 make robot t=name,totalSupply
 ```
 
-## 测试用例
+#### 测试用例
 ```dtd
 demo                                
 
+## 远程构建
 remoteBuild                                         // 远程构建: 拉取git代码，编译
 remoteSetup                                         // scp上传setup目录到远程机器, 前提是在远程机器上已设置过pub key
 	
+## 节点管理部分
 initGenesis                                         // 初始化多个genesis节点
 startGenesis                                        // 启动genesis节点
 stopGenesis                                         // 关停genesis节点
@@ -138,113 +132,104 @@ start                                               // 启动所有节点
 stop                                                // 关停节点
 clear                                               // 清空所有节点数据，慎用
 restart                                             // 重启所有节点
+
 grep                                                // grep查看所有节点运行信息
+
+## palette链上常用查询	
+blockNumber                                         // 查询palette当前高度
+nonce                                               // 查看palette上某个账户当前nonce
 	
-blockNumber
-nonce
-consistency
-deposit
+## PLT部分
+totalSupply                                         // 查询palette上PLT总供应量
+name                                                // 查询palette上PLT对应合约名称
+decimal                                             // 查询palette上PLT decimal精度
+adminBalance                                        // 查询palette上管理员账户PLT余额    
+governanceBalance                                   // 查询palette上治理合约地址PLT余额
+balanceOf                                           // 查询palette上某个账户地址PLT余额
+transfer                                            // 在palette上转账PLT
+approve                                             // 在palette上授权PLT给某个账户
+deposit                                             // palette管理员账户给某个地址充值PLT
+
+# 治理部分	
+addValidators                                       // 在palette上添加多个validators(质押&管理员添加节点)
+getValidators                                       // 查询palette上所有validators   
+reward                                              // 查看分润情况
+delegate                                            // validator代理用户质押
+showDelegate                                        // 查询validator代理用户质押
+proposal                                            // validator提案修改全局参数
+globalParams                                        // 查看全局参数
+stakeAmount                                         // 查看质押数量
 	
-totalSupply
-name
-decimal
-adminBalance
-governanceBalance
-balanceOf
-transfer
-approve
-	
-addValidators
-getValidators
-reward
-fakeReward
-delegate
-showDelegate
-proposal
-globalParams
-spare
-delValidators
-period
-stakeAmount
-dumpBlock
-	
-	// palette side chain environment
-polyHeight
-plt-deploy-eccd
-plt-deploy-eccm
-plt-deploy-ccmp
-plt-eccd-ownership
-plt-eccm-ownership
-plt-ccmp-ownership
-plt-nft-proxy-ownership
-plt-cross-chain-admin-ownership
-plt-registerSideChain
-plt-approveRegisterSideChain
-plt-bind-plt-proxy
-plt-bind-plt-asset
-plt-plt-ccmp
-plt-deploy-nft-proxy
-plt-bind-nft-proxy
-plt-bind-nft-asset
-plt-nft-ccmp
-plt-sync-plt-genesis
-plt-sync-poly-genesis
-plt-upgradeECCM
-plt-changePaletteBookKeeper
-plt-changePolyBookKeeper
-plt-updateSideChain
-plt-quitSideChain
-plt-approveUpdateSideChain
-plt-approveQuitSideChain
+// palette 跨链部分
+polyHeight                                          // 查看poly高度
+plt-deploy-eccd                                     // 在palette上部署eccd合约    
+plt-deploy-eccm                                     // 在palette上部署eccm合约
+plt-deploy-ccmp                                     // 在palette上部署ccmp合约
+plt-eccd-ownership                                  // 在palette上转移eccd合约所有权到eccm    
+plt-eccm-ownership                                  // 在palette上转移eccm合约所有权到ccmp
+plt-ccmp-ownership                                  // 在palette上转移ccmp合约所有权给最终账户
+plt-nft-proxy-ownership                             // 在palette上转移NFT lock proxy合约所有权给最终账户        
+plt-cross-chain-admin-ownership                     // 在palette上转移genesis的cross chain admin所有权给最终账户
+plt-registerSideChain                               // 在poly上注册palette侧链
+plt-approveRegisterSideChain                        // 在poly上授权palette侧链
+plt-bind-plt-proxy                                  // 在palette上绑定以太上PLT lock proxy地址
+plt-bind-plt-asset                                  // 在palette上绑定以太上PLT 资产合约
+plt-plt-ccmp                                        // 在palette的PLT lock proxy设置ccmp地址
+plt-deploy-nft-proxy                                // 在palette上部署NFT lock proxy合约
+plt-bind-nft-proxy                                  // 在palette上绑定以太NFT lock proxy合约    
+plt-bind-nft-asset                                  // 在palette上绑定以太NFT 资产合约    
+plt-nft-ccmp                                        // 在palette的NFT lock proxy设置ccmp地址
+plt-sync-plt-genesis                                // 同步palette区块头到poly
+plt-sync-poly-genesis                               // 同步poly区块头到palette        
 
 // ethereum side chain environment
-eth-deploy-eccd
-eth-deploy-eccm
-eth-deploy-ccmp
-eth-eccd-ownership
-eth-eccm-ownership
-eth-ccmp-ownership
-eth-registerSideChain
-eth-approveRegisterSideChain
-eth-deploy-plt
-eth-deploy-plt-proxy
-eth-bind-plt-proxy
-eth-bind-plt-asset
-eth-plt-ccmp
-eth-deploy-nft-asset
-eth-deploy-nft-proxy
-eth-nft-ccmp
-eth-bind-nft-proxy
-eth-bind-nft-asset
-eth-sync-eth-genesis
-eth-sync-poly-genesis
-eth-plt-asset-ownership
-eth-plt-proxy-ownership
-eth-nft-proxy-ownership
-eth-plt-mint-gov
-eth-plt-mint-admin
-eth-plt-total-supply
-eth-plt-balance
-eth-plt-transfer
-eth-eth-transfer
+eth-deploy-eccd                                     // 在以太上部署eccd合约
+eth-deploy-eccm                                     // 在以太上部署eccm合约
+eth-deploy-ccmp                                     // 在以太上部署ccmp合约
+eth-eccd-ownership                                  // 在以太上转移eccd合约所有权到eccm    
+eth-eccm-ownership                                  // 在以太上转移eccm合约所有权到ccmp
+eth-ccmp-ownership                                  // 在以太上转移ccmp合约所有权给最终账户    
+eth-registerSideChain                               // 在poly上注册以太侧链        
+eth-approveRegisterSideChain                        // 在poly上授权以太侧链    
+eth-deploy-plt                                      // 在以太上部署PLT资产合约
+eth-deploy-plt-proxy                                // 在以太上部署PLT lock proxy合约
+eth-bind-plt-proxy                                  // 在以太上绑定palette的PLT lock proxy合约        
+eth-bind-plt-asset                                  // 在以太上绑定palette的PLT资产合约
+eth-plt-ccmp                                        // 在以太上设置PLT lock proxy合约的ccmp地址
+eth-deploy-nft-asset                                // 在以太上部署NFT 资产合约
+eth-deploy-nft-proxy                                // 在以太上部署NFT lock proxy合约
+eth-nft-ccmp                                        // 在以太上设置NFT lock proxy合约的ccmp地址    
+eth-bind-nft-proxy                                  // 在以太上绑定palette NFT lock proxy合约
+eth-bind-nft-asset                                  // 在以太上绑定palette NFT 资产合约
+eth-sync-eth-genesis                                // 在以太上同步区块头到poly
+eth-sync-poly-genesis                               // 在poly上同步区块头到以太坊
+eth-plt-asset-ownership                             // 在以太上转移PLT资产合约所有权到最终账户
+eth-plt-proxy-ownership                             // 在以太上转移PLT lock proxy合约所有权到最终账户
+eth-nft-proxy-ownership                             // 在以太上转移NFT lock proxy合约所有权到最终账户
+eth-plt-mint-gov                                    // 从以太上跨链3.4亿PLT到palette治理合约地址, 具体数字可以修改
+eth-plt-mint-admin                                  // 从以太上跨链5亿PLT到palette管理员地址(主网没有这个必要，只测试网测试使用)
+eth-plt-total-supply                                // 查询一台上PLT总供应量
+eth-plt-balance                                     // 查询以太上某个账户的PLT余额
+eth-plt-transfer                                    // 在以太上实现PLT转账
+eth-eth-transfer                                    // 纯以太坊转账    
 
 // plt cross chain
-plt-lock
-plt-unlock
+plt-lock                                            // PLT从palette跨链到以太
+plt-unlock                                          // PLT从以太跨链到palette
 
 // nft
-plt-deploy-nft-asset
-nft-transfer
-nft-balance
-nft-token-owner
-nft-set-uri
+plt-deploy-nft-asset                                // 在palette上部署NFT资产合约
+nft-transfer                                        // 在palette上转账NFT
+nft-balance                                         // 在palette上查询某个账户NFT余额
+nft-token-owner                                     // 在palette上查询某个token的owner
+nft-set-uri                                         // 在palette上设置某个NFT资产的base uri
 
 // nft cross chain
-nft-lock
-nft-unlock
+nft-lock                                            // NFT从palette跨链到以太
+nft-unlock                                          // NFT从以太上跨链到palette
 ```
 
-## 配置文件及测试参数
+#### 配置文件及测试参数
 ```dtd
 {
   "Environment":{
