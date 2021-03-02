@@ -547,6 +547,26 @@ func (i *EthInvoker) TransferPLTAssetOwnership(asset, newOwner common.Address) (
 	return tx.Hash(), nil
 }
 
+func (i *EthInvoker) AcceptOwnership(asset common.Address) (common.Hash, error) {
+	instance, err := pltabi.NewPaletteToken(asset, i.backend())
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	auth, err := i.makeAuth()
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	tx, err := instance.AcceptOwnership(auth)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	if err := i.waitTxConfirm(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
+	return tx.Hash(), nil
+}
+
 func (i *EthInvoker) PLTAssetOwnership(asset common.Address) (common.Address, error) {
 	instance, err := pltabi.NewPaletteToken(asset, i.backend())
 	if err != nil {

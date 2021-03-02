@@ -508,14 +508,14 @@ func (c *CrossChainConfig) LoadPolyAccount(path string) (*polysdk.Account, error
 }
 
 func (c *CrossChainConfig) LoadETHAccount() (*ecdsa.PrivateKey, error) {
-	return c.customLoadEthAccount(c.EthereumAccount, c.EthereumAccountPassword)
+	return c.CustomLoadEthAccount(c.EthereumAccount, c.EthereumAccountPassword)
 }
 
 func (c *CrossChainConfig) LoadETHOwner() (*ecdsa.PrivateKey, error) {
-	return c.customLoadEthAccount(c.EthereumOwner, c.EthereumOwnerPassword)
+	return c.CustomLoadEthAccount(c.EthereumOwner, c.EthereumOwnerPassword)
 }
 
-func (c *CrossChainConfig) customLoadEthAccount(acc common.Address, pwd string) (*ecdsa.PrivateKey, error) {
+func (c *CrossChainConfig) CustomLoadEthAccount(acc common.Address, pwd string) (*ecdsa.PrivateKey, error) {
 	enc, err := readWalletFile(ethKeystoreDir, acc)
 	if err != nil {
 		return nil, err

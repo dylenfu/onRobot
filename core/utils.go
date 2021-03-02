@@ -72,6 +72,17 @@ func getEthereumCli(typ cliType) (cli *eth.EthInvoker) {
 	return
 }
 
+func customEthereumCli(account common.Address) (cli *eth.EthInvoker) {
+	chainID := config.Conf.CrossChain.EthereumSideChainID
+	url := config.Conf.CrossChain.EthereumRPCUrl
+	if priv, err := config.Conf.CrossChain.CustomLoadEthAccount(account, ""); err == nil {
+		cli = eth.NewEInvoker(chainID, url, priv)
+	} else {
+		panic(fmt.Sprintf("load eth account err: %s", err.Error()))
+	}
+	return
+}
+
 func gc() {
 	//admcli = nil
 	//config.Conf = config.BakConf.DeepCopy()

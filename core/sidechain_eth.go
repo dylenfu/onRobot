@@ -526,9 +526,16 @@ func ETHTransferPLTAssetOwnership() (succeed bool) {
 		return true
 	}
 
-	hash, err := ethOwner.TransferPLTAssetOwnership(asset, newOwner)
+	hash1, err := ethOwner.TransferPLTAssetOwnership(asset, newOwner)
 	if err != nil {
 		log.Errorf("transfer plt asset ownership to eccm on ethereum failed, err: %s", err.Error())
+		return
+	}
+
+	newEthOwner := customEthereumCli(newOwner)
+	hash2, err := newEthOwner.AcceptOwnership(asset)
+	if err != nil {
+		log.Errorf("accept plt asset ownership to eccm on ethereum failed, err: %s", err.Error())
 		return
 	}
 
@@ -542,7 +549,7 @@ func ETHTransferPLTAssetOwnership() (succeed bool) {
 		return
 	}
 
-	log.Infof("transfer plt asset ownership to eccm on ethereum success, tx %s", hash.Hex())
+	log.Infof("transfer plt asset ownership to eccm on ethereum success, transfer ownership tx %s, accept ownership tx %s", hash1.Hex(), hash2.Hex())
 	return true
 }
 
@@ -970,7 +977,7 @@ func ETHPLTTransfer() (succeed bool) {
 // transfer from eth owner
 func ETHETHTransfer() (succeed bool) {
 	var params struct {
-		To     common.Address
+		List   []common.Address
 		Amount int
 	}
 	if err := config.LoadParams("ETH-ETH-Transfer.json", &params); err != nil {
@@ -986,39 +993,41 @@ func ETHETHTransfer() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	toBalanceBeforeTransfer, err := invoker.ETHBalance(params.To)
-	if err != nil {
-		log.Error(err)
-		return
-	}
+	for _, to := range params.List {
+		toBalanceBeforeTransfer, err := invoker.ETHBalance(to)
+		if err != nil {
+			log.Error(err)
+			return
+		}
 
-	hash, err := invoker.TransferETH(params.To, amount)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	fromBalanceAfterTransfer, err := invoker.ETHBalance(params.To)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	toBalanceAfterTransfer, err := invoker.ETHBalance(params.To)
-	if err != nil {
-		log.Error(err)
-		return
-	}
+		hash, err := invoker.TransferETH(to, amount)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		fromBalanceAfterTransfer, err := invoker.ETHBalance(to)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		toBalanceAfterTransfer, err := invoker.ETHBalance(to)
+		if err != nil {
+			log.Error(err)
+			return
+		}
 
-	log.Infof("tx hash %s \r\n"+
-		"from %s, balance before transfer %d, balance after transfer %d \r\n"+
-		"to %s, balance before transfer %d, balance after transfer %d",
-		hash.Hex(),
-		from.Hex(),
-		plt.PrintUPLT(fromBalanceBeforeTransfer),
-		plt.PrintUPLT(fromBalanceAfterTransfer),
-		params.To.Hex(),
-		plt.PrintUPLT(toBalanceBeforeTransfer),
-		plt.PrintUPLT(toBalanceAfterTransfer),
-	)
+		log.Infof("tx hash %s \r\n"+
+			"from %s, balance before transfer %d, balance after transfer %d \r\n"+
+			"to %s, balance before transfer %d, balance after transfer %d",
+			hash.Hex(),
+			from.Hex(),
+			plt.PrintUPLT(fromBalanceBeforeTransfer),
+			plt.PrintUPLT(fromBalanceAfterTransfer),
+			to.Hex(),
+			plt.PrintUPLT(toBalanceBeforeTransfer),
+			plt.PrintUPLT(toBalanceAfterTransfer),
+		)
+	}
 
 	return true
 }
