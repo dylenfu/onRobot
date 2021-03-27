@@ -136,10 +136,21 @@ func NFTLock() (succeed bool) {
 		wait(1)
 	}
 
+	uri, err := ethInvoker.NFTTokenUri(params.ETHNFTAsset, token)
+	if err != nil {
+		log.Errorf("can not find uri")
+		return
+	}
+	if uri != params.Uri {
+		log.Errorf("expect uri %s, actual %s", params.Uri, uri)
+		return
+	}
+	log.Infof("expect uri %s == actual uri %s", params.Uri, uri)
 	return true
 }
 
-// todo: 按理来说，在safeTransferFrom之前，应该授权给proxy, 没有授权？？？
+// 注意这里在调用以太坊上的safeTransferFrom时并不需要approve，因为当前token的权限已经是msg.sender本身了。
+// 只有在wrap合约中，用户需要将token approve给wrap合约，然后wrap合约调用safeTransferFrom.
 func NFTUnLock() (succeed bool) {
 	var params struct {
 		From        common.Address
@@ -238,5 +249,20 @@ func NFTUnLock() (succeed bool) {
 		wait(1)
 	}
 
+	expectUri, err := invoker.NFTTokenUri(asset, token)
+	if err != nil {
+		log.Error("can not find expect uri, err: %s", err)
+		return
+	}
+	uri, err := cli.NFTTokenURI(targetAsset, token, "latest")
+	if err != nil {
+		log.Errorf("can not find uri, err: %s", err.Error())
+		return
+	}
+	if expectUri != uri {
+		log.Errorf("expect uri %s, actual %s", expectUri, uri)
+		return
+	}
+	log.Infof("expect uri %s == actual uri %s", expectUri, uri)
 	return true
 }

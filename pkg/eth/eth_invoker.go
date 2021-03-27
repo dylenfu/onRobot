@@ -820,6 +820,14 @@ func (i *EthInvoker) NFTBalance(asset, owner common.Address) (*big.Int, error) {
 	return cm.BalanceOf(nil, owner)
 }
 
+func (i *EthInvoker) NFTTokenUri(asset common.Address, tokenID *big.Int) (string, error) {
+	cm, err := nftmapping.NewCrossChainNFTMapping(asset, i.backend())
+	if err != nil {
+		return "", err
+	}
+	return cm.TokenURI(nil, tokenID)
+}
+
 func (i *EthInvoker) NFTGetApproved(asset common.Address, tokenID *big.Int) (common.Address, error) {
 	cm, err := nftmapping.NewCrossChainNFTMapping(asset, i.backend())
 	if err != nil {
