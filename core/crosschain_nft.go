@@ -139,6 +139,7 @@ func NFTLock() (succeed bool) {
 	return true
 }
 
+// todo: 按理来说，在safeTransferFrom之前，应该授权给proxy, 没有授权？？？
 func NFTUnLock() (succeed bool) {
 	var params struct {
 		From        common.Address
