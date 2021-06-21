@@ -16,7 +16,6 @@ require (
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/tyler-smith/go-bip39 v1.0.2
-	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 )
 
 replace (
