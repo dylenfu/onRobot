@@ -11,10 +11,10 @@ require (
 	github.com/ontio/ontology-crypto v1.0.9
 	github.com/palettechain/palette_token v0.0.0-20210120103528-1db803afdd45
 	github.com/polynetwork/eth-contracts v0.0.1
-	github.com/polynetwork/poly v1.3.1-0.20210115104304-aa006115a87d
+	github.com/polynetwork/poly v1.7.2-0.20210802025248-aaa66443deb5
 	github.com/polynetwork/poly-go-sdk v0.0.0-20200817120957-365691ad3493
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750 // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/tyler-smith/go-bip39 v1.0.2
 )
 

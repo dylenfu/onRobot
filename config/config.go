@@ -433,6 +433,13 @@ func LoadPaletteAccount(address common.Address) (*ecdsa.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(enc) <= 64 {
+		bz, err := hex.DecodeString(string(enc))
+		if err != nil {
+			return nil, err
+		}
+		return crypto.ToECDSA(bz)
+	}
 
 	key, err := repeatDecrypt(enc, address, Conf.DefaultPassphrase, pwdSessionPLT)
 	if err != nil {
@@ -478,7 +485,11 @@ func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {
 	list := make([]*polysdk.Account, 0)
 
 	dir := path.Join(Conf.Environment.WorkSpace(), polyKeystoreDir)
-	fs, _ := ioutil.ReadDir(dir)
+	fs, err := ioutil.ReadDir(dir)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("fs length ", len(fs))
 	for _, f := range fs {
 		fullPath := path.Join(dir, f.Name())
 		acc, err := c.LoadPolyAccount(fullPath)
