@@ -85,6 +85,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("plt-deploy-eccd", PLTDeployECCD)
 	frame.Tool.RegMethod("plt-deploy-eccm", PLTDeployECCM)
 	frame.Tool.RegMethod("plt-deploy-ccmp", PLTDeployCCMP)
+	frame.Tool.RegMethod("plt-deploy-wrap", PLTDeployWrap)
 	frame.Tool.RegMethod("plt-eccd-ownership", PLTTransferECCDOwnerShip)
 	frame.Tool.RegMethod("plt-eccm-ownership", PLTTransferECCMOwnerShip)
 	frame.Tool.RegMethod("plt-ccmp-ownership", PLTTransferCCMPOwnerShip)

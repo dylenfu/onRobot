@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
+	wrap_abi "github.com/palettechain/onRobot/pkg/plt_wrap_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccd_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccm_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccmp_abi"
@@ -40,6 +41,18 @@ func (c *Client) DeployECCM(eccd common.Address, sideChainID uint64) (common.Add
 func (c *Client) DeployCCMP(eccm common.Address) (common.Address, error) {
 	auth := c.makeDeployAuth()
 	addr, tx, _, err := eccmp_abi.DeployEthCrossChainManagerProxy(auth, c.backend, eccm)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyAddress, err
+	}
+	return addr, nil
+}
+
+func (c *Client) DeployWrapper(owner, feeToken common.Address, chainId *big.Int) (common.Address, error) {
+	auth := c.makeDeployAuth()
+	addr, tx, _, err := wrap_abi.DeployPolyWrapper(auth, c.backend, owner, feeToken, chainId)
 	if err != nil {
 		return utils.EmptyAddress, err
 	}

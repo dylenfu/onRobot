@@ -188,6 +188,7 @@ func PLTLock() (succeed bool) {
 // 6.循环内查询lock后from在以太上的余额
 // 7.循环内查询lock后to在palette上的余额
 // 8.比较并判断是否成功
+// todo: 修改了eth ropsten的节点地址https://ropsten.infura.io/v3/fb92347fd9084d79b8da06ab1744c672
 func PLTUnlock() (succeed bool) {
 	var params struct {
 		From   common.Address

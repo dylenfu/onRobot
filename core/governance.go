@@ -14,7 +14,7 @@ import (
 )
 
 // 管理员添加共识节点:
-// 1.根据配置文件中使用node5,node6,node7作为validators
+// 1.根据配置文件中使用node5作为validators
 // 2.检查stakeAccount余额，余额不足initAmount则通过管理员转账补齐，确保3个节点的总余额大于1亿(投票所需最小票额)
 // 3.节点质押所有余额initAmount，两个周期后，dump stake event
 // 4.检查质押后余额，应该都为0

@@ -38,6 +38,7 @@ func NFTDeploy() (succeed bool) {
 func NFTMint() (succeed bool) {
 	var params struct {
 		Asset   common.Address
+		To      common.Address
 		TokenID uint64
 		Uri     string
 	}
@@ -48,7 +49,7 @@ func NFTMint() (succeed bool) {
 	}
 
 	valcli := getPaletteCli(pltCTypeInvoker)
-	owner := valcli.Address()
+	owner := params.To
 	token := new(big.Int).SetUint64(params.TokenID)
 	balanceBeforeMint, err := valcli.NFTBalance(params.Asset, owner, "latest")
 	if err != nil {
