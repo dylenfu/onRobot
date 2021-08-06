@@ -3879,4 +3879,3 @@ func (_Utils *UtilsTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Tran
 func (_Utils *UtilsTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _Utils.Contract.contract.Transact(opts, method, params...)
 }
-

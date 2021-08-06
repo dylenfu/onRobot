@@ -461,6 +461,7 @@ type CrossChainConfig struct {
 	PaletteECCM          common.Address
 	PaletteCCMP          common.Address
 	PaletteNFTProxy      common.Address
+	PaletteWrapper       common.Address
 
 	// ethereum side chain configuration
 	EthereumSideChainID   uint64
@@ -565,6 +566,11 @@ func (c *CrossChainConfig) StorePaletteCCMP(addr common.Address) error {
 
 func (c *CrossChainConfig) StorePaletteNFTProxy(addr common.Address) error {
 	c.PaletteNFTProxy = addr
+	return SaveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StorePaletteWrapper(addr common.Address) error {
+	c.PaletteWrapper = addr
 	return SaveConfig(Conf)
 }
 

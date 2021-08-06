@@ -3,8 +3,6 @@ package core
 import (
 	"bytes"
 	"fmt"
-	"github.com/ethereum/go-ethereum/contracts/native"
-	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -83,22 +81,6 @@ func PLTDeployCCMP() (succeed bool) {
 		return
 	}
 
-	return true
-}
-
-func PLTDeployWrap() (succeed bool) {
-	feeToken := common.HexToAddress(native.PLTContractAddress)
-	chainId := new(big.Int).SetUint64(config.Conf.CrossChain.PaletteSideChainID)
-	ccAdmCli := getPaletteCli(pltCTypeInvoker)
-	owner := ccAdmCli.Address()
-
-	contractAddr, err := ccAdmCli.DeployWrapper(owner, feeToken, chainId)
-	if err != nil {
-		log.Errorf("deploy wrap on palette failed, err: %s", err.Error())
-		return
-	}
-
-	log.Infof("deploy wrap %s on palette success!", contractAddr.Hex())
 	return true
 }
 

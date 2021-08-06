@@ -85,7 +85,6 @@ func Endpoint() {
 	frame.Tool.RegMethod("plt-deploy-eccd", PLTDeployECCD)
 	frame.Tool.RegMethod("plt-deploy-eccm", PLTDeployECCM)
 	frame.Tool.RegMethod("plt-deploy-ccmp", PLTDeployCCMP)
-	frame.Tool.RegMethod("plt-deploy-wrap", PLTDeployWrap)
 	frame.Tool.RegMethod("plt-eccd-ownership", PLTTransferECCDOwnerShip)
 	frame.Tool.RegMethod("plt-eccm-ownership", PLTTransferECCMOwnerShip)
 	frame.Tool.RegMethod("plt-ccmp-ownership", PLTTransferCCMPOwnerShip)
@@ -109,6 +108,11 @@ func Endpoint() {
 	frame.Tool.RegMethod("plt-quitSideChain", PLTQuitSideChain)
 	frame.Tool.RegMethod("plt-approveUpdateSideChain", PLTApproveUpdateSideChain)
 	frame.Tool.RegMethod("plt-approveQuitSideChain", PLTApproveQuitSideChain)
+
+	// plt cross chain wrapper contract
+	frame.Tool.RegMethod("plt-deploy-wrap", PLTDeployWrap)
+	frame.Tool.RegMethod("plt-wrap-set-proxy", PLTWrapperSetLockProxy)
+	frame.Tool.RegMethod("plt-wrap-lock", PLTWrapperLock)
 
 	// ethereum side chain environment
 	frame.Tool.RegMethod("eth-deploy-eccd", ETHDeployECCD)
