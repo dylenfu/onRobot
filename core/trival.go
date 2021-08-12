@@ -133,7 +133,7 @@ type EVMTestOps struct {
 }
 
 // 只有validator拥有部署solidity合约的权限，在调用该方法前，先调用addValidators
-func TestDeploy1() (succeed bool) {
+func DeploySafetyContract() (succeed bool) {
 	var params EVMTestOps
 
 	if err := config.LoadParams("evm1.json", &params); err != nil {
@@ -149,9 +149,11 @@ func TestDeploy1() (succeed bool) {
 	return true
 }
 
-func TestEVM1() (succeed bool) {
+func Safety() (succeed bool) {
 	var params EVMTestOps
 
+	logsplit()
+	log.Info("prepare to safety test, load safety contract abi...")
 	if err := config.LoadParams("evm1.json", &params); err != nil {
 		log.Error(err)
 		return
@@ -173,7 +175,9 @@ func TestEVM1() (succeed bool) {
 	amount := plt.MultiPLT(1)
 	admcli := getPaletteCli(pltCTypeAdmin)
 
-	// transfer plt to contract
+	//
+	logsplit()
+	log.Infof("prepare balance, admin account transfer %d PLT to delegate caller(safety contract)...", plt.PrintUPLT(amount))
 	{
 		if _, err := admcli.PLTTransfer(contract, amount); err != nil {
 			log.Errorf("failed to transfer PLT to contract, err: %v", err)
@@ -184,21 +188,41 @@ func TestEVM1() (succeed bool) {
 			log.Errorf("failed to get balance of contract, err: %v", err)
 			return
 		}
-		log.Infof("contract %s balance %d", contract.Hex(), plt.PrintUPLT(balance))
+		log.Infof("admin account transfer prepare PLT to contract success! and contract %s balance is %d", contract.Hex(), plt.PrintUPLT(balance))
 	}
+	wait(2)
 
-	b1, err := admcli.BalanceOf(to, "latest")
+	logsplit()
+	log.Info("check balance before safety test...")
+	dstBalanceBeforeTest, err := admcli.BalanceOf(to, "latest")
 	if err != nil {
-		log.Errorf("failed to get balance before transfer, err: %v", err)
+		log.Errorf("failed to get dest account balance before transfer, err: %v", err)
 		return
+	} else {
+		log.Infof("dest account balance before safety test %d", plt.PrintUPLT(dstBalanceBeforeTest))
+	}
+	admBalanceBeforeTest, err := admcli.BalanceOf(admcli.Address(), "latest")
+	if err != nil {
+		log.Errorf("failed to get admin balance before transfer, err: %v", err)
+		return
+	} else {
+		log.Infof("admin balance before safety test %d", plt.PrintUPLT(admBalanceBeforeTest))
+	}
+	contractBalanceBeforeTest, err := admcli.BalanceOf(contract, "latest")
+	if err != nil {
+		log.Errorf("failed to get contract balance before transfer, err: %v", err)
+	} else {
+		log.Infof("contract balance before safety test %d", plt.PrintUPLT(contractBalanceBeforeTest))
 	}
 
+	//
+	logsplit()
+	log.Info("safety testing, try to call nativeTransfer which will delegate call transfer method of plt contract...")
 	enc, err := utils.PackMethod(abiJs, "nativeTransfer", to, amount)
 	if err != nil {
 		log.Errorf("failed to pack `nativeTransfer`, err: %v", err)
 		return
 	}
-
 	hash, err := admcli.SendTransaction(contract, enc)
 	if err != nil {
 		log.Errorf("failed to send transaction to new deployed contract, err: %v", err)
@@ -211,15 +235,50 @@ func TestEVM1() (succeed bool) {
 		return
 	}
 
-	b2, err := admcli.BalanceOf(to, "latest")
+	logsplit()
+	log.Info("check balance after test...")
+	dstBalanceAfterTest, err := admcli.BalanceOf(to, "latest")
 	if err != nil {
-		log.Errorf("failed to get balance after transfer, err: %v", err)
+		log.Errorf("failed to get dest account balance after transfer, err: %v", err)
 		return
+	} else {
+		log.Infof("dest account balance after test %d", plt.PrintUPLT(dstBalanceAfterTest))
+	}
+	admBalanceAfterTest, err := admcli.BalanceOf(admcli.Address(), "latest")
+	if err != nil {
+		log.Errorf("failed to get admin balance after transfer, err: %v", err)
+		return
+	} else {
+		log.Infof("admin balance after test %d", plt.PrintUPLT(admBalanceAfterTest))
+	}
+	contractBalanceAfterTest, err := admcli.BalanceOf(contract, "latest")
+	if err != nil {
+		log.Errorf("failed to get contract balance after transfer, err: %v", err)
+		return
+	} else {
+		log.Infof("contract balance after test %d", plt.PrintUPLT(contractBalanceAfterTest))
 	}
 
-	if utils.SafeSub(b2, b1).Cmp(amount) != 0 {
-		log.Errorf("balance before transfer %d, balance after transfer %d, amount %d is not correct",
-			plt.PrintUPLT(b1), plt.PrintUPLT(b2), plt.PrintUPLT(amount))
+	// dest account should received enough PLT
+	if utils.SafeSub(dstBalanceAfterTest, dstBalanceBeforeTest).Cmp(amount) != 0 {
+		log.Errorf("dest account balance before test %d, balance after test %d, amount %d is not correct",
+			plt.PrintUPLT(dstBalanceBeforeTest), plt.PrintUPLT(dstBalanceAfterTest), plt.PrintUPLT(amount))
+		return
+	} else {
+		log.Info("dest account balance is correct")
+	}
+	// admin account balance should be less
+	if utils.SafeSub(admBalanceBeforeTest, admBalanceAfterTest).Cmp(amount) != 0 {
+		log.Errorf("admin account balance before transfer %d, balance after test %d",
+			plt.PrintUPLT(admBalanceBeforeTest), plt.PrintUPLT(admBalanceAfterTest))
+	} else {
+		log.Info("admin account balance is correct")
+	}
+	if contractBalanceBeforeTest.Cmp(contractBalanceAfterTest) != 0 {
+		log.Errorf("contract account balance before test %d, balance after test %d",
+			plt.PrintUPLT(contractBalanceBeforeTest), plt.PrintUPLT(contractBalanceAfterTest))
+	} else {
+		log.Info("contract account balance is correct")
 	}
 
 	return true

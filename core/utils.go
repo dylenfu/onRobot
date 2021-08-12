@@ -102,8 +102,9 @@ func PrivKey2Addr(pk *ecdsa.PrivateKey) common.Address {
 }
 
 func deployContract(abiJson, objectCode string, params ...interface{}) (common.Address, *bind.BoundContract, error) {
-	node := config.Conf.ValidatorNodes()[0]
-	cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
+	//node := config.Conf.ValidatorNodes()[0]
+	cli := getPaletteCli(pltCTypeAdmin)
+	//cli := sdk.NewSender(node.RPCAddr(), node.PrivateKey())
 	return cli.DeployContract(abiJson, objectCode, params...)
 }
 

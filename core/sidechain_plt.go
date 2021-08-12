@@ -270,10 +270,11 @@ func PLTSetCCMP() (succeed bool) {
 func PLTBindPLTProxy() (succeed bool) {
 	proxy := config.Conf.CrossChain.EthereumPLTProxy
 	sideChainID := config.Conf.CrossChain.EthereumSideChainID
+	//ccAdmCli := getPaletteCli(pltCTypeAdmin)//
 	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.GetBindPLTProxy(sideChainID, "latest")
-	if bytes.Equal(proxy.Bytes(), cur.Bytes()) {
+	if cur == proxy {
 		log.Infof("PLT proxy already bound to by %s", proxy.Hex())
 		return true
 	}
@@ -302,10 +303,11 @@ func PLTBindPLTProxy() (succeed bool) {
 func PLTBindPLTAsset() (succeed bool) {
 	asset := config.Conf.CrossChain.EthereumPLTAsset
 	sideChainID := config.Conf.CrossChain.EthereumSideChainID
+	//ccAdmCli := getPaletteCli(pltCTypeAdmin)//
 	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
 
 	cur, _ := ccAdmCli.GetBindPLTAsset(sideChainID, "latest")
-	if bytes.Equal(asset.Bytes(), cur.Bytes()) {
+	if cur == asset {
 		log.Infof("PLT asset already bound to by %s", asset.Hex())
 		return true
 	}

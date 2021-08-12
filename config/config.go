@@ -326,6 +326,8 @@ func SaveConfig(c *Config) error {
 		PaletteECCM          common.Address
 		PaletteCCMP          common.Address
 		PaletteNFTProxy      common.Address
+		PalettePLTWrapper    common.Address
+		PaletteNFTWrapper    common.Address
 
 		// ethereum side chain configuration
 		EthereumSideChainID   uint64
@@ -336,6 +338,8 @@ func SaveConfig(c *Config) error {
 		EthereumPLTAsset      common.Address
 		EthereumPLTProxy      common.Address
 		EthereumNFTProxy      common.Address
+		EthereumPLTWrapper    common.Address
+		EthereumNFTWrapper    common.Address
 
 		// ethereum node rpc and account
 		EthereumRPCUrl          string
@@ -461,7 +465,8 @@ type CrossChainConfig struct {
 	PaletteECCM          common.Address
 	PaletteCCMP          common.Address
 	PaletteNFTProxy      common.Address
-	PaletteWrapper       common.Address
+	PalettePLTWrapper    common.Address
+	PaletteNFTWrapper    common.Address
 
 	// ethereum side chain configuration
 	EthereumSideChainID   uint64
@@ -472,6 +477,8 @@ type CrossChainConfig struct {
 	EthereumPLTAsset      common.Address
 	EthereumPLTProxy      common.Address
 	EthereumNFTProxy      common.Address
+	EthereumPLTWrapper    common.Address
+	EthereumNFTWrapper    common.Address
 
 	// ethereum node rpc and account
 	EthereumRPCUrl          string
@@ -569,8 +576,13 @@ func (c *CrossChainConfig) StorePaletteNFTProxy(addr common.Address) error {
 	return SaveConfig(Conf)
 }
 
-func (c *CrossChainConfig) StorePaletteWrapper(addr common.Address) error {
-	c.PaletteWrapper = addr
+func (c *CrossChainConfig) StorePalettePLTWrapper(addr common.Address) error {
+	c.PalettePLTWrapper = addr
+	return SaveConfig(Conf)
+}
+
+func (c *CrossChainConfig) StorePaletteNFTWrapper(addr common.Address) error {
+	c.PaletteNFTWrapper = addr
 	return SaveConfig(Conf)
 }
 
