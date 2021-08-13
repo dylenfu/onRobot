@@ -104,7 +104,7 @@ func ETHTransferECCDOwnership() (succeed bool) {
 		log.Errorf("get eccd new owner failed, err :%v", err)
 		return
 	}
-	if !bytes.Equal(eccm.Bytes(), actual.Bytes()) {
+	if actual != eccm {
 		log.Errorf("transfer eccd ownership failed. expect %s != actual %s", eccm.Hex(), actual.Hex())
 		return
 	}
@@ -119,7 +119,7 @@ func ETHTransferECCMOwnership() (succeed bool) {
 	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	curOwner, _ := ethOwner.ECCMOwnership(eccm)
-	if bytes.Equal(ccmp.Bytes(), curOwner.Bytes()) {
+	if ccmp == curOwner {
 		log.Infof("eccm %s ownership is %s already", eccm.Hex(), ccmp.Hex())
 		return true
 	}
@@ -135,7 +135,7 @@ func ETHTransferECCMOwnership() (succeed bool) {
 		log.Errorf("get eccm new owner failed, err :%v", err)
 		return
 	}
-	if !bytes.Equal(ccmp.Bytes(), actual.Bytes()) {
+	if ccmp != actual {
 		log.Errorf("transfer eccm ownership failed. expect %s != actual %s", ccmp.Hex(), actual.Hex())
 		return
 	}
@@ -340,7 +340,7 @@ func ETHSetPLTCCMP() (succeed bool) {
 	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.GetPLTCCMP(proxy)
-	if bytes.Equal(cur.Bytes(), ccmp.Bytes()) {
+	if ccmp == cur {
 		log.Infof("PLT proxy %s already managed to %s", proxy.Hex(), ccmp.Hex())
 		return true
 	}
@@ -356,7 +356,7 @@ func ETHSetPLTCCMP() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	if !bytes.Equal(ccmp.Bytes(), actual.Bytes()) {
+	if ccmp != actual {
 		log.Errorf("set plt ccmp failed, expect %s != actual %s", ccmp.Hex(), actual.Hex())
 		return
 	}
@@ -418,7 +418,7 @@ func ETHSetNFTCCMP() (succeed bool) {
 	ethOwner := getEthereumCli(ethCTypeOwner)
 
 	cur, _ := ethOwner.GetNFTCCMP(proxy)
-	if bytes.Equal(cur.Bytes(), ccmp.Bytes()) {
+	if ccmp == cur {
 		log.Infof("NFT proxy %s already managed to %s", proxy.Hex(), ccmp.Hex())
 		return true
 	}
@@ -434,7 +434,7 @@ func ETHSetNFTCCMP() (succeed bool) {
 		log.Error(err)
 		return
 	}
-	if !bytes.Equal(ccmp.Bytes(), actual.Bytes()) {
+	if ccmp != actual {
 		log.Errorf("register NFT proxy to ccmp failed, expect %s != actual %s", ccmp.Hex(), actual.Hex())
 		return
 	}
@@ -700,6 +700,15 @@ func ETHSyncPolyGenesis() (succeed bool) {
 		log.Infof("sync genesis header success, txhash %s", txhash.Hex())
 	}
 
+	return true
+}
+
+// todo(fuk):
+func ETHDeployPLTWrapper() (succeed bool) {
+	return true
+}
+
+func ETHDeployNFTWrapper() (succeed bool) {
 	return true
 }
 

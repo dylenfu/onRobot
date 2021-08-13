@@ -50,8 +50,8 @@ func PLTDeployECCM() (succeed bool) {
 	eccd := config.Conf.CrossChain.PaletteECCD
 	sideChainID := config.Conf.CrossChain.PaletteSideChainID
 	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
+	// white list only allow proxy, DONT add eccd in it
 	whiteList := []common.Address{
-		eccd,
 		common.HexToAddress(native.PLTContractAddress),
 		config.Conf.CrossChain.PaletteNFTProxy,
 	}

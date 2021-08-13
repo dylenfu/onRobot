@@ -25,6 +25,8 @@ github.com/JohnCGriffin/overflow v0.0.0-20170615021017-4d914c927216 h1:2ZboyJ8vl
 github.com/JohnCGriffin/overflow v0.0.0-20170615021017-4d914c927216/go.mod h1:X0CRv0ky0k6m906ixxpzmDRLvX58TFUKS2eePweuyxk=
 github.com/KSlashh/eth-contracts v0.0.0-20210812170020-92f77f319e72 h1:vM/7x+YIVv0/z5Bbbm1DtepLnx6O0icszyzSuk1qa0w=
 github.com/KSlashh/eth-contracts v0.0.0-20210812170020-92f77f319e72/go.mod h1:R8lRKM8SOtVhY3zdgx6QGnuodbnptIlN4TxindEgk6Q=
+github.com/KSlashh/eth-contracts v0.0.0-20210813100032-17cd52477f06 h1:fNoimVxTfQedGTKORdvnj7mzT9fL5Litm5VZtn6dAyE=
+github.com/KSlashh/eth-contracts v0.0.0-20210813100032-17cd52477f06/go.mod h1:R8lRKM8SOtVhY3zdgx6QGnuodbnptIlN4TxindEgk6Q=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/OneOfOne/xxhash v1.2.5/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q=

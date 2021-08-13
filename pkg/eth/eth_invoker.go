@@ -34,12 +34,10 @@ import (
 	"github.com/polynetwork/eth-contracts/go_abi/eccm_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/eccmp_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/lock_proxy_abi"
-	wrapabi "github.com/polynetwork/wrapper/abi/eth"
-
-	//"github.com/polynetwork/eth-contracts/go_abi/nftlp"
 	nftlp "github.com/polynetwork/nft-contracts/go_abi/nft_lock_proxy_abi"
 	nftmapping "github.com/polynetwork/nft-contracts/go_abi/nft_mapping_abi"
 	polycm "github.com/polynetwork/poly/common"
+	wrapabi "github.com/polynetwork/wrapper/abi/eth"
 )
 
 // 部署在以太上的PLT token来自项目github.com/palettechain/palette-token.git

@@ -81,7 +81,6 @@ func Endpoint() {
 	frame.Tool.RegMethod("dumpBlock", DumpBlock)
 
 	// palette side chain environment
-	frame.Tool.RegMethod("polyHeight", PolyHeight)
 	frame.Tool.RegMethod("plt-deploy-eccd", PLTDeployECCD)
 	frame.Tool.RegMethod("plt-deploy-eccm", PLTDeployECCM)
 	frame.Tool.RegMethod("plt-deploy-ccmp", PLTDeployCCMP)
@@ -172,4 +171,6 @@ func Endpoint() {
 	frame.Tool.RegMethod("safety", Safety)
 	frame.Tool.RegMethod("test-deploy2", TestDeploy2)
 	frame.Tool.RegMethod("test-evm2", TestEVM2)
+
+	frame.Tool.RegMethod("poly-height", PolyHeight)
 }

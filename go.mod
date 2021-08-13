@@ -20,5 +20,5 @@ require (
 
 replace (
 	github.com/ethereum/go-ethereum v1.9.15 => /Users/dylen/workspace/gohome/src/github.com/palettechain/palette
-	github.com/polynetwork/eth-contracts v1.0.0 => github.com/KSlashh/eth-contracts v0.0.0-20210812170020-92f77f319e72
+	github.com/polynetwork/eth-contracts v1.0.0 => github.com/KSlashh/eth-contracts v0.0.0-20210813100032-17cd52477f06
 )

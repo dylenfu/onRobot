@@ -1,30 +1,29 @@
 # cross chain environment preparing
 
-## prepare on ethereum chain
+## deploy contracts and transfer ownership
+1. deploy proxy contracts
+```bash
+make robot t=eth-deploy-plt-proxy
+make robot t=eth-deploy-nft-proxy
+```
 
-1. deploy eccd, eccm, ccmp contracts and record in config.json
+2. deploy eccd, eccm, ccmp contracts and record in config.json
 ```bash
 make robot t=eth-deploy-eccd
 make robot t=eth-deploy-eccm
 make robot t=eth-deploy-ccmp
 ```
 
-2. transfer eccd ownership to eccm, transfer eccm ownship to ccmp
+3. transfer eccd ownership to eccm, transfer eccm ownship to ccmp
 ```bash
 make robot t=eth-eccd-ownership
 make robot t=eth-eccm-ownership
 ```
 
-3. register ethereum as an new side chain on poly chain
+4. set proxy upgrade manager contract
 ```bash
-make robot t=eth-registerSideChain
-make robot t=eth-approveRegisterSideChain
-```
-
-4. sync genesis header
-```bash
-make robot t=eth-sync-eth-genesis
-make robot t=eth-sync-poly-genesis
+make robot t=eth-plt-ccmp
+make robot t=eth-nft-ccmp
 ```
 
 5. deploy plt asset
@@ -32,18 +31,22 @@ make robot t=eth-sync-poly-genesis
 make robot t=eth-deploy-plt
 ```
 
-6. deploy proxy contracts and set manager proxy, and record in config.json
-```bash
-make robot t=eth-deploy-plt-proxy
-make robot t=eth-plt-ccmp
-
-make robot t=eth-deploy-nft-proxy
-make robot t=eth-nft-ccmp
-```
-
-7. mint plt from `plt asset contract` owner to `plt proxy`
+6. mint plt from `plt asset contract` owner to `plt proxy`
 ```bash
 make robot t=eth-plt-transfer
+```
+
+## register side chain and sync header
+1. register ethereum as an new side chain on poly chain
+```bash
+make robot t=eth-registerSideChain
+make robot t=eth-approveRegisterSideChain
+```
+
+2. sync genesis header
+```bash
+make robot t=eth-sync-eth-genesis
+make robot t=eth-sync-poly-genesis
 ```
 
 ## prepare on palette chain
