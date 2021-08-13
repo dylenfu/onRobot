@@ -25,9 +25,9 @@ func (c *Client) DeployECCD() (common.Address, error) {
 	return addr, nil
 }
 
-func (c *Client) DeployECCM(eccd common.Address, sideChainID uint64) (common.Address, error) {
+func (c *Client) DeployECCM(eccd common.Address, sideChainID uint64, whiteList []common.Address, curBookeeperBytes []byte) (common.Address, error) {
 	auth := c.makeDeployAuth()
-	addr, tx, _, err := eccm_abi.DeployEthCrossChainManager(auth, c.backend, eccd)
+	addr, tx, _, err := eccm_abi.DeployEthCrossChainManager(auth, c.backend, eccd, sideChainID, whiteList, curBookeeperBytes)
 	if err != nil {
 		return utils.EmptyAddress, err
 	}

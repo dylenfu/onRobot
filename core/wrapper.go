@@ -1,6 +1,8 @@
 package core
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
@@ -8,7 +10,6 @@ import (
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/eth"
 	"github.com/palettechain/onRobot/pkg/log"
-	"math/big"
 )
 
 func PLTDeployPLTWrap() (succeed bool) {
@@ -34,9 +35,9 @@ func PLTDeployPLTWrap() (succeed bool) {
 
 func PLTWrapperLock() (succeed bool) {
 	var params struct {
-		To        common.Address
-		Amount    int
-		ID        uint64
+		To     common.Address
+		Amount int
+		ID     uint64
 	}
 
 	if err := config.LoadParams("PLT-Wrap-Lock.json", &params); err != nil {

@@ -23,6 +23,8 @@ github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e h1:ahyvB3q25Yn
 github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e/go.mod h1:kGUqhHd//musdITWjFvNTHn90WG9bMLBEPQZ17Cmlpw=
 github.com/JohnCGriffin/overflow v0.0.0-20170615021017-4d914c927216 h1:2ZboyJ8vl75fGesnG9NpMTD2DyQI3FzMXy4x752rGF0=
 github.com/JohnCGriffin/overflow v0.0.0-20170615021017-4d914c927216/go.mod h1:X0CRv0ky0k6m906ixxpzmDRLvX58TFUKS2eePweuyxk=
+github.com/KSlashh/eth-contracts v0.0.0-20210812170020-92f77f319e72 h1:vM/7x+YIVv0/z5Bbbm1DtepLnx6O0icszyzSuk1qa0w=
+github.com/KSlashh/eth-contracts v0.0.0-20210812170020-92f77f319e72/go.mod h1:R8lRKM8SOtVhY3zdgx6QGnuodbnptIlN4TxindEgk6Q=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/OneOfOne/xxhash v1.2.5/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q=
@@ -521,7 +523,6 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/polynetwork/btc-vendor-tools v0.0.0-20200813091748-3b19a5fd7666/go.mod h1:U8rR9X6vemlkBAJWfvzwSoalcJjX8B2aQjB0kPRhBUA=
 github.com/polynetwork/cosmos-poly-module v0.0.0-20200810030259-95d586518759/go.mod h1:VMBJZ8GSZeoWBntd/rWx2Rr5roRKofO7siP1qd6A6pY=
-github.com/polynetwork/eth-contracts v0.0.0-20200814062128-70f58e22b014 h1:fbVjTnsS7nZwsTtRdbv+2162e/odNN1rqfLf/gBmhAM=
 github.com/polynetwork/eth-contracts v0.0.0-20200814062128-70f58e22b014/go.mod h1:TeePrYZfWJAwuksPlie7RPequ51Ujp5l/JY6TcutsFc=
 github.com/polynetwork/nft-contracts v0.0.0-20210611024411-f14ed0d8d574 h1:hxBFgk0erutG9N0TRIhUh9rH7FGYAxtd1CgCE0L03Zw=
 github.com/polynetwork/nft-contracts v0.0.0-20210611024411-f14ed0d8d574/go.mod h1:yJi9LDhBOUvQmnagD2qMmoInDm5532NlXsJap3yzIzE=

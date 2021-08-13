@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -49,7 +50,13 @@ func PLTDeployECCM() (succeed bool) {
 	eccd := config.Conf.CrossChain.PaletteECCD
 	sideChainID := config.Conf.CrossChain.PaletteSideChainID
 	ccAdmCli := getPaletteCli(pltCTypeCrossChainAdmin)
-	eccm, err := ccAdmCli.DeployECCM(eccd, sideChainID)
+	whiteList := []common.Address{
+		eccd,
+		common.HexToAddress(native.PLTContractAddress),
+		config.Conf.CrossChain.PaletteNFTProxy,
+	}
+	curPkBytes := config.Conf.CrossChain.LoadCurrentBookKeeperBytes()
+	eccm, err := ccAdmCli.DeployECCM(eccd, sideChainID, whiteList, curPkBytes)
 	if err != nil {
 		log.Errorf("deploy eccm on palette failed, err: %s", err.Error())
 		return

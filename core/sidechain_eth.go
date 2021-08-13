@@ -39,8 +39,15 @@ func ETHDeployECCD() (succeed bool) {
 
 func ETHDeployECCM() (succeed bool) {
 	eccd := config.Conf.CrossChain.EthereumECCD
+	sideChainID := config.Conf.CrossChain.EthereumSideChainID
+	// todo: make sure that there are no more contracts
+	whiteList := []common.Address{
+		config.Conf.CrossChain.EthereumPLTProxy,
+		config.Conf.CrossChain.EthereumNFTProxy,
+	}
+	curPkBytes := config.Conf.CrossChain.LoadCurrentBookKeeperBytes()
 	ethOwner := getEthereumCli(ethCTypeOwner)
-	eccm, err := ethOwner.DeployECCMContract(eccd)
+	eccm, err := ethOwner.DeployECCMContract(eccd, sideChainID, whiteList, curPkBytes)
 	if err != nil {
 		log.Errorf("deploy eccm on ethereum failed, err: %s", err.Error())
 		return

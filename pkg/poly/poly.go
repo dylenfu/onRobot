@@ -2,6 +2,7 @@ package poly
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"encoding/hex"
 	"encoding/json"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ontio/ontology-crypto/ec"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology-crypto/sm2"
@@ -387,4 +389,58 @@ func GetCurveLabel(name string) (byte, error) {
 	default:
 		panic("err")
 	}
+}
+
+// AssemblePubKeyList collect bookkeepers within vbft block info, sort and assemble keepers into a byte slice.
+// return two bytes slice, the first contains an length which denote the bookeeper's number and the other without it.
+func AssemblePubKeyList(bookkeepers []keypair.PublicKey) (*polycm.ZeroCopySink, []byte) {
+	bookkeepers = keypair.SortPublicKeys(bookkeepers)
+	pubKeyList := make([]byte, 0)
+	sink := polycm.NewZeroCopySink(nil)
+	sink.WriteUint64(uint64(len(bookkeepers)))
+	for _, key := range bookkeepers {
+		raw := GetNoCompressKey(key)
+		pubKeyList = append(pubKeyList, raw...)
+		sink.WriteVarBytes(crypto.Keccak256(GetEthNoCompressKey(key)[1:])[12:])
+	}
+	return sink, pubKeyList
+}
+
+func GetNoCompressKey(key keypair.PublicKey) []byte {
+	var buf bytes.Buffer
+	switch t := key.(type) {
+	case *ec.PublicKey:
+		switch t.Algorithm {
+		case ec.ECDSA:
+			// Take P-256 as a special case
+			if t.Params().Name == elliptic.P256().Params().Name {
+				return ec.EncodePublicKey(t.PublicKey, false)
+			}
+			buf.WriteByte(byte(0x12))
+		case ec.SM2:
+			buf.WriteByte(byte(0x13))
+		}
+		label, err := GetCurveLabel(t.Curve.Params().Name)
+		if err != nil {
+			panic(err)
+		}
+		buf.WriteByte(label)
+		buf.Write(ec.EncodePublicKey(t.PublicKey, false))
+	case ed25519.PublicKey:
+		panic("err")
+	default:
+		panic("err")
+	}
+	return buf.Bytes()
+}
+
+func GetEthNoCompressKey(key keypair.PublicKey) []byte {
+	var buf bytes.Buffer
+	switch t := key.(type) {
+	case *ec.PublicKey:
+		return crypto.FromECDSAPub(t.PublicKey)
+	default:
+		panic("err")
+	}
+	return buf.Bytes()
 }

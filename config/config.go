@@ -17,10 +17,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/palettechain/onRobot/pkg/dao"
 	"github.com/palettechain/onRobot/pkg/encode"
 	"github.com/palettechain/onRobot/pkg/files"
 	"github.com/palettechain/onRobot/pkg/log"
+	"github.com/palettechain/onRobot/pkg/poly"
 	"github.com/palettechain/onRobot/pkg/sdk"
 	polysdk "github.com/polynetwork/poly-go-sdk"
 )
@@ -508,6 +510,16 @@ func (c *CrossChainConfig) LoadPolyAccountList() []*polysdk.Account {
 	}
 
 	return list
+}
+
+func (c *CrossChainConfig) LoadCurrentBookKeeperBytes() []byte {
+	accList := c.LoadPolyAccountList()
+	keepers := []keypair.PublicKey{}
+	for _, v := range accList {
+		keepers = append(keepers, v.PublicKey)
+	}
+	sink, _ := poly.AssemblePubKeyList(keepers)
+	return sink.Bytes()
 }
 
 func (c *CrossChainConfig) LoadPolyTestCaseAccount(filename string) (*polysdk.Account, error) {

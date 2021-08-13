@@ -35,8 +35,8 @@ import (
 	"github.com/polynetwork/eth-contracts/go_abi/eccmp_abi"
 	"github.com/polynetwork/eth-contracts/go_abi/lock_proxy_abi"
 	wrapabi "github.com/polynetwork/wrapper/abi/eth"
-	//"github.com/polynetwork/eth-contracts/go_abi/nftlp"
 
+	//"github.com/polynetwork/eth-contracts/go_abi/nftlp"
 	nftlp "github.com/polynetwork/nft-contracts/go_abi/nft_lock_proxy_abi"
 	nftmapping "github.com/polynetwork/nft-contracts/go_abi/nft_mapping_abi"
 	polycm "github.com/polynetwork/poly/common"
@@ -245,12 +245,12 @@ func (i *EthInvoker) DeployECCDContract() (common.Address, error) {
 	return contractAddress, nil
 }
 
-func (i *EthInvoker) DeployECCMContract(eccd common.Address) (common.Address, error) {
+func (i *EthInvoker) DeployECCMContract(eccd common.Address, sideChainID uint64, whiteList []common.Address, curBookeepers []byte) (common.Address, error) {
 	auth, err := i.makeAuth()
 	if err != nil {
 		return utils.EmptyAddress, fmt.Errorf("DeployECCMContract, err: %v", err)
 	}
-	contractAddress, tx, _, err := eccm_abi.DeployEthCrossChainManager(auth, i.backend(), eccd)
+	contractAddress, tx, _, err := eccm_abi.DeployEthCrossChainManager(auth, i.backend(), eccd, sideChainID, whiteList, curBookeepers)
 	if err != nil {
 		return common.Address{}, fmt.Errorf("DeployECCMContract, err: %v", err)
 	}
@@ -798,7 +798,7 @@ func (i *EthInvoker) PLTUnlock(
 	return tx.Hash(), nil
 }
 
-func (i *EthInvoker) WrapLock(wrapAddr, fromAsset, toUser common.Address,  dstChainId uint64, amount, fee, id *big.Int) (common.Hash, error) {
+func (i *EthInvoker) WrapLock(wrapAddr, fromAsset, toUser common.Address, dstChainId uint64, amount, fee, id *big.Int) (common.Hash, error) {
 	wrap, err := wrapabi.NewIPolyWrapper(wrapAddr, i.backend())
 	if err != nil {
 		return utils.EmptyHash, err
