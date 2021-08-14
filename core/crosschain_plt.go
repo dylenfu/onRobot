@@ -376,3 +376,98 @@ func EthWrapperPLTLock() (succeed bool) {
 
 	return true
 }
+
+func EthWrapperNFTLock() (succeed bool) {
+	var params struct {
+		From   common.Address
+		To     common.Address
+		Amount int
+	}
+	if err := config.LoadParams("NFT-UnLock.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
+
+	from := params.From
+	to := params.To
+	wrapper := config.Conf.CrossChain.EthereumPLTWrapper
+	targetSideChainID := config.Conf.CrossChain.PaletteSideChainID
+	asset := config.Conf.CrossChain.EthereumPLTAsset
+	amount := plt.MultiPLT(params.Amount)
+	fee := big.NewInt(0)
+	id := big.NewInt(0)
+	cli := getPaletteCli(pltCTypeCustomer)
+	invoker := eth.NewEInvoker(
+		config.Conf.CrossChain.EthereumSideChainID,
+		config.Conf.CrossChain.EthereumRPCUrl,
+		customLoadAccount(from),
+	)
+
+	// please make sure that eth account's balance is enough for gas fee.
+
+	// prepare allowance
+	logsplit()
+	log.Infof("prepare from account allowance for proxy......")
+	if err := prepareAllowance(invoker, from, wrapper, amount); err != nil {
+		log.Error(err)
+		return
+	}
+
+	// unlock
+	logsplit()
+	log.Infof("lock plt on ethereum......")
+	fromBalanceBeforeLockOnEthereum, err := invoker.PLTBalanceOf(asset, from)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	toBalanceBeforeLockOnPalette, err := cli.BalanceOf(to, "latest")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	hash, err := invoker.WrapLock(wrapper, asset, to, targetSideChainID, amount, fee, id)
+	if err != nil {
+		log.Error(err)
+		return
+	} else {
+		log.Infof("lock plt on ethereum, tx hash %s", hash.Hex())
+	}
+
+	logsplit()
+	log.Info("check balance on both of palette chain and ethereum chain...")
+	for i := 0; i < 100; i++ {
+		fromBalanceAfterLockOnEthereum, err := invoker.PLTBalanceOf(asset, from)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		toBalanceAfterLockOnPalette, err := cli.BalanceOf(to, "latest")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		log.Infof("ethereum %s: balance before lock [%d], balance after lock [%d]",
+			params.From.Hex(),
+			plt.PrintUPLT(fromBalanceBeforeLockOnEthereum),
+			plt.PrintUPLT(fromBalanceAfterLockOnEthereum),
+		)
+		log.Infof("palette %s: balance before lock [%d], balance after lock [%d]",
+			params.To.Hex(),
+			plt.PrintUPLT(toBalanceBeforeLockOnPalette),
+			plt.PrintUPLT(toBalanceAfterLockOnPalette),
+		)
+		subFrom := utils.SafeSub(fromBalanceBeforeLockOnEthereum, fromBalanceAfterLockOnEthereum)
+		subTo := utils.SafeSub(toBalanceAfterLockOnPalette, toBalanceBeforeLockOnPalette)
+		zero := big.NewInt(0)
+		if new(big.Int).Sub(subFrom, amount).Cmp(zero) == 0 && new(big.Int).Sub(subTo, amount).Cmp(zero) == 0 {
+			log.Infof("lock tx hash %s success!", hash.Hex())
+			break
+		}
+		logsplit()
+		wait(1)
+	}
+
+	return true
+}

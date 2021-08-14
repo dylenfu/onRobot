@@ -108,12 +108,6 @@ func Endpoint() {
 	frame.Tool.RegMethod("plt-approveUpdateSideChain", PLTApproveUpdateSideChain)
 	frame.Tool.RegMethod("plt-approveQuitSideChain", PLTApproveQuitSideChain)
 
-	// plt cross chain wrapper contract
-	frame.Tool.RegMethod("plt-deploy-plt-wrap", PLTDeployPLTWrap)
-	frame.Tool.RegMethod("plt-plt-wrap-lock", PLTWrapperLock)
-	frame.Tool.RegMethod("plt-unpack-lock-event", PLTWrapperUnpackLockEvent)
-	frame.Tool.RegMethod("plt-unpack-unlock-event", PLTWrapperUnpackUnlockEvent)
-
 	// ethereum side chain environment
 	frame.Tool.RegMethod("eth-deploy-eccd", ETHDeployECCD)
 	frame.Tool.RegMethod("eth-deploy-eccm", ETHDeployECCM)
@@ -153,6 +147,12 @@ func Endpoint() {
 	frame.Tool.RegMethod("plt-unlock", PLTUnlock)
 	frame.Tool.RegMethod("plt-dump-contract", PLTDumpContractCode)
 
+	// plt cross chain wrapper contract
+	frame.Tool.RegMethod("plt-deploy-plt-wrap", PLTDeployPLTWrap)
+	frame.Tool.RegMethod("plt-wrap-lock", PLTWrapperLock)
+	frame.Tool.RegMethod("plt-unpack-lock-event", PLTWrapperUnpackLockEvent)
+	frame.Tool.RegMethod("plt-unpack-unlock-event", PLTWrapperUnpackUnlockEvent)
+
 	// nft
 	frame.Tool.RegMethod("plt-deploy-nft-asset", NFTDeploy)
 	frame.Tool.RegMethod("nft-transfer", NFTTransfer)
@@ -165,6 +165,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("nft-burn", NFTBurn)
 	frame.Tool.RegMethod("nft-lock", NFTLock)
 	frame.Tool.RegMethod("nft-unlock", NFTUnLock)
+	frame.Tool.RegMethod("nft-wrap-lock", NFTWrapLock)
 
 	// evm test
 	frame.Tool.RegMethod("deploy-safety", DeploySafetyContract)

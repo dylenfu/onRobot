@@ -11,12 +11,13 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/native"
 	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/core/types"
-	pltwpabi "github.com/palettechain/onRobot/pkg/plt_wrap_abi"
+	nftwp "github.com/polynetwork/nft-contracts/go_abi/nft_native_wrap_abi"
+	pltwp "github.com/polynetwork/nft-contracts/go_abi/plt_native_wrap_abi"
 )
 
 func (c *Client) DeployPLTWrapper(owner, lockProxy common.Address, chainId *big.Int) (common.Address, error) {
 	auth := c.makeDeployAuth()
-	addr, tx, _, err := pltwpabi.DeployPolyWrapper(auth, c.backend, owner, lockProxy, chainId)
+	addr, tx, _, err := pltwp.DeployPolyWrapper(auth, c.backend, owner, lockProxy, chainId)
 	if err != nil {
 		return utils.EmptyAddress, err
 	}
@@ -27,13 +28,31 @@ func (c *Client) DeployPLTWrapper(owner, lockProxy common.Address, chainId *big.
 }
 
 func (c *Client) PLTWrapLock(wrapAddr, fromAsset, toAddr common.Address, toChainId uint64, amount, fee, id *big.Int) (common.Hash, error) {
-	wrapper, err := pltwpabi.NewPolyWrapper(wrapAddr, c.backend)
+	wrapper, err := pltwp.NewPolyWrapper(wrapAddr, c.backend)
 	if err != nil {
 		return utils.EmptyHash, err
 	}
 
 	auth := c.makeDeployAuth()
 	tx, err := wrapper.Lock(auth, fromAsset, toChainId, toAddr.Bytes(), amount, fee, id)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	if err := c.WaitTransaction(tx.Hash()); err != nil {
+		return utils.EmptyHash, err
+	}
+	return tx.Hash(), nil
+}
+
+func (c *Client) NFTWrapLock(wrapAddr, fromAsset, toAddr, feeToken common.Address, toChainId uint64, tokenId, fee, id *big.Int) (common.Hash, error) {
+	wrapper, err := nftwp.NewPolyNativeNFTWrapper(wrapAddr, c.backend)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	auth := c.makeDeployAuth()
+	tx, err := wrapper.Lock(auth, fromAsset, toChainId, toAddr, tokenId, feeToken, fee, id)
 	if err != nil {
 		return utils.EmptyHash, err
 	}

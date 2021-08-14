@@ -24,7 +24,7 @@ func NFTDeploy() (succeed bool) {
 		return
 	}
 
-	valcli := getPaletteCli(pltCTypeInvoker)
+	valcli := getPaletteCli(pltCTypeCrossChainAdmin)
 	_, addr, err := valcli.NFTDeploy(params.Name, params.Symbol)
 	if err != nil {
 		log.Error(err)
@@ -48,7 +48,7 @@ func NFTMint() (succeed bool) {
 		return
 	}
 
-	valcli := getPaletteCli(pltCTypeInvoker)
+	valcli := getPaletteCli(pltCTypeCrossChainAdmin)
 	owner := params.To
 	token := new(big.Int).SetUint64(params.TokenID)
 	balanceBeforeMint, err := valcli.NFTBalance(params.Asset, owner, "latest")

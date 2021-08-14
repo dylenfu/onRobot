@@ -94,6 +94,30 @@ func (c *Client) NFTAssetOwner(asset common.Address, blockNum string) (common.Ad
 	return result.Owner, nil
 }
 
+func (c *Client) NFTTokenApprove(asset, approved common.Address, tokenID *big.Int) (common.Hash, error) {
+	payload, err := c.packNFT(nft.MethodApprove, approved, tokenID)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	return c.sendNFT(asset, payload)
+}
+
+func (c *Client) NFTTokenAllowance(asset common.Address, tokenID *big.Int, blockNum string) (common.Address, error) {
+	payload, err := c.packNFT(nft.MethodGetApproved, tokenID)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	data, err := c.callNFT(asset, payload, blockNum)
+	if err != nil {
+		return utils.EmptyAddress, err
+	}
+	result := &nft.GetApprovedResult{}
+	if err = c.unpackNFT(nft.MethodGetApproved, result, data); err != nil {
+		return utils.EmptyAddress, err
+	}
+	return result.Spender, nil
+}
+
 func (c *Client) NFTTokenOwner(asset common.Address, tokenID *big.Int, blockNum string) (common.Address, error) {
 	payload, err := c.packNFT(nft.MethodOwnerOf, tokenID)
 	if err != nil {
