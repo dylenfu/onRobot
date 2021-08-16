@@ -26,6 +26,14 @@ func (c *Client) Stake(validator, stakeAccount common.Address, amount *big.Int, 
 	return c.SendGovernanceTx(payload)
 }
 
+func (c *Client) StakeWithoutWaiting(validator, stakeAccount common.Address, amount *big.Int, revoke bool) (common.Hash, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodStake, validator, stakeAccount, amount, revoke)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return c.SendTransaction(GovernanceAddress, payload)
+}
+
 func (c *Client) GetStakeAmount(validator, stakeAccount common.Address, blockNum string) *big.Int {
 	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetStakeAmount, stakeAccount, validator)
 	if err != nil {

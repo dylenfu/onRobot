@@ -92,6 +92,14 @@ func (c *Client) PLTTransfer(to common.Address, amount *big.Int) (common.Hash, e
 	return c.sendPLTTx(payload)
 }
 
+func (c *Client) PLTTransferWithoutWaiting(to common.Address, amount *big.Int) (common.Hash, error) {
+	payload, err := c.packPLT(plt.MethodTransfer, to, amount)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+	return c.SendTransaction(PLTAddress, payload)
+}
+
 func (c *Client) PLTTransferFrom(from, to common.Address, amount *big.Int) (common.Hash, error) {
 	payload, err := c.packPLT(plt.MethodTransferFrom, from, to, amount)
 	if err != nil {

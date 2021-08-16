@@ -323,7 +323,7 @@ func Delegate() (succeed bool) {
 			}
 			value := plt.PrintFPLT(utils.DecimalFromBigInt(data))
 			res[addr] = value
-			log.Infof("%s balance %s %f", addr.Hex(), mark, value)
+			log.Infof("%s, %s balance %f", mark, addr.Hex(), value)
 		}
 		return res
 	}
@@ -334,7 +334,7 @@ func Delegate() (succeed bool) {
 			stkAcc := fan.Address
 			value := admcli.GetStakeAmount(node.NodeAddr(), stkAcc, "latest")
 			stkAmt := plt.PrintFPLT(utils.DecimalFromBigInt(value))
-			log.Infof("%s stake amount %s %f", fan.Address, mark, stkAmt)
+			log.Infof("%s, %s stake amount %f", mark, fan.Address.Hex(), stkAmt)
 		}
 	}
 

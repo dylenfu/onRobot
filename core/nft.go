@@ -37,10 +37,10 @@ func NFTDeploy() (succeed bool) {
 
 func NFTMint() (succeed bool) {
 	var params struct {
-		Asset   common.Address
-		To      common.Address
-		TokenID uint64
-		Uri     string
+		Asset    common.Address
+		To       common.Address
+		TokenIDs []uint64
+		Uri      string
 	}
 
 	if err := config.LoadParams("NFT-Mint.json", &params); err != nil {
@@ -50,23 +50,45 @@ func NFTMint() (succeed bool) {
 
 	valcli := getPaletteCli(pltCTypeCrossChainAdmin)
 	owner := params.To
-	token := new(big.Int).SetUint64(params.TokenID)
+	list := strings.Split(params.Uri, ".")
+	if len(list) != 2 {
+		log.Errorf("uri format should be like this: cat.jpg")
+		return
+	}
+	uriPrefix := list[0]
+	uriSuffix := list[1]
+
+	logsplit()
+	log.Infof("check balance before mint...")
 	balanceBeforeMint, err := valcli.NFTBalance(params.Asset, owner, "latest")
 	if err != nil {
 		log.Error(err)
 		return
+	} else {
+		log.Infof("user %s balance before mint %d", owner.Hex(), balanceBeforeMint.Uint64())
 	}
 
-	// mint
-	if _, err := valcli.NFTMint(params.Asset, owner, token, params.Uri); err != nil {
-		log.Error(err)
-		return
+	logsplit()
+	log.Infof("mint...")
+	for _, tokenID := range params.TokenIDs {
+		url := fmt.Sprintf("%s%d%s", uriPrefix, tokenID, uriSuffix)
+		token := new(big.Int).SetUint64(tokenID)
+
+		// mint
+		if _, err := valcli.NFTMint(params.Asset, owner, token, url); err != nil {
+			log.Error(err)
+			return
+		}
 	}
 
+	logsplit()
+	log.Infof("check balance after mint...")
 	balanceAfterMint, err := valcli.NFTBalance(params.Asset, owner, "latest")
 	if err != nil {
 		log.Error(err)
 		return
+	} else {
+		log.Infof("user %s balance after mint %d", owner.Hex(), balanceAfterMint.Uint64())
 	}
 
 	subAmt := utils.SafeSub(balanceAfterMint, balanceBeforeMint).Uint64()
@@ -74,6 +96,7 @@ func NFTMint() (succeed bool) {
 		log.Errorf("balance before mint %d, balance after mint %d, sub amount should be %d",
 			balanceBeforeMint.Uint64(), balanceAfterMint.Uint64(), subAmt)
 	}
+
 	return true
 }
 

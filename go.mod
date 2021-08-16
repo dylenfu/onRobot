@@ -10,7 +10,7 @@ require (
 	github.com/ontio/ontology-crypto v1.0.9
 	github.com/palettechain/palette_token v0.0.0-20210120103528-1db803afdd45
 	github.com/polynetwork/eth-contracts v1.0.0
-	github.com/polynetwork/nft-contracts v0.0.0-20210814124652-c673fbe9d128
+	github.com/polynetwork/nft-contracts v0.0.0-20210816104924-4164d880e4f0
 	github.com/polynetwork/poly v1.7.2-0.20210802025248-aaa66443deb5
 	github.com/polynetwork/poly-go-sdk v0.0.0-20200817120957-365691ad3493
 	github.com/polynetwork/wrapper v0.0.0-20210708030702-eb192531f509

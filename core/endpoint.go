@@ -78,6 +78,7 @@ func Endpoint() {
 	frame.Tool.RegMethod("delValidators", DelValidators)
 	frame.Tool.RegMethod("period", RewardPeriod)
 	frame.Tool.RegMethod("stakeAmount", StakeAmount)
+	frame.Tool.RegMethod("stable", Stable)
 	frame.Tool.RegMethod("dumpBlock", DumpBlock)
 
 	// palette side chain environment
