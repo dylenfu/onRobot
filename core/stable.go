@@ -21,25 +21,29 @@ package core
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/native/plt"
+	"github.com/ethereum/go-ethereum/contracts/native/utils"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/palettechain/onRobot/config"
 	"github.com/palettechain/onRobot/pkg/log"
 	"github.com/palettechain/onRobot/pkg/sdk"
 )
 
-// 节点代理用户质押:
-// 1. admin给用户充值
-// 2. fans delegate
-// 3. 质押后不等待生效，立即取消质押
-// 4. 充值返还给admin
 func Stable() (succeed bool) {
-	const num = 50000
+	var params struct {
+		Number int
+		NodeIndex int
+	}
 
+	if err := config.LoadParams("Stable.json", &params); err != nil {
+		log.Error(err)
+		return
+	}
 	type Fan struct {
 		Address common.Address
 		Cli     *sdk.Client
 	}
 
+	num := params.Number
 	fans := make([]*Fan, num)
 	url := config.Conf.Nodes[0].RPCAddr()
 	for i := 0; i < num; i++ {
@@ -62,12 +66,12 @@ func Stable() (succeed bool) {
 	wait(10)
 
 	// fans delegate
+	nodeIndex := params.NodeIndex
+	node := config.Conf.Nodes[nodeIndex]
+	validator := node.NodeAddr()
+	stakeAccount := node.StakeAddr()
 	{
 		logsplit()
-		nodeIndex := 5
-		node := config.Conf.Nodes[nodeIndex]
-		validator := node.NodeAddr()
-		stakeAccount := node.StakeAddr()
 		log.Infof("fans delegate......")
 		for _, fan := range fans {
 			if _, err := fan.Cli.StakeWithoutWaiting(validator, stakeAccount, amount, false); err != nil {
@@ -76,6 +80,35 @@ func Stable() (succeed bool) {
 		}
 	}
 
+	wait(20)
+
+	for _, fan := range fans {
+		amount, err := fan.Cli.Withdrawable(fan.Address, "latest")
+		if err != nil {
+			continue
+		} else {
+			log.Infof("fans %s withdrawable %.5f", fan.Address.Hex(), plt.PrintFPLT(utils.DecimalFromBigInt(amount)))
+		}
+	}
+
+	wait(20)
+
+	for _, fan := range fans {
+		fan.Cli.WithdrawForWithoutWaiting(fan.Address)
+	}
+
+	wait(30)
+
+	//for _, fan := range fans {
+	//	if _, err := fan.Cli.StakeWithoutWaiting(validator, stakeAccount, amount, true); err != nil {
+	//		log.Errorf("%s stake to node%d failed, err: %v", fan.Address, node.Index, err)
+	//	}
+	//}
+
+	for _, fan := range fans {
+		fan.Cli.WithdrawForWithoutWaiting(fan.Address)
+	}
+
 	wait(10)
-	return
+	return true
 }

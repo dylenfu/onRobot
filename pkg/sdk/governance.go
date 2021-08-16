@@ -34,6 +34,41 @@ func (c *Client) StakeWithoutWaiting(validator, stakeAccount common.Address, amo
 	return c.SendTransaction(GovernanceAddress, payload)
 }
 
+func (c *Client) Withdrawable(user common.Address, blockNumber string) (*big.Int, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodWithdrawable, user)
+	if err != nil {
+		return nil, err
+	}
+	enc, err := c.CallGovernance(payload, blockNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	output := new(governance.MethodWithdrawableOutput)
+	if err := utils.UnpackOutputs(GovernanceABI, governance.MethodWithdrawable, output, enc); err != nil {
+		return nil, err
+	}
+	return output.Amount, nil
+}
+
+func (c *Client) WithdrawFor(user common.Address) (common.Hash, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodWithdrawFor, user)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	return c.SendGovernanceTx(payload)
+}
+
+func (c *Client) WithdrawForWithoutWaiting(user common.Address) (common.Hash, error) {
+	payload, err := utils.PackMethod(GovernanceABI, governance.MethodWithdrawFor, user)
+	if err != nil {
+		return utils.EmptyHash, err
+	}
+
+	return c.SendTransaction(GovernanceAddress, payload)
+}
+
 func (c *Client) GetStakeAmount(validator, stakeAccount common.Address, blockNum string) *big.Int {
 	payload, err := utils.PackMethod(GovernanceABI, governance.MethodGetStakeAmount, stakeAccount, validator)
 	if err != nil {

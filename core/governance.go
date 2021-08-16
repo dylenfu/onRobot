@@ -393,6 +393,33 @@ func Delegate() (succeed bool) {
 		}
 	}
 
+	// withdraw
+	{
+		logsplit()
+		log.Infof("waiting for withdraw")
+		for _, fan := range params.Fans {
+			cli := clients[fan.Address.Hex()]
+			if amt, err := cli.Withdrawable(fan.Address, "latest"); err != nil {
+				log.Errorf("%s check withdrawable failed, err: %v", fan.Address.Hex(), err)
+				return
+			} else {
+				log.Infof("%s can withdraw %f", fan.Address.Hex(), plt.PrintFPLT(utils.DecimalFromBigInt(amt)))
+			}
+
+			if _, err := cli.WithdrawFor(fan.Address); err != nil {
+				log.Error("%s withdraw failed %v", fan.Address.Hex(), err)
+				return
+			} else {
+				if amt, err := cli.Withdrawable(fan.Address, "latest"); err != nil {
+					log.Errorf("%s check withdrawable failed, err: %v", fan.Address.Hex(), err)
+					return
+				} else {
+					log.Infof("%s can withdraw should be zero %f", fan.Address.Hex(), plt.PrintFPLT(utils.DecimalFromBigInt(amt)))
+				}
+			}
+		}
+	}
+
 	// revoke delegate
 	{
 		logsplit()
