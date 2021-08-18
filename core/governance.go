@@ -293,8 +293,9 @@ func FakeReward() (succeed bool) {
 // 2. 检查节点是否为可用节点
 // 2. fans delegate
 // 3. 等待一定周期查询奖励
-// 4. 取消质押
-// 5. 等待一定周期查询奖励应该为0
+// 4. 提取分润
+// 5. 取消质押
+// 6. 等待一定周期查询奖励应该为0
 func Delegate() (succeed bool) {
 	var params struct {
 		Fans []struct {
@@ -310,6 +311,12 @@ func Delegate() (succeed bool) {
 		return
 	}
 	admcli := getPaletteCli(pltCTypeAdmin)
+
+	// fans transfer back to admin
+	clients := make(map[string]*sdk.Client)
+	for _, fan := range params.Fans {
+		clients[fan.Address.Hex()] = sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), customLoadAccount(fan.Address))
+	}
 
 	checkBalance := func(mark string) map[common.Address]float64 {
 		res := make(map[common.Address]float64)
@@ -338,10 +345,13 @@ func Delegate() (succeed bool) {
 		}
 	}
 
-	// fans transfer back to admin
-	clients := make(map[string]*sdk.Client)
-	for _, fan := range params.Fans {
-		clients[fan.Address.Hex()] = sdk.NewSender(config.Conf.Nodes[0].RPCAddr(), customLoadAccount(fan.Address))
+	checkWithdrawable := func(fan common.Address) {
+		cli := clients[fan.Hex()]
+		if amt, err := cli.Withdrawable(fan, "latest"); err != nil {
+			log.Errorf("%s check withdrawable failed, err: %v", fan.Hex(), err)
+		} else {
+			log.Infof("%s can withdraw %f", fan.Hex(), plt.PrintFPLT(utils.DecimalFromBigInt(amt)))
+		}
 	}
 
 	// admin batch transfer to fans
@@ -388,7 +398,9 @@ func Delegate() (succeed bool) {
 
 		logsplit()
 		for i := 0; i < params.WaitBlock; i++ {
-			checkBalance("after delegate")
+			for _, v := range clients {
+				checkWithdrawable(v.Address())
+			}
 			wait(1)
 		}
 	}
@@ -396,26 +408,16 @@ func Delegate() (succeed bool) {
 	// withdraw
 	{
 		logsplit()
-		log.Infof("waiting for withdraw")
+		log.Infof("waiting for withdraw......")
 		for _, fan := range params.Fans {
 			cli := clients[fan.Address.Hex()]
-			if amt, err := cli.Withdrawable(fan.Address, "latest"); err != nil {
-				log.Errorf("%s check withdrawable failed, err: %v", fan.Address.Hex(), err)
-				return
-			} else {
-				log.Infof("%s can withdraw %f", fan.Address.Hex(), plt.PrintFPLT(utils.DecimalFromBigInt(amt)))
-			}
+			checkWithdrawable(fan.Address)
 
 			if _, err := cli.WithdrawFor(fan.Address); err != nil {
 				log.Error("%s withdraw failed %v", fan.Address.Hex(), err)
 				return
 			} else {
-				if amt, err := cli.Withdrawable(fan.Address, "latest"); err != nil {
-					log.Errorf("%s check withdrawable failed, err: %v", fan.Address.Hex(), err)
-					return
-				} else {
-					log.Infof("%s can withdraw should be zero %f", fan.Address.Hex(), plt.PrintFPLT(utils.DecimalFromBigInt(amt)))
-				}
+				checkWithdrawable(fan.Address)
 			}
 		}
 	}
@@ -445,7 +447,7 @@ func Delegate() (succeed bool) {
 			node := config.Conf.Nodes[fan.NodeIndex]
 			value := admcli.GetStakeAmount(node.NodeAddr(), node.StakeAddr(), "latest")
 			stkAmt := plt.PrintFPLT(utils.DecimalFromBigInt(value))
-			log.Infof("%s stake amount %f", fan.Address, stkAmt)
+			log.Infof("%s stake amount %f", fan.Address.Hex(), stkAmt)
 		}
 		for i := 0; i < params.WaitBlock; i++ {
 			checkBalance("after revoke delegate")
@@ -460,7 +462,7 @@ func Delegate() (succeed bool) {
 		to := config.Conf.AdminAccount
 		for _, fan := range params.Fans {
 			cli := clients[fan.Address.Hex()]
-			amt := plt.MultiPLT(fan.Amount)
+			amt, _ := cli.BalanceOf(fan.Address, "latest")
 			if _, err := cli.PLTTransfer(to, amt); err != nil {
 				log.Errorf("admin transfer to %s failed, err: %v", to.Hex(), err)
 				return
